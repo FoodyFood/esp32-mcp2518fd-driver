@@ -41,8 +41,8 @@ Each item below has been tested on real hardware and confirmed working.
 | TX FIFO configuration          | ✅ Verified  | Step 2 — FIFO1=TX (TXEN=1, PLSIZE=0, FSIZE=0), readback 0x00000480 (FRESET set by HW) |
 | RX FIFO configuration          | ✅ Verified  | Step 2 — FIFO2=RX (all zeros), readback 0x00000400 (FRESET set by HW) |
 | TXQEN/STEF cleared in CiCON    | ✅ Verified  | Step 2 — byte-write to CiCON+2, confirmed TXQEN=0 STEF=0 |
-| RAM initialisation             | 🔲 Not started | Step 3                                        |
+| RAM initialisation             | ✅ Verified  | Step 3 — chip allocates RAM automatically, no explicit init needed |
 | RAM allocation for FIFOs       | ✅ Verified  | Step 3 — UA1=0x000 (RAM 0x400), UA2=0x010 (RAM 0x410). UA is offset from RAM base, not absolute address |
 | Send one frame                 | ✅ Verified  | Step 4 — T0=0x123 FDF BRS DLC=8, TXREQ cleared, no errors. CiFIFOSTA1=0x00000007 before and after |
-| Receive one frame              | 🔲 Not started | Step 6                                        |
-| Loopback frame verify          | 🔲 Not started | Step 6                                        |
+| Receive a frame (internal loopback) | ✅ Verified  | Step 5 — Filter 0 accept-all→FIFO2, R0=0x00000123 R1=0x000000C8 R2=0x04030201 R3=0x08070605 |
+| Full loopback round-trip verify | ✅ Verified  | Step 5 — TX SID=0x123 FDF BRS DLC=8 data=0x01..0x08 received intact in FIFO2 |

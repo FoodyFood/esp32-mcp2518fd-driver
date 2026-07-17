@@ -75,8 +75,8 @@ The result is a minimal, auditable reference implementation that anyone can foll
 | FIFO1=TX, FIFO2=RX configuration | ✅ Verified |
 | RAM allocation (UA offsets confirmed) | ✅ Verified |
 | Transmit a frame (internal loopback) | ✅ Verified |
-| Receive a frame (internal loopback) | 🔲 Not started |
-| Full loopback round-trip verify | 🔲 Not started |
+| Receive a frame (internal loopback) | ✅ Verified |
+| Full loopback round-trip verify | ✅ Verified |
 | Normal CAN FD mode (two-node) | 🔲 Not started |
 
 See [`docs/status.md`](docs/status.md) for detailed notes and observed values from each verified step.

@@ -58,6 +58,14 @@ inline constexpr uint16_t FIFO_CON(uint8_t m) { return 0x05C + (m - 1) * 0x0C; }
 inline constexpr uint16_t FIFO_STA(uint8_t m) { return 0x060 + (m - 1) * 0x0C; }
 inline constexpr uint16_t FIFO_UA(uint8_t m)  { return 0x064 + (m - 1) * 0x0C; }
 
+// Filter registers (DS20006027B page 13)
+// CiFLTCONm: m=0..7, each register controls 4 filters
+// byte 0 = Filter 0: FLTEN0 (bit7) + F0BP[4:0]
+constexpr uint16_t REG_CiFLTCON0 = 0x1D0;
+// CiFLTOBJm / CiMASKm: stride 8 bytes per filter (OBJ then MASK)
+constexpr uint16_t REG_CiFLTOBJ0 = 0x1F0;
+constexpr uint16_t REG_CiMASK0   = 0x1F4;
+
 // RAM
 constexpr uint16_t RAM_BASE = 0x400;
 

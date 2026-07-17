@@ -119,10 +119,23 @@ void runTest()
     // ------------------------------------------------------------------
 
     // ------------------------------------------------------------------
-    // Step 3: Read CiFIFOUA1 and CiFIFOUA2 — must be outside config mode
-    // Enter loopback first, then read UA
+    // Step 5: Configure Filter 0 BEFORE entering loopback, then TX+RX
+    // Filter must be configured before the frame is transmitted.
+    // Sequence:
+    //   1. In config mode: disable filter, write OBJ+MASK, enable pointing to FIFO2
+    //   2. Enter loopback
+    //   3. Transmit frame (Step 4)
+    //   4. Check FIFO2 has message, read and verify
     // ------------------------------------------------------------------
 
+    // Configure Filter 0 (can be done outside config mode per ref manual 6.1,
+    // but we are still in config mode here so this is fine)
+    can.write8(REG_CiFLTCON0, 0x00);                  // disable filter 0
+    can.write32(REG_CiFLTOBJ0, 0x00000000UL);          // match any SID
+    can.write32(REG_CiMASK0,   0x00000000UL);          // all bits don’t care
+    can.write8(REG_CiFLTCON0, (1u << 7) | 0x02);      // FLTEN0=1, F0BP=2 (FIFO2)
+
+    // Now enter loopback
     can.setMode(MODE_INTERNAL_LB);
 
     uint32_t ua1 = can.read32(FIFO_UA(1));
@@ -130,9 +143,6 @@ void runTest()
 
     Serial.println();
     Serial.println("Step 3 — FIFO UA (RAM addresses):");
-    // UA holds the offset from RAM base (0x400), not the absolute address
-    // Actual address = 0x400 + UA. With no TEF/TXQ:
-    // FIFO1: offset 0x000, FIFO2: offset 0x010 (16 bytes per object)
     Serial.printf("CiFIFOUA1 = 0x%08lX  expect 0x00000000  %s\n",
         ua1, ua1 == 0x00000000UL ? "OK" : "FAIL");
     Serial.printf("CiFIFOUA2 = 0x%08lX  expect 0x00000010  %s\n",
@@ -141,17 +151,7 @@ void runTest()
         0x400UL + ua1, 0x400UL + ua2);
 
     // ------------------------------------------------------------------
-    // Step 4: Transmit one CAN FD frame in internal loopback
-    // Sequence (ref manual section 4.2):
-    //   1. Check TFNRFNIF in CiFIFOSTA1 (must be set = room in FIFO)
-    //   2. Write T0+T1+data to RAM at 0x400 + UA1
-    //   3. Set UINC|TXREQ in one write to CiFIFOCON1
-    //   4. Poll TXREQ cleared = frame sent
-    //   5. Verify no error flags in CiFIFOSTA1
-    //
-    // T0 = SID=0x123, IDE=0  => 0x00000123
-    // T1 = FDF=1, BRS=1, DLC=8 => 0x000000C8
-    // Data: 0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08
+    // Step 4: Transmit one CAN FD frame
     // ------------------------------------------------------------------
 
     Serial.println();
@@ -163,17 +163,14 @@ void runTest()
     Serial.printf("TFNRFNIF check: %s\n",
         (sta1 & FIFOSTA_TFNRFNIF) ? "OK" : "FAIL");
 
-    // Write message object to RAM
     uint16_t txAddr = (uint16_t)(RAM_BASE + ua1);
-    can.write32(txAddr,      0x00000123UL);  // T0: SID=0x123
-    can.write32(txAddr + 4,  0x000000C8UL);  // T1: FDF=1 BRS=1 DLC=8
-    can.write32(txAddr + 8,  0x04030201UL);  // T2: bytes 0-3
-    can.write32(txAddr + 12, 0x08070605UL);  // T3: bytes 4-7
+    can.write32(txAddr,      0x00000123UL);
+    can.write32(txAddr + 4,  0x000000C8UL);
+    can.write32(txAddr + 8,  0x04030201UL);
+    can.write32(txAddr + 12, 0x08070605UL);
 
-    // Set UINC and TXREQ in one write — rule: always set together
     can.write32(FIFO_CON(1), FIFOCON_TXEN | FIFOCON_UINC | FIFOCON_TXREQ);
 
-    // Poll TXREQ cleared (max 10ms)
     uint32_t start = millis();
     bool sent = false;
     while (millis() - start < 10)
@@ -190,6 +187,42 @@ void runTest()
     Serial.printf("CiFIFOSTA1 after TX  = 0x%08lX\n", sta1_after);
     Serial.printf("No TX errors: %s\n",
         (sta1_after & (FIFOSTA_TXERR | FIFOSTA_TXABT)) == 0 ? "OK" : "FAIL");
+
+    // ------------------------------------------------------------------
+    // Step 5: Receive the frame from FIFO2
+    // ------------------------------------------------------------------
+
+    Serial.println();
+    Serial.println("Step 5 — receive frame:");
+
+    uint32_t sta2 = can.read32(FIFO_STA(2));
+    Serial.printf("CiFIFOSTA2 = 0x%08lX  TFNRFNIF=%lu\n",
+        sta2, (sta2 & FIFOSTA_TFNRFNIF) ? 1 : 0);
+    Serial.printf("Message waiting: %s\n",
+        (sta2 & FIFOSTA_TFNRFNIF) ? "OK" : "FAIL");
+
+    uint32_t ua2_rx = can.read32(FIFO_UA(2));
+    uint16_t rxAddr = (uint16_t)(RAM_BASE + ua2_rx);
+
+    uint32_t r0 = can.read32(rxAddr);
+    uint32_t r1 = can.read32(rxAddr + 4);
+    uint32_t r2 = can.read32(rxAddr + 8);
+    uint32_t r3 = can.read32(rxAddr + 12);
+
+    Serial.printf("R0 = 0x%08lX  SID=0x%03lX  expect SID=0x123  %s\n",
+        r0, r0 & 0x7FFUL, (r0 & 0x7FFUL) == 0x123UL ? "OK" : "FAIL");
+    Serial.printf("R1 = 0x%08lX  FDF=%lu BRS=%lu DLC=%lu  expect FDF=1 BRS=1 DLC=8  %s\n",
+        r1,
+        (r1 >> 7) & 1,
+        (r1 >> 6) & 1,
+        r1 & 0xFUL,
+        ((r1 & 0xCFUL) == 0xC8UL) ? "OK" : "FAIL");
+    Serial.printf("R2 = 0x%08lX  expect 0x04030201  %s\n",
+        r2, r2 == 0x04030201UL ? "OK" : "FAIL");
+    Serial.printf("R3 = 0x%08lX  expect 0x08070605  %s\n",
+        r3, r3 == 0x08070605UL ? "OK" : "FAIL");
+
+    can.write32(FIFO_CON(2), FIFOCON_UINC);
 
     Serial.println();
 }
