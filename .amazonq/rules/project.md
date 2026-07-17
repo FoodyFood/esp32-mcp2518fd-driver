@@ -63,6 +63,22 @@ If any previously passing check fails, stop and fix the regression before contin
 - All SPI transport in `mcp2518fd_spi.h` / `mcp2518fd_spi.cpp`
 - Test harness in `main.cpp` — key-triggered via Serial
 
+## Documentation
+After every successful verified step:
+- Update `docs/status.md` to mark the step complete with notes on actual observed values
+- Update `docs/registers.md` if any new register fields were used or clarified
+- Update `docs/context.md` if any new decisions, discoveries or gotchas were made
+- Commit everything together: code + docs in the same commit
+
+If something unexpected is discovered during testing (e.g. a register behaves differently than the datasheet suggests), document it immediately in `docs/context.md` under a "Discoveries" section before moving on.
+
+## Commit Rules
+- Commit after every successful verified iteration — no exceptions
+- Commit message format: `step N: short description`
+- Never commit code that has not been verified on hardware
+- Never commit with failing or skipped checks
+- Docs and code go in the same commit
+
 ## Files
 - `src/main.cpp` — interactive test harness
 - `src/mcp2518fd_registers.h` — all register addresses, masks, constants

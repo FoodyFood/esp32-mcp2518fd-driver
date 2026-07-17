@@ -37,7 +37,7 @@ Each item below has been tested on real hardware and confirmed working.
 
 | Feature                        | Status       | Notes                                           |
 |--------------------------------|--------------|-------------------------------------------------|
-| FIFO register definitions      | ✅ Done      | Step 1 — addresses, bit masks, PLSIZE, FIFO_CON/STA/UA helpers |
+| FIFO register definitions      | ✅ Verified  | Step 1 — addresses confirmed on hardware. CiTXQCON=0x00600080 (TXEN=1 always), CiFIFOCON1=0x00600000, FIFO_CON() helper verified |
 | RAM initialisation             | 🔲 Not started | Step 2                                        |
 | TX FIFO configuration          | 🔲 Not started | Step 3                                        |
 | RX FIFO configuration          | 🔲 Not started | Step 4                                        |
