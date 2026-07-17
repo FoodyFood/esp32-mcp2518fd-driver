@@ -27,6 +27,7 @@ Every change must follow this exact sequence. Do not skip steps.
 
 1. Make the code change
 2. Build + Upload + Monitor in one step: `pio run -e loopback --target upload --upload-port COM4 && python monitor.py COM4 115200`
+   - Framework objects are cached in `.cache/` — only changed files recompile after the first build
 3. Verify the output matches expected values from the datasheet
 4. If verification passes, commit: `git add . && git commit -m "step N: description"`
 5. If verification fails, diagnose before proceeding
