@@ -1,8 +1,6 @@
-# esp32-mcp2518fd-driver
+# MCP2518FD CAN FD Driver for ESP32
 
-A clean-room, direct register-level CAN FD driver for the **MCP2518FD** external CAN FD controller, running on an **ESP32** over SPI.
-
-Every register address, bit position and field definition is verified against the official Microchip datasheets before any code is written. No third-party CAN libraries. No guesswork.
+A register-level CAN FD driver for the **MCP2518FD** external CAN FD controller, running on an **ESP32** over SPI. Built directly from the Microchip datasheet as the source of truth — every register address, bit position and field definition is verified against the official documentation before any code is written.
 
 ## System overview
 
@@ -76,7 +74,7 @@ The result is a minimal, auditable reference implementation that anyone can foll
 | FIFO register definitions | ✅ Verified |
 | FIFO1=TX, FIFO2=RX configuration | ✅ Verified |
 | RAM allocation (UA offsets confirmed) | ✅ Verified |
-| Transmit a frame (internal loopback) | 🔲 In progress |
+| Transmit a frame (internal loopback) | ✅ Verified |
 | Receive a frame (internal loopback) | 🔲 Not started |
 | Full loopback round-trip verify | 🔲 Not started |
 | Normal CAN FD mode (two-node) | 🔲 Not started |
@@ -153,6 +151,8 @@ Requires [PlatformIO](https://platformio.org/).
 ```bash
 pio run --target upload --upload-port <PORT> && python monitor.py <PORT> 115200
 ```
+
+Replace `<PORT>` with your serial port (`COM4` on Windows, `/dev/ttyUSB0` on Linux/macOS).
 
 ## License
 
