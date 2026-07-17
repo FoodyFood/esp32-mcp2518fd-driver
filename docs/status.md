@@ -38,10 +38,11 @@ Each item below has been tested on real hardware and confirmed working.
 | Feature                        | Status       | Notes                                           |
 |--------------------------------|--------------|-------------------------------------------------|
 | FIFO register definitions      | ✅ Verified  | Step 1 — addresses confirmed on hardware. CiTXQCON=0x00600080 (TXEN=1 always), CiFIFOCON1=0x00600000, FIFO_CON() helper verified |
-| RAM initialisation             | 🔲 Not started | Step 2                                        |
-| TX FIFO configuration          | 🔲 Not started | Step 3                                        |
-| RX FIFO configuration          | 🔲 Not started | Step 4                                        |
-| RAM allocation for FIFOs       | 🔲 Not started | Step 5                                        |
+| TX FIFO configuration          | ✅ Verified  | Step 2 — FIFO1=TX (TXEN=1, PLSIZE=0, FSIZE=0), readback 0x00000480 (FRESET set by HW) |
+| RX FIFO configuration          | ✅ Verified  | Step 2 — FIFO2=RX (all zeros), readback 0x00000400 (FRESET set by HW) |
+| TXQEN/STEF cleared in CiCON    | ✅ Verified  | Step 2 — byte-write to CiCON+2, confirmed TXQEN=0 STEF=0 |
+| RAM initialisation             | 🔲 Not started | Step 3                                        |
+| RAM allocation for FIFOs       | 🔲 Not started | Step 4                                        |
 | Send one frame                 | 🔲 Not started | Step 7-8                                      |
 | Receive one frame              | 🔲 Not started | Step 9                                        |
 | Loopback frame verify          | 🔲 Not started | Step 9                                        |

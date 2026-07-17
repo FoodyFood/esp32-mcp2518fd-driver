@@ -26,12 +26,10 @@ Never assume a register address or bit position. Always verify from the PDFs fir
 Every change must follow this exact sequence. Do not skip steps.
 
 1. Make the code change
-2. Build: `pio run`
-3. Upload: `pio run --target upload --upload-port COM4`
-4. Read hardware output: `python monitor.py COM4 115200`
-5. Verify the output matches expected values from the datasheet
-6. If verification passes, commit: `git add . && git commit -m "step N: description"`
-7. If verification fails, diagnose before proceeding
+2. Build + Upload + Monitor in one step: `pio run --target upload --upload-port COM4 && python monitor.py COM4 115200`
+3. Verify the output matches expected values from the datasheet
+4. If verification passes, commit: `git add . && git commit -m "step N: description"`
+5. If verification fails, diagnose before proceeding
 
 Never commit unverified code.
 

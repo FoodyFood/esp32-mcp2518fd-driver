@@ -75,51 +75,48 @@ void runTest()
     Serial.printf("CiNBTCFG  = 0x%08lX\n", can.read32(REG_CiNBTCFG));
     Serial.printf("CiDBTCFG  = 0x%08lX\n", can.read32(REG_CiDBTCFG));
 
+    // ------------------------------------------------------------------
+    // Step 2: Configure FIFO1 (TX) and FIFO2 (RX)
+    // Must be done in Configuration mode.
+    // Clear TXQEN (bit 20) and STEF (bit 19) in CiCON byte 2 — we don't use TXQ or TEF.
+    // FIFO1 = TX: TXEN=1, PLSIZE=0 (8 bytes), FSIZE=0 (1 deep)
+    // FIFO2 = RX: TXEN=0, PLSIZE=0, FSIZE=0
+    // Expected readback: CiFIFOCON1=0x00000080, CiFIFOCON2=0x00000000
+    // ------------------------------------------------------------------
+
+    // Clear TXQEN and STEF in CiCON byte 2 (bits 4 and 3 of that byte)
+    uint8_t con2 = can.read8(REG_CiCON + 2);
+    con2 &= ~((1u << 4) | (1u << 3));  // clear TXQEN (bit20=byte2.bit4), STEF (bit19=byte2.bit3)
+    can.write8(REG_CiCON + 2, con2);
+
+    // FIFO1 = TX: TXEN=1, PLSIZE=0, FSIZE=0
+    can.write32(FIFO_CON(1), FIFOCON_TXEN);
+
+    // FIFO2 = RX: all zeros
+    can.write32(FIFO_CON(2), 0x00000000);
+
+    uint32_t f1con = can.read32(FIFO_CON(1));
+    uint32_t f2con = can.read32(FIFO_CON(2));
+    uint32_t cicon = can.read32(REG_CiCON);
+
+    Serial.println();
+    Serial.println("Step 2 — FIFO config:");
+    Serial.printf("CiCON     = 0x%08lX  TXQEN=%lu STEF=%lu\n",
+        cicon,
+        (cicon >> 20) & 1,
+        (cicon >> 19) & 1);
+    // FRESET (bit10) is set automatically by hardware in config mode — expected
+    Serial.printf("CiFIFOCON1= 0x%08lX  expect 0x00000480  %s\n",
+        f1con, f1con == 0x00000480UL ? "OK" : "FAIL");
+    Serial.printf("CiFIFOCON2= 0x%08lX  expect 0x00000400  %s\n",
+        f2con, f2con == 0x00000400UL ? "OK" : "FAIL");
+
+    // Now enter loopback
     can.setMode(MODE_INTERNAL_LB);
 
     Serial.println();
     Serial.println("After LOOPBACK:");
     dumpCiCON();
-
-    // ------------------------------------------------------------------
-    // Verify FIFO register addresses (Step 1 sanity check)
-    // In config mode, FRESET is set in all FIFOCONm registers (bit 10)
-    // TXEN is clear (RX FIFO by default)
-    // All other bits should be reset values
-    // ------------------------------------------------------------------
-
-    Serial.println();
-    Serial.println("FIFO register address check (in loopback/config):");
-
-    uint32_t txqcon  = can.read32(REG_CiTXQCON);
-    uint32_t f1con   = can.read32(REG_CiFIFOCON1);
-    uint32_t f1sta   = can.read32(REG_CiFIFOSTA1);
-    uint32_t f2con   = can.read32(REG_CiFIFOCON2);
-
-    Serial.printf("CiTXQCON  (0x050) = 0x%08lX  FRESET=%lu TXEN=%lu\n",
-        txqcon,
-        (txqcon & FIFOCON_FRESET) ? 1 : 0,
-        (txqcon & FIFOCON_TXEN)   ? 1 : 0);
-
-    Serial.printf("CiFIFOCON1(0x05C) = 0x%08lX  FRESET=%lu TXEN=%lu\n",
-        f1con,
-        (f1con & FIFOCON_FRESET) ? 1 : 0,
-        (f1con & FIFOCON_TXEN)   ? 1 : 0);
-
-    Serial.printf("CiFIFOSTA1(0x060) = 0x%08lX  TFNRFNIF=%lu\n",
-        f1sta,
-        (f1sta & FIFOSTA_TFNRFNIF) ? 1 : 0);
-
-    Serial.printf("CiFIFOCON2(0x068) = 0x%08lX  FRESET=%lu TXEN=%lu\n",
-        f2con,
-        (f2con & FIFOCON_FRESET) ? 1 : 0,
-        (f2con & FIFOCON_TXEN)   ? 1 : 0);
-
-    // Also verify FIFO_CON() helper gives same result as direct address
-    uint32_t f1con_helper = can.read32(FIFO_CON(1));
-    uint32_t f2con_helper = can.read32(FIFO_CON(2));
-    Serial.printf("FIFO_CON(1) helper match: %s\n", f1con_helper == f1con ? "OK" : "FAIL");
-    Serial.printf("FIFO_CON(2) helper match: %s\n", f2con_helper == f2con ? "OK" : "FAIL");
 
     Serial.println();
 }

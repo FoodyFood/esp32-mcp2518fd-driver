@@ -30,7 +30,7 @@ Chip: MCP2518FD — 40 MHz oscillator, SPI mode 0,0, little-endian byte order.
 |-------------|--------|------------------|
 | CiCON+0     | 7:0    | Lower config     |
 | CiCON+1     | 15:8   | Lower config     |
-| CiCON+2     | 23:16  | OPMOD [7:5]      |
+| CiCON+2     | 23:16  | OPMOD [7:5], TXQEN [bit4], STEF [bit3] |
 | CiCON+3     | 31:24  | REQOP [2:0]      |
 
 ---
@@ -67,14 +67,16 @@ Chip: MCP2518FD — 40 MHz oscillator, SPI mode 0,0, little-endian byte order.
 
 ---
 
-## CiFIFOCON1 — FIFO 1 Control (0x05C)
+## CiFIFOCONm — FIFO m Control (base 0x05C, stride 0x0C)
 
-| Bits  | Field   | Description                        |
-|-------|---------|-------------------------------------|
-| 31:29 | PLSIZE  | Payload size                        |
-| 28:24 | FSIZE   | FIFO depth (0 = 1 message)          |
-| 21    | TXEN    | 1 = TX FIFO, 0 = RX FIFO            |
-| 0     | TXREQ   | Set to request transmission         |
+| Bits  | Field   | Description                             |
+|-------|---------|-----------------------------------------|
+| 31:29 | PLSIZE  | Payload size (see table below)          |
+| 28:24 | FSIZE   | FIFO depth (0 = 1 message deep)         |
+| 10    | FRESET  | Set by HW in config mode, cleared on exit — do not write |
+| 9     | TXREQ   | Set to request transmission (TX only)   |
+| 8     | UINC    | Increment head/tail pointer             |
+| 7     | TXEN    | 1 = TX FIFO, 0 = RX FIFO (config only) |
 
 ### Payload Size (PLSIZE)
 
@@ -88,6 +90,13 @@ Chip: MCP2518FD — 40 MHz oscillator, SPI mode 0,0, little-endian byte order.
 | 5     | 32    |
 | 6     | 48    |
 | 7     | 64    |
+
+### Verified reset values (in config mode)
+
+| Register   | Address | Value      | Notes                        |
+|------------|---------|------------|------------------------------|
+| CiFIFOCON1 | 0x05C   | 0x00000480 | TXEN=1, FRESET=1 (HW-set)    |
+| CiFIFOCON2 | 0x068   | 0x00000400 | TXEN=0, FRESET=1 (HW-set)    |
 
 ---
 
