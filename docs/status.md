@@ -43,6 +43,6 @@ Each item below has been tested on real hardware and confirmed working.
 | TXQEN/STEF cleared in CiCON    | ✅ Verified  | Step 2 — byte-write to CiCON+2, confirmed TXQEN=0 STEF=0 |
 | RAM initialisation             | 🔲 Not started | Step 3                                        |
 | RAM allocation for FIFOs       | ✅ Verified  | Step 3 — UA1=0x000 (RAM 0x400), UA2=0x010 (RAM 0x410). UA is offset from RAM base, not absolute address |
-| Send one frame                 | 🔲 Not started | Step 5                                        |
+| Send one frame                 | ✅ Verified  | Step 4 — T0=0x123 FDF BRS DLC=8, TXREQ cleared, no errors. CiFIFOSTA1=0x00000007 before and after |
 | Receive one frame              | 🔲 Not started | Step 6                                        |
 | Loopback frame verify          | 🔲 Not started | Step 6                                        |

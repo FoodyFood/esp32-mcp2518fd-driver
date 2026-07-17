@@ -90,6 +90,9 @@ constexpr uint8_t PLSIZE_64 = 7;
 // bit 7: TXABT  bit 6: TXLARB  bit 5: TXERR
 // bit 4: TXATIF  bit 3: RXOVIF
 // bit 2: TFERFFIF  bit 1: TFHRFHIF  bit 0: TFNRFNIF
+constexpr uint32_t FIFOSTA_TXABT    = (1u << 7);
+constexpr uint32_t FIFOSTA_TXLARB   = (1u << 6);
+constexpr uint32_t FIFOSTA_TXERR    = (1u << 5);
 constexpr uint32_t FIFOSTA_TXATIF   = (1u << 4);
 constexpr uint32_t FIFOSTA_RXOVIF   = (1u << 3);
 constexpr uint32_t FIFOSTA_TFERFFIF = (1u << 2);

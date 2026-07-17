@@ -134,6 +134,18 @@ Each feature is implemented in a single numbered step:
 - **No interrupts** — polling only until the core driver is proven correct
 - **UA is an offset, not an absolute address** — `CiFIFOUAm` holds the byte offset from RAM base `0x400`; actual address = `0x400 + UA`
 
+## Prerequisites
+
+**Firmware**
+- [PlatformIO Core](https://docs.platformio.org/en/latest/core/installation/index.html) 6.x
+- Espressif32 platform 7.0.1 (pinned in `platformio.ini`)
+
+**PDF search tool** (optional — only needed to query the datasheets)
+```bash
+pip install -r requirements.txt
+```
+Then place the two Microchip PDFs in `docs/reference/` — see [`docs/reference/README.md`](docs/reference/README.md).
+
 ## Building
 
 Requires [PlatformIO](https://platformio.org/).

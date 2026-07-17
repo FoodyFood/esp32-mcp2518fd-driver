@@ -118,6 +118,13 @@ void runTest()
     // Expected: UA1=0x400, UA2=0x410
     // ------------------------------------------------------------------
 
+    // ------------------------------------------------------------------
+    // Step 3: Read CiFIFOUA1 and CiFIFOUA2 — must be outside config mode
+    // Enter loopback first, then read UA
+    // ------------------------------------------------------------------
+
+    can.setMode(MODE_INTERNAL_LB);
+
     uint32_t ua1 = can.read32(FIFO_UA(1));
     uint32_t ua2 = can.read32(FIFO_UA(2));
 
@@ -132,6 +139,57 @@ void runTest()
         ua2, ua2 == 0x00000010UL ? "OK" : "FAIL");
     Serial.printf("RAM addr FIFO1 = 0x%03lX  RAM addr FIFO2 = 0x%03lX\n",
         0x400UL + ua1, 0x400UL + ua2);
+
+    // ------------------------------------------------------------------
+    // Step 4: Transmit one CAN FD frame in internal loopback
+    // Sequence (ref manual section 4.2):
+    //   1. Check TFNRFNIF in CiFIFOSTA1 (must be set = room in FIFO)
+    //   2. Write T0+T1+data to RAM at 0x400 + UA1
+    //   3. Set UINC|TXREQ in one write to CiFIFOCON1
+    //   4. Poll TXREQ cleared = frame sent
+    //   5. Verify no error flags in CiFIFOSTA1
+    //
+    // T0 = SID=0x123, IDE=0  => 0x00000123
+    // T1 = FDF=1, BRS=1, DLC=8 => 0x000000C8
+    // Data: 0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08
+    // ------------------------------------------------------------------
+
+    Serial.println();
+    Serial.println("Step 4 — TX frame:");
+
+    uint32_t sta1 = can.read32(FIFO_STA(1));
+    Serial.printf("CiFIFOSTA1 before TX = 0x%08lX  TFNRFNIF=%lu\n",
+        sta1, (sta1 & FIFOSTA_TFNRFNIF) ? 1 : 0);
+    Serial.printf("TFNRFNIF check: %s\n",
+        (sta1 & FIFOSTA_TFNRFNIF) ? "OK" : "FAIL");
+
+    // Write message object to RAM
+    uint16_t txAddr = (uint16_t)(RAM_BASE + ua1);
+    can.write32(txAddr,      0x00000123UL);  // T0: SID=0x123
+    can.write32(txAddr + 4,  0x000000C8UL);  // T1: FDF=1 BRS=1 DLC=8
+    can.write32(txAddr + 8,  0x04030201UL);  // T2: bytes 0-3
+    can.write32(txAddr + 12, 0x08070605UL);  // T3: bytes 4-7
+
+    // Set UINC and TXREQ in one write — rule: always set together
+    can.write32(FIFO_CON(1), FIFOCON_TXEN | FIFOCON_UINC | FIFOCON_TXREQ);
+
+    // Poll TXREQ cleared (max 10ms)
+    uint32_t start = millis();
+    bool sent = false;
+    while (millis() - start < 10)
+    {
+        if (!(can.read32(FIFO_CON(1)) & FIFOCON_TXREQ))
+        {
+            sent = true;
+            break;
+        }
+    }
+    Serial.printf("TXREQ cleared: %s\n", sent ? "OK" : "FAIL");
+
+    uint32_t sta1_after = can.read32(FIFO_STA(1));
+    Serial.printf("CiFIFOSTA1 after TX  = 0x%08lX\n", sta1_after);
+    Serial.printf("No TX errors: %s\n",
+        (sta1_after & (FIFOSTA_TXERR | FIFOSTA_TXABT)) == 0 ? "OK" : "FAIL");
 
     Serial.println();
 }
