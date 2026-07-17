@@ -82,6 +82,7 @@ The result is a minimal, auditable reference implementation that anyone can foll
 | Full loopback round-trip verify | ✅ Verified |
 | Multi-frame + runtime bitrate switch | ✅ Verified |
 | Driver refactor — clean layered API | ✅ Verified |
+| Physical bus output (MODE_EXTERNAL_LB, scope verified) | ✅ Verified |
 | Normal CAN FD mode (two-node) | 🔲 Not started |
 
 See [`docs/status.md`](docs/status.md) for detailed notes and observed values from each verified step.

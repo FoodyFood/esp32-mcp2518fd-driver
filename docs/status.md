@@ -49,3 +49,7 @@ Each item below has been tested on real hardware and confirmed working.
 | Multi-frame loopback (3 frames) | ✅ Verified  | Step 6 — SIDs 0x001 0x7FF 0x456 all OK at 2 Mbps |
 | setDataBitTiming() runtime switch | ✅ Verified  | Step 6 — config round-trip, re-enable filter, TX+RX OK |
 | Driver refactor (SRP)           | ✅ Verified  | mcp2518fd_can.h/.cpp — main.cpp is pure consumer, all assertions pass |
+| 64-byte payload (DLC=15)        | ✅ Verified  | PLSIZE_64 on both FIFOs, dlcToLen() loop, all 64 bytes verified |
+| Data rates 4/5/8 Mbps           | ✅ Verified  | DBTCFG+TDC presets derived from datasheet, loopback passes on COM3+COM4 |
+| Physical bus output (MODE_EXTERNAL_LB) | ✅ Verified  | Clean differential waveform on scope, 125kbps/2Mbps, SID=0x123 DLC=8 |
+| Normal CAN FD mode (two-node)   | 🔲 Not started |  |
