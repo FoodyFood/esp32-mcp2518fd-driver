@@ -29,17 +29,19 @@ Each item below has been tested on real hardware and confirmed working.
 
 | Feature                        | Status       | Notes                                           |
 |--------------------------------|--------------|-------------------------------------------------|
-| CiNBTCFG (nominal bit timing)  | 🔲 Not started |                                               |
-| CiDBTCFG (data bit timing)     | 🔲 Not started |                                               |
+| CiNBTCFG (nominal bit timing)  | ✅ Verified  | BRP=0 TSEG1=30 TSEG2=7 SJW=7 → 125kbps @ 40MHz |
+| CiDBTCFG (data bit timing)     | ✅ Verified  | BRP=0 TSEG1=14 TSEG2=3 SJW=3                   |
 | CiTDC (transmitter delay comp) | 🔲 Not started |                                               |
 
 ## FIFO / Messaging
 
 | Feature                        | Status       | Notes                                           |
 |--------------------------------|--------------|-------------------------------------------------|
-| RAM initialisation             | 🔲 Not started |                                               |
-| TX FIFO configuration          | 🔲 Not started |                                               |
-| RX FIFO configuration          | 🔲 Not started |                                               |
-| Send one frame                 | 🔲 Not started |                                               |
-| Receive one frame              | 🔲 Not started |                                               |
-| Loopback frame verify          | 🔲 Not started |                                               |
+| FIFO register definitions      | ✅ Done      | Step 1 — addresses, bit masks, PLSIZE, FIFO_CON/STA/UA helpers |
+| RAM initialisation             | 🔲 Not started | Step 2                                        |
+| TX FIFO configuration          | 🔲 Not started | Step 3                                        |
+| RX FIFO configuration          | 🔲 Not started | Step 4                                        |
+| RAM allocation for FIFOs       | 🔲 Not started | Step 5                                        |
+| Send one frame                 | 🔲 Not started | Step 7-8                                      |
+| Receive one frame              | 🔲 Not started | Step 9                                        |
+| Loopback frame verify          | 🔲 Not started | Step 9                                        |

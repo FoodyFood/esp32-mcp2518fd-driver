@@ -32,22 +32,73 @@ constexpr uint16_t REG_CiTREC   = 0x034;
 constexpr uint16_t REG_CiBDIAG0 = 0x038;
 constexpr uint16_t REG_CiBDIAG1 = 0x03C;
 
-// FIFO base
-constexpr uint16_t REG_CiFIFOCON1 = 0x05C;
-constexpr uint16_t REG_CiFIFOSTA1 = 0x060;
-constexpr uint16_t REG_CiFIFOUA1  = 0x064;
+// TEF (Transmit Event FIFO)
+constexpr uint16_t REG_CiTEFCON = 0x040;
+constexpr uint16_t REG_CiTEFSTA = 0x044;
+constexpr uint16_t REG_CiTEFUA  = 0x048;
+// 0x04C reserved
 
 // TX Queue
 constexpr uint16_t REG_CiTXQCON = 0x050;
 constexpr uint16_t REG_CiTXQSTA = 0x054;
 constexpr uint16_t REG_CiTXQUA  = 0x058;
 
+// FIFO registers — each FIFO occupies 0x0C bytes: CON, STA, UA
+// FIFO m (m = 1..31): base = 0x05C + (m-1)*0x0C
+constexpr uint16_t REG_CiFIFOCON1 = 0x05C;
+constexpr uint16_t REG_CiFIFOSTA1 = 0x060;
+constexpr uint16_t REG_CiFIFOUA1  = 0x064;
+
+constexpr uint16_t REG_CiFIFOCON2 = 0x068;
+constexpr uint16_t REG_CiFIFOSTA2 = 0x06C;
+constexpr uint16_t REG_CiFIFOUA2  = 0x070;
+
+// Helper: compute CON/STA/UA address for any FIFO m (1-based)
+inline constexpr uint16_t FIFO_CON(uint8_t m) { return 0x05C + (m - 1) * 0x0C; }
+inline constexpr uint16_t FIFO_STA(uint8_t m) { return 0x060 + (m - 1) * 0x0C; }
+inline constexpr uint16_t FIFO_UA(uint8_t m)  { return 0x064 + (m - 1) * 0x0C; }
+
 // RAM
 constexpr uint16_t RAM_BASE = 0x400;
 
+// CiFIFOCONm bit positions (Register 3-29, DS20006027B page 54)
+// bits 31-29: PLSIZE[2:0]  bits 28-24: FSIZE[4:0]
+// bit 10: FRESET  bit 9: TXREQ  bit 8: UINC
+// bit 7: TXEN  bit 6: RTREN  bit 5: RXTSEN
+// bit 4: TXATIE  bit 3: RXOVIE  bit 2: TFERFFIE  bit 1: TFHRFHIE  bit 0: TFNRFNIE
+constexpr uint32_t FIFOCON_PLSIZE_SHIFT = 29;
+constexpr uint32_t FIFOCON_FSIZE_SHIFT  = 24;
+constexpr uint32_t FIFOCON_FRESET       = (1u << 10);
+constexpr uint32_t FIFOCON_TXREQ        = (1u << 9);
+constexpr uint32_t FIFOCON_UINC         = (1u << 8);
+constexpr uint32_t FIFOCON_TXEN         = (1u << 7);
+constexpr uint32_t FIFOCON_RTREN        = (1u << 6);
+constexpr uint32_t FIFOCON_RXTSEN       = (1u << 5);
+
+// PLSIZE values (DS20006027B page 54)
+constexpr uint8_t PLSIZE_8  = 0;
+constexpr uint8_t PLSIZE_12 = 1;
+constexpr uint8_t PLSIZE_16 = 2;
+constexpr uint8_t PLSIZE_20 = 3;
+constexpr uint8_t PLSIZE_24 = 4;
+constexpr uint8_t PLSIZE_32 = 5;
+constexpr uint8_t PLSIZE_48 = 6;
+constexpr uint8_t PLSIZE_64 = 7;
+
+// CiFIFOSTAm bit positions (Register 3-30, DS20006027B page 57)
+// bits 12-8: FIFOCI[4:0]
+// bit 7: TXABT  bit 6: TXLARB  bit 5: TXERR
+// bit 4: TXATIF  bit 3: RXOVIF
+// bit 2: TFERFFIF  bit 1: TFHRFHIF  bit 0: TFNRFNIF
+constexpr uint32_t FIFOSTA_TXATIF   = (1u << 4);
+constexpr uint32_t FIFOSTA_RXOVIF   = (1u << 3);
+constexpr uint32_t FIFOSTA_TFERFFIF = (1u << 2);
+constexpr uint32_t FIFOSTA_TFHRFHIF = (1u << 1);
+constexpr uint32_t FIFOSTA_TFNRFNIF = (1u << 0);
+
 // CiCON mode bits
-constexpr uint32_t CON_REQOP_SHIFT = 21;
-constexpr uint32_t CON_OPMOD_SHIFT = 24;
+constexpr uint32_t CON_REQOP_SHIFT = 24;
+constexpr uint32_t CON_OPMOD_SHIFT = 21;
 
 constexpr uint32_t CON_REQOP_MASK = 0x7u << CON_REQOP_SHIFT;
 constexpr uint32_t CON_OPMOD_MASK = 0x7u << CON_OPMOD_SHIFT;

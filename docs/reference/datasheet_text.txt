@@ -1,0 +1,8827 @@
+=== PAGE 1 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 1
+MCP2518FD
+Features
+General
+• External CAN FD Controller with Serial Peripheral 
+Interface (SPI)
+• Arbitration Bit Rate up to 1 Mbps
+• Data Bit Rate up to 8 Mbps
+• CAN FD Controller modes
+- Mixed CAN 2.0B and CAN FD Mode
+- CAN 2.0B Mode
+• Conforms to ISO 11898-1:2015
+Message FIFOs
+• 31 FIFOs, configurable as Transmit or Receive 
+FIFOs
+• One Transmit Queue (TXQ)
+• Transmit Event FIFO (TEF) with 32 bit time stamp
+Message Transmission
+• Message transmission prioritization:
+- Based on priority bit field
+- Message with lowest ID gets transmitted first 
+using the Transmit Queue (TXQ)
+• Programmable automatic retransmission 
+attempts: unlimited, 3 attempts or disabled
+Message Reception
+• 32 Flexible Filter and Mask Objects
+• Each object can be configured to filter either:
+- Standard ID + first 18 data bits, or
+- Extended ID 
+• 32-bit Time Stamp
+Special Features
+• VDD: 2.7 to 5.5V
+• Active Current: maximum 20 mA at 5.5 V, 40 MHz 
+CAN clock
+• Sleep Current: 15 A, typical
+• Low Power Mode current: maximum 10 A from
+-40°C to +150°C
+• Message Objects are located in RAM: 2 KB
+• Up to 3 Configurable Interrupt Pins
+• Bus Health Diagnostics and Error Counters
+• Transceiver Standby Control
+• Start of frame pin for indicating the beginning of 
+messages on the bus
+• AEC-Q100 Qualified
+• Temperature Ranges:
+- Extended (E): -40°C to +125°C
+- High (H): -40°C to +150°C
+Oscillator Options
+• 40, 20 or 4 MHz Crystal or Ceramic Resonator; 
+External Clock Input
+• Clock Output with Prescaler
+SPI Interface
+• Up to 20 MHz SPI clock speed
+• Supports SPI Modes 0,0 and 1,1
+• Registers and bit fields are arranged in a way to 
+enable efficient access through SPI
+Safety Critical Systems
+• SPI commands with CRC to detect noise on SPI 
+interface
+• Error Correction Code (ECC) protected RAM
+Additional Features
+• GPIO pins: INT0 and INT1 can be configured as 
+general purpose I/O
+• Open drain outputs: TXCAN, INT, INT0, and INT1 
+pins can be configured as push/pull or open drain 
+outputs
+• ISO 26262 Functional Safety ready
+External CAN FD Controller with SPI Interface
+=== PAGE 2 ===
+MCP2518FD
+DS20006027B-page 2
+ 2019-2020 Microchip Technology Inc.
+Package Types
+VDFN14 includes an Exposed Thermal Pad (EP); see
+Table 1-1
+MCP2518FD
+SOIC14
+MCP2518FD
+VDFN14 with wettable flanks*
+EP*
+1
+2
+3
+4
+11
+12
+13
+14
+TXCAN
+OSC2
+VDD
+INT
+SDI
+SDO
+nCS
+CLKO/SOF
+5
+10
+RXCAN
+SCK
+6
+9
+VSS
+OSC1
+INT0/GPIO0/XSTBY
+7
+8
+INT1/GPIO1
+1
+2
+3
+4
+11
+12
+13
+14
+TXCAN
+OSC2
+VDD
+INT
+SDI
+SDO
+nCS
+CLKO/SOF
+5
+10
+RXCAN
+SCK
+6
+9
+VSS
+OSC1
+INT0/GPIO0/XSTBY
+7
+8
+INT1/GPIO1
+=== PAGE 3 ===
+ 2019-2020 Microchip Technology Inc.
+ 
+DS20006027B-page 3
+MCP2518FD
+1.0
+DEVICE OVERVIEW
+The MCP2518FD device is a cost-effective and
+small-footprint CAN FD controller that can be easily
+added to a microcontroller with an available SPI
+interface. A CAN FD channel can be easily added to a
+microcontroller that is either lacking a CAN FD
+peripheral or does not have enough CAN FD
+channels.
+MCP2518FD supports both CAN frames in the
+Classical format (CAN2.0B) and CAN Flexible Data
+Rate (CAN FD) format, as specified in ISO
+11898-1:2015.
+The MCP2518FD device was improved as follows:
+• Added Low Power Mode (LPM), in order to 
+reduce leakage current to 10 A over the full 
+temperature range.
+• Extended SEQ field in Transmit Message Object 
+and Transmit Event FIFO Object from 7 to 23 bits.
+• Added DEVID register to distinguish between 
+future members of the device family.
+• Switched to saw cut DFN package with wettable 
+flanks.
+1.1
+Block Diagram
+Figure 1.1 
+shows 
+the 
+block 
+diagram 
+of 
+the
+MCP2518FD device. MCP2518FD contains the
+following main blocks:
+• The CAN FD Controller module implements the 
+CAN FD protocol, and contains the FIFOs and 
+Filters.
+• The SPI interface is used to control the device by 
+accessing Special Function Registers (SFR) and 
+RAM.
+• The RAM controller arbitrates the RAM accesses 
+between the SPI and CAN FD Controller module.
+• The Message RAM is used to store the data of the 
+Message Objects.
+• The oscillator generates the CAN clock.
+• The Internal LDO and POR circuit.
+• The I/O control.
+FIGURE 1-1:
+MCP2518FD BLOCK DIAGRAM
+Note 1: This data sheet summarizes the features
+of the MCP2518FD device. It is not
+intended 
+to 
+be 
+a 
+comprehensive
+reference source. To complement the
+information in this data sheet, refer to the
+related section of the “MCP25xxFD
+Family Reference Manual”.
+I/O
+Message
+RAM
+TXCAN
+RXCAN
+INT
+INT0/GPIO0/XSTBY
+RAM 
+Controller
+nCS
+SCK
+SDI
+SDO
+INT1/GPIO1
+CAN FD 
+Controller 
+Module
+CLKO/SOF
+OSC1
+OSC2
+Oscillator
+VDD
+VSS
+RX
+Filter
+POR
+Internal 
+LDO
+SPI
+Interface
+=== PAGE 4 ===
+MCP2518FD
+DS20006027B-page 4
+ 2019-2020 Microchip Technology Inc.
+1.2
+Pinout Description
+Table 1-1 describes the functions of the pins.
+TABLE 1-1:
+MCP2518FD STANDARD PINOUT VERSION
+Pin Name
+SOIC
+VDFN
+Pin Type
+Description
+TXCAN
+1
+1
+O
+Transmit output to CAN FD transceiver
+RXCAN
+2
+2
+I
+Receive input from CAN FD transceiver
+CLKO/SOF
+3
+3
+O
+Clock output/Start of Frame output
+INT
+4
+4
+O
+Interrupt output (active low)
+OSC2
+5
+5
+O
+External oscillator output
+OSC1
+6
+6
+I
+External oscillator input
+VSS
+7
+7
+P
+Ground
+INT1/GPIO1
+8
+8
+I/O
+RX Interrupt output (active low)/GPIO
+INT0/GPIO0/
+XSTBY
+9
+9
+I/O
+TX Interrupt output (active low)/GPIO/
+Transceiver Standby output
+SCK
+10
+10
+I
+SPI clock input
+SDI
+11
+11
+I
+SPI data input
+SDO
+12
+12
+O
+SPI data output
+nCS
+13
+13
+I
+SPI chip select input
+VDD
+14
+14
+P
+Positive Supply
+EP
+-
+15
+P
+Exposed Pad; connect to VSS
+Legend:
+P = Power, I = Input, O = Output
+=== PAGE 5 ===
+ 2019-2020 Microchip Technology Inc.
+ 
+DS20006027B-page 5
+MCP2518FD
+1.3
+ Typical Application
+Figure 1-2 shows an example of a typical application
+of the MCP2518FD device. In this example, the
+microcontroller operates at 3.3V.
+The MCP2518FD device interfaces directly with
+microcontrollers operating at 2.7V to 5.5V. In addition, the
+MCP2518FD device connects directly to high-speed
+CAN FD transceivers. There are no external level shifters
+required when connecting VDD of the MCP2518FD and
+the microcontroller to VIO of the transceiver. 
+The VDD of the CAN FD transceiver is connected to
+5V.
+The SPI interface is used to configure and control the
+CAN FD controller.
+The MCP2518FD device signals interrupts to the
+microcontroller by using INT, INT0 and INT1. Interrupts
+need to be cleared by the microcontroller through SPI.
+The 
+CLKO 
+pin 
+provides 
+the 
+clock 
+to 
+the
+microcontroller.
+FIGURE 1-2:
+MCP2518FD INTERFACING WITH A 3.3V MICROCONTROLLER
+3.3V LDO
+5V LDO
+VBAT
+0.1uF
+CANH
+CANL
+0.1uF
+0.1uF
+120
+VSS
+MCP2518FD
+VDD
+RXCAN
+TXCAN
+CLKO
+nCS
+SCK
+INT
+SDI
+SDO
+VDD
+RA0
+VSS
+PIC® MCU
+OSC1
+SCK
+SDI
+SDO
+INT0
+VDD
+TXD
+RXD
+STBY
+VSS
+ATA6563
+VIO
+CANH
+CANL
+0.1uF
+INT0
+INT1
+OSC2
+OSC1
+22pF
+22pF
+INT1
+INT2
+=== PAGE 6 ===
+MCP2518FD
+DS20006027B-page 6
+ 2019-2020 Microchip Technology Inc.
+2.0
+CAN FD CONTROLLER 
+MODULE
+Figure 2-1 shows the main blocks of the CAN FD
+Controller module:
+• The CAN FD Controller module has multiple 
+modes:
+- Configuration
+- Normal CAN FD
+- Normal CAN 2.0
+- Sleep (normal Sleep mode and Low Power 
+Mode)
+- Listen Only
+- Restricted Operation
+- Internal and External Loop back modes
+• The CAN FD Bit Stream Processor (BSP) 
+implements the Medium Access Control of the 
+CAN FD protocol described in ISO 11898-1:2015. 
+It serializes and de-serializes the bit stream, 
+encodes and decodes the CAN FD frames, 
+manages the medium access, acknowledges 
+frames and detects and signals errors.
+• The TX Handler prioritizes the messages that are 
+requested for transmission by the Transmit 
+FIFOs. It uses the RAM Interface to fetch the 
+transmit data from RAM and provides it to the 
+BSP for transmission.
+• The BSP provides received messages to the RX 
+Handler. The RX Handler uses the Acceptance 
+Filter to filter out messages that shall be stored 
+into Receive FIFOs. It uses the RAM Interface to 
+store received data into RAM.
+• Each FIFO can be configured either as a Transmit 
+or Receive FIFO. The FIFO Control keeps track of 
+the FIFO Head and Tail, and calculates the User 
+Address. For a TX FIFO, the User Address points 
+to the address in RAM where the data for the next 
+transmit message shall be stored. For a RX FIFO, 
+the User Address points to the address in RAM 
+where the data of the next receive message shall 
+be read. The User notifies the FIFO that a 
+message was written to or read from RAM by 
+incrementing the Head/Tail of the FIFO.
+• The Transmit Queue (TXQ) is a special transmit 
+FIFO that transmits the messages based on the 
+ID of the messages stored in the queue.
+• The Transmit Event FIFO (TEF) stores the 
+message IDs of the transmitted messages.
+• A free-running Time Base Counter is used to time 
+stamp received messages. Messages in the TEF 
+can also be time stamped.
+• The CAN FD Controller module generates 
+interrupts when new messages are received or 
+when messages were transmitted successfully.
+• The SFR are used to control and to read the 
+status of the CAN FD Controller module.
+FIGURE 2-1:
+CAN FD CONTROLLER MODULE BLOCK DIAGRAM
+Note 1: This data sheet summarizes the features
+of the CAN FD Controller module. It is not
+intended 
+to 
+be 
+a 
+comprehensive
+reference source. To complement the
+information in this data sheet, refer to the
+related section of the “MCP25xxFD
+Family Reference Manual”.
+CAN FD 
+Protocol
+Bit Stream 
+Processor
+RAM
+Interface
+TX Handler
+TX Prioritization
+RX Handler
+Acceptance 
+Filter
+TXQ Control
+TEF
+Control
+FIFO
+Control
+SFR
+Interrupt
+Control
+Error
+Handling
+Diagnostics
+Time Stamping
+TBC
+Mode
+Control
+=== PAGE 7 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 7
+MCP2518FD
+3.0
+MEMORY ORGANIZATION
+Figure 3-1 illustrates the main sections of the memory
+and its address ranges:
+• MCP2518FD Special Function Registers
+• CAN FD Controller module SFR
+• Message Memory (RAM)
+The SFR are 32-bit wide. The LSB is located at the
+lower address, for example, the LSB of C1CON is
+located at address 0x000, while its MSB is located at
+address 0x003.
+Table 3-1 lists the MCP2518FD specific registers. The
+first column contains the address of the SFR.
+Table 3-2 lists the registers of the CAN FD Controller
+module. The first column contains the address of the
+SFR.
+FIGURE 3-1:
+MEMORY MAP 
+MSB
+Address
+LSB
+Address
+Unimplemented
+(272 BYTE)
+CAN FD Controller Module SFR
+(752 BYTE)
+RAM
+(2KBYTE)
+0x000
+0x2EC
+0x3FC
+0x003
+0x2EF
+0x2F0
+0x2F3
+32 bit
+0x3FF
+0
+0
+4
+X
+0
+3
+0
+4
+x
+0
+LSB
+MSB
+Unimplemented
+(512 BYTE)
+0xBFF
+0xC03
+0xDFF
+0xE03
+0xBFC
+0xDFC
+0xC00
+0xE00
+MCP2518FD SFR
+(24 BYTE)
+Reserved
+(488 BYTE)
+0xE14
+0xFFC
+0xE17
+0xE18
+0xE1B
+0xFFF
+=== PAGE 8 ===
+MCP2518FD
+DS20006027B-page 8
+ 
+ 2019-2020 Microchip Technology Inc.
+TABLE 3-1:
+MCP2518FD REGISTER SUMMARY
+Address
+Name
+Bit
+31/23/15/7
+Bit
+30/22/14/6
+Bit
+29/21/13/5
+Bit
+28/20/12/4
+Bit
+27/19/11/3
+Bit
+26/18/10/2
+Bit
+25/17/9/1
+Bit
+24/16/8/0
+E03
+OSC
+31:24
+—
+—
+—
+—
+—
+—
+—
+—
+E02
+23:16
+—
+—
+—
+—
+—
+—
+—
+—
+E01
+15:8
+—
+—
+—
+SCLKRDY
+—
+OSCRDY
+—
+PLLRDY
+E00( 1)
+7:0
+—
+CLKODIV[1:0]
+SCLKDIV
+LPMEN
+OSCDIS
+—
+PLLEN
+IOCON 
+31:24
+—
+INTOD
+SOF
+TXCANOD
+—
+—
+PM1
+PM0
+23:16
+—
+—
+—
+—
+—
+—
+GPIO1
+GPIO0
+15:8
+—
+—
+—
+—
+—
+—
+LAT1
+LAT0
+E04
+7:0
+—
+XSTBYEN
+—
+—
+—
+—
+TRIS1
+TRIS0
+CRC
+31:24
+—
+—
+—
+—
+—
+—
+FERRIE
+CRCERRIE
+23:16
+—
+—
+—
+—
+—
+—
+FERRIF
+CRCERRIF
+15:8
+CRC[15:8]
+E08
+7:0
+CRC[7:0]
+ECCCON
+31:24
+—
+—
+—
+—
+—
+—
+—
+—
+23:16
+—
+—
+—
+—
+—
+—
+—
+—
+15:8
+—
+PARITY[6:0]
+E0C
+7:0
+—
+—
+—
+—
+—
+DEDIE
+SECIE
+ECCEN
+ECCSTAT
+31:24
+—
+—
+—
+—
+ERRADDR[11:8]
+23:16
+ERRADDR[7:0]
+15:8
+—
+—
+—
+—
+—
+—
+—
+—
+E10
+7:0
+—
+—
+—
+—
+—
+DEDIF
+SECIF
+—
+DEVID
+31:24
+—
+—
+—
+—
+—
+—
+—
+—
+23:16
+—
+—
+—
+—
+—
+—
+—
+—
+15:8
+—
+—
+—
+—
+—
+—
+—
+—
+E14
+7:0
+ID[3:0]
+REV[3:0]
+Note 1:
+The lower order byte of the 32-bit register resides at the low-order address.
+2:
+The bit fields in the IOCON register must be written using single data byte SFR WRITE instructions.
+=== PAGE 9 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 9
+MCP2518FD
+TABLE 3-2:
+CAN FD CONTROLLER MODULE REGISTER SUMMARY
+Addr.
+Name
+Bit
+31/23/15/7
+Bit
+30/22/14/6
+Bit
+29/21/13/5
+Bit
+28/20/12/4
+Bit
+27/19/11/3
+Bit
+26/18/10/2
+Bit
+25/17/9/1
+Bit
+24/16/8/0
+03
+C1CON 
+31:24
+TXBWS[3:0]
+ABAT
+REQOP[2:0]
+02
+23:16
+OPMOD[2:0]
+TXQEN
+STEF
+SERR2LOM
+ESIGM
+RTXAT
+01
+15:8
+—
+—
+—
+BRSDIS
+BUSY
+WFT[1:0]
+WAKFIL
+00[ 1]
+7:0
+—
+PXEDIS
+ISOCRCEN
+DNCNT[4:0]
+C1NBTCFG
+31:24
+BRP[7:0]
+23:16
+TSEG1[7:0]
+15:8
+—
+TSEG2[6:0]
+04
+7:0
+—
+SJW[6:0]
+C1DBTCFG
+31:24
+BRP[7:0]
+23:16
+—
+—
+—
+TSEG1[4:0]
+15:8
+—
+—
+—
+—
+TSEG2[3:0]
+08
+7:0
+—
+—
+—
+—
+SJW[3:0]
+C1TDC
+31:24
+—
+—
+—
+—
+—
+—
+EDGFLTEN
+SID11EN
+23:16
+—
+—
+—
+—
+—
+—
+TDCMOD[1:0]
+15:8
+—
+TDCO[6:0]
+0C
+7:0
+—
+—
+TDCV[5:0]
+C1TBC
+31:24
+TBC[31:24]
+23:16
+TBC[23:16]
+15:8
+TBC[15:8]
+10
+7:0
+TBC[7:0]
+C1TSCON
+31:24
+—
+—
+—
+—
+—
+—
+—
+—
+23:16
+—
+—
+—
+—
+—
+TSRES
+TSEOF
+TBCEN
+15:8
+—
+—
+—
+—
+—
+—
+TBCPRE[9:8]
+14
+7:0
+TBCPRE[7:0]
+C1VEC
+31:24
+—
+RXCODE[6:0]
+23:16
+—
+TXCODE[6:0]
+15:8
+—
+—
+—
+FILHIT[4:0]
+18
+7:0
+—
+ICODE[6:0]
+C1INT
+31:24
+IVMIE
+WAKIE
+CERRIE
+SERRIE
+RXOVIE
+TXATIE
+SPICRCIE
+ECCIE
+23:16
+—
+—
+—
+TEFIE
+MODIE
+TBCIE
+RXIE
+TXIE
+15:8
+IVMIF
+WAKIF
+CERRIF
+SERRIF
+RXOVIF
+TXATIF
+SPICRCIF
+ECCIF
+1C
+7:0
+—
+—
+—
+TEFIF
+MODIF
+TBCIF
+RXIF
+TXIF
+C1RXIF
+31:24
+RFIF[31:24]
+23:16
+RFIF[23:16]
+15:8
+RFIF[15:8]
+20
+7:0
+RFIF[7:1]
+—
+C1TXIF
+31:24
+TFIF[31:24]
+23:16
+TFIF[23:16]
+15:8
+TFIF[15:8]
+24
+7:0
+TFIF[7:0]
+C1RXOVIF
+31:24
+RFOVIF[31:24]
+23:16
+RFOVIF[23:16]
+15:8
+RFOVIF[15:8]
+28
+7:0
+RFOVIF[7:1]
+—
+C1TXATIF
+31:24
+TFATIF[31:24]
+23:16
+TFATIF[23:16]
+15:8
+TFATIF[15:8]
+2C
+7:0
+TFATIF[7:0]
+Note 1:
+The lower order byte of the 32-bit register resides at the low-order address.
+2:
+Reserved register reads 0.
+=== PAGE 10 ===
+MCP2518FD
+DS20006027B-page 10
+ 
+ 2019-2020 Microchip Technology Inc.
+C1TXREQ
+31:24
+TXREQ[31:24]
+23:16
+TXREQ[23:16]
+15:8
+TXREQ[15:8]
+30
+7:0
+TXREQ[7:0]
+C1TREC
+31:24
+—
+—
+—
+—
+—
+—
+—
+—
+23:16
+—
+—
+TXBO
+TXBP
+RXBP
+TXWARN
+RXWARN
+EWARN
+15:8
+TEC[7:0]
+34
+7:0
+REC[7:0]
+C1BDIAG0
+31:24
+DTERRCNT[7:0]
+23:16
+DRERRCNT[7:0]
+15:8
+NTERRCNT[7:0]
+38
+7:0
+NRERRCNT[7:0]
+C1BDIAG1
+31:24
+DLCMM
+ESI
+DCRCERR
+DSTUFERR
+DFORMERR
+—
+DBIT1ERR
+DBIT0ERR
+23:16
+TXBOERR
+—
+NCRCERR
+NSTUFERR
+NFORMERR
+NACKERR
+NBIT1ERR
+NBIT0ERR
+15:8
+EFMSGCNT[15:8]
+3C
+7:0
+EFMSGCNT[7:0]
+C1TEFCON
+31:24
+—
+—
+—
+FSIZE[4:0]
+23:16
+—
+—
+—
+—
+—
+—
+—
+—
+15:8
+—
+—
+—
+—
+—
+FRESET
+—
+UINC
+40
+7:0
+—
+—
+TEFTSEN
+—
+TEFOVIE
+TEFFIE
+TEFHIE
+TEFNEIE
+C1TEFSTA
+31:24
+—
+—
+—
+—
+—
+—
+—
+—
+23:16
+—
+—
+—
+—
+—
+—
+—
+—
+15:8
+—
+—
+—
+—
+—
+—
+—
+—
+44
+7:0
+—
+—
+—
+—
+TEFOVIF
+TEFFIF
+TEFHIF
+TEFNEIF
+C1TEFUA
+31:24
+TEFUA[31:24]
+23:16
+TEFUA[23:16]
+15:8
+TEFUA[15:8]
+48
+7:0
+TEFUA[7:0]
+Reserved( 2)
+31:24
+Reserved[31:24]
+23:16
+Reserved[23:16]
+15:8
+Reserved[15:8]
+4C
+7:0
+Reserved[7:0]
+C1TXQCON
+31:24
+PLSIZE[2:0]
+FSIZE[4:0]
+23:16
+—
+TXAT[1:0]
+TXPRI[4:0]
+15:8
+—
+—
+—
+—
+—
+FRESET
+TXREQ
+UINC
+50
+7:0
+TXEN
+—
+—
+TXATIE
+—
+TXQEIE
+—
+TXQNIE
+C1TXQSTA
+31:24
+—
+—
+—
+—
+—
+—
+—
+—
+23:16
+—
+—
+—
+—
+—
+—
+—
+—
+15:8
+—
+—
+—
+TXQCI[4:0]
+54
+7:0
+TXABT
+TXLARB
+TXERR
+TXATIF
+—
+TXQEIF
+—
+TXQNIF
+C1TXQUA
+31:24
+TXQUA[31:24]
+23:16
+TXQUA[23:16]
+15:8
+TXQUA[15:8]
+58
+7:0
+TXQUA[7:0]
+TABLE 3-2:
+CAN FD CONTROLLER MODULE REGISTER SUMMARY (CONTINUED)
+Addr.
+Name
+Bit
+31/23/15/7
+Bit
+30/22/14/6
+Bit
+29/21/13/5
+Bit
+28/20/12/4
+Bit
+27/19/11/3
+Bit
+26/18/10/2
+Bit
+25/17/9/1
+Bit
+24/16/8/0
+Note 1:
+The lower order byte of the 32-bit register resides at the low-order address.
+2:
+Reserved register reads 0.
+=== PAGE 11 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 11
+MCP2518FD
+C1FIFOCON1
+31:24
+PLSIZE[2:0]
+FSIZE[4:0]
+23:16
+—
+TXAT[1:0]
+TXPRI[4:0]
+15:8
+—
+—
+—
+—
+—
+FRESET
+TXREQ
+UINC
+5C
+7:0
+TXEN
+RTREN
+RXTSEN
+TXATIE
+RXOVIE
+TFERFFIE
+TFHRFHIE
+TFNRFNIE
+C1FIFOSTA1
+31:24
+—
+—
+—
+—
+—
+—
+—
+—
+23:16
+—
+—
+—
+—
+—
+—
+—
+—
+15:8
+—
+—
+—
+FIFOCI[4:0]
+60
+7:0
+TXABT
+TXLARB
+TXERR
+TXATIF
+RXOVIF
+TFERFFIF
+TFHRFHIF
+TFNRFNIF
+C1FIFOUA1
+31:24
+FIFOUA[31:24]
+23:16
+FIFOUA[23:16]
+15:8
+FIFOUA[15:8]
+64
+7:0
+FIFOUA[7:0]
+68
+C1FIFOCON2
+31:0
+same as C1FIFOCON1
+6C
+C1FIFOSTA2
+31:0
+same as C1FIFOSTA1
+70
+C1FIFOUA2
+31:0
+same as C1FIFOUA1
+74
+C1FIFOCON3
+31:0
+same as C1FIFOCON1
+78
+C1FIFOSTA3
+31:0
+same as C1FIFOSTA1
+7C
+C1FIFOUA3
+31:0
+same as C1FIFOUA1
+80
+C1FIFOCON4
+31:0
+same as C1FIFOCON1
+84
+C1FIFOSTA4
+31:0
+same as C1FIFOSTA1
+88
+C1FIFOUA4
+31:0
+same as C1FIFOUA1
+8C
+C1FIFOCON5
+31:0
+same as C1FIFOCON1
+90
+C1FIFOSTA5
+31:0
+same as C1FIFOSTA1
+94
+C1FIFOUA5
+31:0
+same as C1FIFOUA1
+98
+C1FIFOCON6
+31:0
+same as C1FIFOCON1
+9C
+C1FIFOSTA6
+31:0
+same as C1FIFOSTA1
+A0
+C1FIFOUA6
+31:0
+same as C1FIFOUA1
+A4
+C1FIFOCON7
+31:0
+same as C1FIFOCON1
+A8
+C1FIFOSTA7
+31:0
+same as C1FIFOSTA1
+AC
+C1FIFOUA7
+31:0
+same as C1FIFOUA1
+B0
+C1FIFOCON8
+31:0
+same as C1FIFOCON1
+B4
+C1FIFOSTA8
+31:0
+same as C1FIFOSTA1
+B8
+C1FIFOUA8
+31:0
+same as C1FIFOUA1
+BC
+C1FIFOCON9
+31:0
+same as C1FIFOCON1
+C0
+C1FIFOSTA9
+31:0
+same as C1FIFOSTA1
+C4
+C1FIFOUA9
+31:0
+same as C1FIFOUA1
+C8
+C1FIFOCON10
+31:0
+same as C1FIFOCON1
+CC
+C1FIFOSTA10
+31:0
+same as C1FIFOSTA1
+D0
+C1FIFOUA10
+31:0
+same as C1FIFOUA1
+D4
+C1FIFOCON11
+31:0
+same as C1FIFOCON1
+D8
+C1FIFOSTA11
+31:0
+same as C1FIFOSTA1
+DC
+C1FIFOUA11
+31:0
+same as C1FIFOUA1
+E0
+C1FIFOCON12
+31:0
+same as C1FIFOCON1
+E4
+C1FIFOSTA12
+31:0
+same as C1FIFOSTA1
+E8
+C1FIFOUA12
+31:0
+same as C1FIFOUA1
+EC
+C1FIFOCON13
+31:0
+same as C1FIFOCON1
+F0
+C1FIFOSTA13
+31:0
+same as C1FIFOSTA1
+F4
+C1FIFOUA13
+31:0
+same as C1FIFOUA1
+F8
+C1FIFOCON14
+31:0
+same as C1FIFOCON1
+FC
+C1FIFOSTA14
+31:0
+same as C1FIFOSTA1
+100
+C1FIFOUA14
+31:0
+same as C1FIFOUA1
+TABLE 3-2:
+CAN FD CONTROLLER MODULE REGISTER SUMMARY (CONTINUED)
+Addr.
+Name
+Bit
+31/23/15/7
+Bit
+30/22/14/6
+Bit
+29/21/13/5
+Bit
+28/20/12/4
+Bit
+27/19/11/3
+Bit
+26/18/10/2
+Bit
+25/17/9/1
+Bit
+24/16/8/0
+Note 1:
+The lower order byte of the 32-bit register resides at the low-order address.
+2:
+Reserved register reads 0.
+=== PAGE 12 ===
+MCP2518FD
+DS20006027B-page 12
+ 
+ 2019-2020 Microchip Technology Inc.
+104
+C1FIFOCON15
+31:0
+same as C1FIFOCON1
+108
+C1FIFOSTA15
+31:0
+same as C1FIFOSTA1
+10C
+C1FIFOUA15
+31:0
+same as C1FIFOUA1
+110
+C1FIFOCON16
+31:0
+same as C1FIFOCON1
+114
+C1FIFOSTA16
+31:0
+same as C1FIFOSTA1
+118
+C1FIFOUA16
+31:0
+same as C1FIFOUA1
+11C
+C1FIFOCON17
+31:0
+same as C1FIFOCON1
+120
+C1FIFOSTA17
+31:0
+same as C1FIFOSTA1
+124
+C1FIFOUA17
+31:0
+same as C1FIFOUA1
+128
+C1FIFOCON18
+31:0
+same as C1FIFOCON1
+12C
+C1FIFOSTA18
+31:0
+same as C1FIFOSTA1
+130
+C1FIFOUA18
+31:0
+same as C1FIFOUA1
+134
+C1FIFOCON19
+31:0
+same as C1FIFOCON1
+138
+C1FIFOSTA19
+31:0
+same as C1FIFOSTA1
+13C
+C1FIFOUA19
+31:0
+same as C1FIFOUA1
+140
+C1FIFOCON20
+31:0
+same as C1FIFOCON1
+144
+C1FIFOSTA20
+31:0
+same as C1FIFOSTA1
+148
+C1FIFOUA20
+31:0
+same as C1FIFOUA1
+14C
+C1FIFOCON21
+31:0
+same as C1FIFOCON1
+150
+C1FIFOSTA21
+31:0
+same as C1FIFOSTA1
+154
+C1FIFOUA21
+31:0
+same as C1FIFOUA1
+158
+C1FIFOCON22
+31:0
+same as C1FIFOCON1
+15C
+C1FIFOSTA22
+31:0
+same as C1FIFOSTA1
+160
+C1FIFOUA22
+31:0
+same as C1FIFOUA1
+164
+C1FIFOCON23
+31:0
+same as C1FIFOCON1
+168
+C1FIFOSTA23
+31:0
+same as C1FIFOSTA1
+16C
+C1FIFOUA23
+31:0
+same as C1FIFOUA1
+170
+C1FIFOCON24
+31:0
+same as C1FIFOCON1
+174
+C1FIFOSTA24
+31:0
+same as C1FIFOSTA1
+178
+C1FIFOUA24
+31:0
+same as C1FIFOUA1
+17C
+C1FIFOCON25
+31:0
+same as C1FIFOCON1
+180
+C1FIFOSTA25
+31:0
+same as C1FIFOSTA1
+184
+C1FIFOUA25
+31:0
+same as C1FIFOUA1
+188
+C1FIFOCON26
+31:0
+same as C1FIFOCON1
+18C
+C1FIFOSTA26
+31:0
+same as C1FIFOSTA1
+190
+C1FIFOUA26
+31:0
+same as C1FIFOUA1
+194
+C1FIFOCON27
+31:0
+same as C1FIFOCON1
+198
+C1FIFOSTA27
+31:0
+same as C1FIFOSTA1
+19C
+C1FIFOUA27
+31:0
+same as C1FIFOUA1
+1A0
+C1FIFOCON28
+31:0
+same as C1FIFOCON1
+1A4
+C1FIFOSTA28
+31:0
+same as C1FIFOSTA1
+1A8
+C1FIFOUA28
+31:0
+same as C1FIFOUA1
+1AC
+C1FIFOCON29
+31:0
+same as C1FIFOCON1
+1B0
+C1FIFOSTA29
+31:0
+same as C1FIFOSTA1
+1B4
+C1FIFOUA29
+31:0
+same as C1FIFOUA1
+1B8
+C1FIFOCON30
+31:0
+same as C1FIFOCON1
+1BC
+C1FIFOSTA30
+31:0
+same as C1FIFOSTA1
+1C0
+C1FIFOUA30
+31:0
+same as C1FIFOUA1
+1C4
+C1FIFOCON31
+31:0
+same as C1FIFOCON1
+1C8
+C1FIFOSTA31
+31:0
+same as C1FIFOSTA1
+1CC
+C1FIFOUA31
+31:0
+same as C1FIFOUA1
+TABLE 3-2:
+CAN FD CONTROLLER MODULE REGISTER SUMMARY (CONTINUED)
+Addr.
+Name
+Bit
+31/23/15/7
+Bit
+30/22/14/6
+Bit
+29/21/13/5
+Bit
+28/20/12/4
+Bit
+27/19/11/3
+Bit
+26/18/10/2
+Bit
+25/17/9/1
+Bit
+24/16/8/0
+Note 1:
+The lower order byte of the 32-bit register resides at the low-order address.
+2:
+Reserved register reads 0.
+=== PAGE 13 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 13
+MCP2518FD
+C1FLTCON0
+31:24
+FLTEN3
+—
+—
+F3BP[4:0]
+23:16
+FLTEN2
+—
+—
+F2BP[4:0]
+15:8
+FLTEN1
+—
+—
+F1BP[4:0]
+1D0
+7:0
+FLTEN0
+—
+—
+F0BP[4:0]
+C1FLTCON1
+31:24
+FLTEN7
+—
+—
+F7BP[4:0]
+23:16
+FLTEN6
+—
+—
+F6BP[4:0]
+15:8
+FLTEN5
+—
+—
+F5BP[4:0]
+1D4
+7:0
+FLTEN4
+—
+—
+F4BP[4:0]
+C1FLTCON2
+31:24
+FLTEN11
+—
+—
+F11BP[4:0]
+23:16
+FLTEN10
+—
+—
+F10BP[4:0]
+15:8
+FLTEN9
+—
+—
+F9BP[4:0]
+1D8
+7:0
+FLTEN8
+—
+—
+F8BP[4:0]
+C1FLTCON3
+31:24
+FLTEN15
+—
+—
+F15BP[4:0]
+23:16
+FLTEN14
+—
+—
+F14BP[4:0]
+15:8
+FLTEN13
+—
+—
+F13BP[4:0]
+1DC
+7:0
+FLTEN12
+—
+—
+F12BP[4:0]
+C1FLTCON4
+31:24
+FLTEN19
+—
+—
+F19BP[4:0]
+23:16
+FLTEN18
+—
+—
+F18BP[4:0]
+15:8
+FLTEN17
+—
+—
+F17BP[4:0]
+1E0
+7:0
+FLTEN16
+—
+—
+F16BP[4:0]
+C1FLTCON5
+31:24
+FLTEN23
+—
+—
+F23BP[4:0]
+23:16
+FLTEN22
+—
+—
+F22BP[4:0]
+15:8
+FLTEN21
+—
+—
+F21BP[4:0]
+1E4
+7:0
+FLTEN20
+—
+—
+F20BP[4:0]
+C1FLTCON6
+31:24
+FLTEN27
+—
+—
+F27BP[4:0]
+23:16
+FLTEN26
+—
+—
+F26BP[4:0]
+15:8
+FLTEN25
+—
+—
+F25BP[4:0]
+1E8
+7:0
+FLTEN24
+—
+—
+F24BP[4:0]
+C1FLTCON7
+31:24
+FLTEN31
+—
+—
+F31BP[4:0]
+23:16
+FLTEN30
+—
+—
+F30BP[4:0]
+15:8
+FLTEN29
+—
+—
+F29BP[4:0]
+1EC
+7:0
+FLTEN28
+—
+—
+F28BP[4:0]
+C1FLTOBJ0
+31:24
+—
+EXIDE
+SID11
+EID[17:6]
+23:16
+EID[12:5]
+15:8
+EID[4:0]
+SID[10:8]
+1F0
+7:0
+SID[7:0]
+C1MASK0
+31:24
+—
+MIDE
+MSID11
+MEID[17:6]
+23:16
+MEID[12:5]
+15:8
+MEID[4:0]
+MSID[10:8]
+1F4
+7:0
+MSID[7:0]
+1F8
+C1FLTOBJ1
+31:0
+same as C1FLTOBJ0
+1FC
+C1MASK1
+31:0
+same as C1MASK0
+200
+C1FLTOBJ2
+31:0
+same as C1FLTOBJ0
+204
+C1MASK2
+31:0
+same as C1MASK0
+208
+C1FLTOBJ3
+31:0
+same as C1FLTOBJ0
+20C
+C1MASK3
+31:0
+same as C1MASK0
+210
+C1FLTOBJ4
+31:0
+same as C1FLTOBJ0
+214
+C1MASK4
+31:0
+same as C1MASK0
+218
+C1FLTOBJ5
+31:0
+same as C1FLTOBJ0
+21C
+C1MASK5
+31:0
+same as C1MASK0
+TABLE 3-2:
+CAN FD CONTROLLER MODULE REGISTER SUMMARY (CONTINUED)
+Addr.
+Name
+Bit
+31/23/15/7
+Bit
+30/22/14/6
+Bit
+29/21/13/5
+Bit
+28/20/12/4
+Bit
+27/19/11/3
+Bit
+26/18/10/2
+Bit
+25/17/9/1
+Bit
+24/16/8/0
+Note 1:
+The lower order byte of the 32-bit register resides at the low-order address.
+2:
+Reserved register reads 0.
+=== PAGE 14 ===
+MCP2518FD
+DS20006027B-page 14
+ 
+ 2019-2020 Microchip Technology Inc.
+220
+C1FLTOBJ6
+31:0
+same as C1FLTOBJ0
+224
+C1MASK6
+31:0
+same as C1MASK0
+228
+C1FLTOBJ7
+31:0
+same as C1FLTOBJ0
+22C
+C1MASK7
+31:0
+same as C1MASK0
+230
+C1FLTOBJ8
+31:0
+same as C1FLTOBJ0
+234
+C1MASK8
+31:0
+same as C1MASK0
+238
+C1FLTOBJ9
+31:0
+same as C1FLTOBJ0
+23C
+C1MASK9
+31:0
+same as C1MASK0
+240
+C1FLTOBJ10
+31:0
+same as C1FLTOBJ0
+244
+C1MASK10
+31:0
+same as C1MASK0
+248
+C1FLTOBJ11
+31:0
+same as C1FLTOBJ0
+24C
+C1MASK11
+31:0
+same as C1MASK0
+250
+C1FLTOBJ12
+31:0
+same as C1FLTOBJ0
+254
+C1MASK12
+31:0
+same as C1MASK0
+258
+C1FLTOBJ13
+31:0
+same as C1FLTOBJ0
+25C
+C1MASK13
+31:0
+same as C1MASK0
+260
+C1FLTOBJ14
+31:0
+same as C1FLTOBJ0
+264
+C1MASK14
+31:0
+same as C1MASK0
+268
+C1FLTOBJ15
+31:0
+same as C1FLTOBJ0
+26C
+C1MASK15
+31:0
+same as C1MASK0
+270
+C1FLTOBJ16
+31:0
+same as C1FLTOBJ0
+274
+C1MASK16
+31:0
+same as C1MASK0
+278
+C1FLTOBJ17
+31:0
+same as C1FLTOBJ0
+27C
+C1MASK17
+31:0
+same as C1MASK0
+280
+C1FLTOBJ18
+31:0
+same as C1FLTOBJ0
+284
+C1MASK18
+31:0
+same as C1MASK0
+288
+C1FLTOBJ19
+31:0
+same as C1FLTOBJ0
+28C
+C1MASK19
+31:0
+same as C1MASK0
+290
+C1FLTOBJ20
+31:0
+same as C1FLTOBJ0
+294
+C1MASK20
+31:0
+same as C1MASK0
+298
+C1FLTOBJ21
+31:0
+same as C1FLTOBJ0
+29C
+C1MASK21
+31:0
+same as C1MASK0
+2A0
+C1FLTOBJ22
+31:0
+same as C1FLTOBJ0
+2A4
+C1MASK22
+31:0
+same as C1MASK0
+2A8
+C1FLTOBJ23
+31:0
+same as C1FLTOBJ0
+2AC
+C1MASK23
+31:0
+same as C1MASK0
+2B0
+C1FLTOBJ24
+31:0
+same as C1FLTOBJ0
+2B4
+C1MASK24
+31:0
+same as C1MASK0
+2B8
+C1FLTOBJ25
+31:0
+same as C1FLTOBJ0
+2BC
+C1MASK25
+31:0
+same as C1MASK0
+2C0
+C1FLTOBJ26
+31:0
+same as C1FLTOBJ0
+2C4
+C1MASK26
+31:0
+same as C1MASK0
+2C8
+C1FLTOBJ27
+31:0
+same as C1FLTOBJ0
+2CC
+C1MASK27
+31:0
+same as C1MASK0
+2D0
+C1FLTOBJ28
+31:0
+same as C1FLTOBJ0
+2D4
+C1MASK28
+31:0
+same as C1MASK0
+2D8
+C1FLTOBJ29
+31:0
+same as C1FLTOBJ0
+2DC
+C1MASK29
+31:0
+same as C1MASK0
+2E0
+C1FLTOBJ30
+31:0
+same as C1FLTOBJ0
+2E4
+C1MASK30
+31:0
+same as C1MASK0
+2E8
+C1FLTOBJ31
+31:0
+same as C1FLTOBJ0
+2EC
+C1MASK31
+31:0
+same as C1MASK0
+TABLE 3-2:
+CAN FD CONTROLLER MODULE REGISTER SUMMARY (CONTINUED)
+Addr.
+Name
+Bit
+31/23/15/7
+Bit
+30/22/14/6
+Bit
+29/21/13/5
+Bit
+28/20/12/4
+Bit
+27/19/11/3
+Bit
+26/18/10/2
+Bit
+25/17/9/1
+Bit
+24/16/8/0
+Note 1:
+The lower order byte of the 32-bit register resides at the low-order address.
+2:
+Reserved register reads 0.
+=== PAGE 15 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 15
+MCP2518FD
+3.1
+MCP2518FD Specific Registers
+• Register 3-1: OSC
+• Register 3-2: IOCON
+• Register 3-3: CRC
+• Register 3-4: ECCCON
+• Register 3-5: ECCSTAT
+• Register 3-6: DEVID 
+ 
+EXAMPLE 3-1:
+TABLE 3-3:
+REGISTER LEGEND
+Symbol
+Description
+Symbol
+Description
+R
+Readable bit
+HC
+Cleared by Hardware only
+W
+Writable bit
+HS
+Set by Hardware only
+U
+Unimplemented bit, read as ‘0’
+1
+Bit is set at Reset
+S
+Settable bit
+0
+Bit is cleared at Reset
+C
+Clearable bit
+x
+Bit is unknown at Reset
+R/W - 0 indicates the bit is both readable and writable, and reads ‘0’ after a Reset.
+=== PAGE 16 ===
+MCP2518FD
+DS20006027B-page 16
+ 
+ 2019-2020 Microchip Technology Inc.
+REGISTER 3-1:
+OSC – MCP2518FD OSCILLATOR CONTROL REGISTER
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 31
+bit 24
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 23
+bit 16
+U-0
+U-0
+U-0
+R-0
+U-0
+R-0
+U-0
+R-0
+—
+—
+—
+SCLKRDY
+—
+OSCRDY
+—
+PLLRDY
+bit 15
+bit 8
+U-0
+R/W-1
+R/W-1
+R/W-0
+R/W-0
+HS/C-0
+U-0
+R/W-0
+—
+CLKODIV[1:0]
+SCLKDIV( 1)
+LPMEN( 3)
+OSCDIS( 2)
+—
+PLLEN( 1)
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-13
+Unimplemented: Read as ‘0’
+bit 12
+SCLKRDY: Synchronized SCLKDIV bit
+1 = SCLKDIV 1
+0 = SCLKDIV 0
+bit 11
+Unimplemented: Read as ‘0’
+bit 10
+OSCRDY: Clock Ready
+1 = Clock is running and stable
+0 = Clock not ready or off
+bit 9
+Unimplemented: Read as ‘0’
+bit 8
+PLLRDY: PLL Ready
+1 = PLL Locked
+0 = PLL not ready
+bit 7
+Unimplemented: Read as ‘0’
+bit 6-5
+CLKODIV[1:0]: Clock Output Divisor
+11 =CLKO is divided by 10
+10 =CLKO is divided by 4
+01 =CLKO is divided by 2
+00 =CLKO is divided by 1
+bit 4
+SCLKDIV: System Clock Divisor( 1)
+1 = SCLK is divided by 2
+0 = SCLK is divided by 1
+Note 1:
+This bit can only be modified in Configuration mode.
+2:
+Clearing OSCDIS while in Sleep mode will wake-up the device and put it back in Configuration mode.
+3:
+Setting LPMEN does not actually put the device in LPM. It selects which Sleep mode will be entered after 
+requesting Sleep mode using CiCON.REQOP. In order to wake up on RXCAN activity, CiINT.WAKIE must 
+be set.
+=== PAGE 17 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 17
+MCP2518FD
+bit 3
+LPMEN: Low Power Mode (LPM) Enable( 3)
+1 = When in LPM, the device will stop the clock and power down the majority of the chip. Register and
+RAM values will be lost. The device will wake-up due to asserting nCS, or due to RXCAN activity.
+0 = When in Sleep mode, the device will stop the clock, and retain it’s register and RAM values. It will
+wake-up due to clearing the OSCDIS bit, or due to RXCAN activity.
+bit 2
+OSCDIS: Clock (Oscillator) Disable( 2)
+1 = Clock disabled, the device is in Sleep mode.
+0 = Enable Clock
+bit 1
+Unimplemented: Read as ‘0’
+bit 0
+PLLEN: PLL Enable( 1)
+1 = System Clock from 10x PLL
+0 = System Clock comes directly from XTAL oscillator
+REGISTER 3-1:
+OSC – MCP2518FD OSCILLATOR CONTROL REGISTER (CONTINUED)
+Note 1:
+This bit can only be modified in Configuration mode.
+2:
+Clearing OSCDIS while in Sleep mode will wake-up the device and put it back in Configuration mode.
+3:
+Setting LPMEN does not actually put the device in LPM. It selects which Sleep mode will be entered after 
+requesting Sleep mode using CiCON.REQOP. In order to wake up on RXCAN activity, CiINT.WAKIE must 
+be set.
+=== PAGE 18 ===
+MCP2518FD
+DS20006027B-page 18
+ 
+ 2019-2020 Microchip Technology Inc.
+REGISTER 3-2:
+IOCON – INPUT/OUTPUT CONTROL REGISTER
+U-0
+R/W-0
+R/W-0
+R/W-0
+U-0
+U-0
+R/W-1
+R/W-1
+—
+INTOD
+SOF
+TXCANOD
+—
+—
+PM1
+PM0
+bit 31
+bit 24
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+R/W-x
+R/W-x
+—
+—
+—
+—
+—
+—
+GPIO1
+GPIO0
+bit 23
+bit 16
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+R/W-x
+R/W-x
+—
+—
+—
+—
+—
+—
+LAT1
+LAT0
+bit 15
+bit 8
+U-0
+R/W-0
+U-0
+U-0
+U-0
+U-0
+R/W-1
+R/W-1
+—
+XSTBYEN
+—
+—
+—
+—
+TRIS1( 1)
+TRIS0( 1)
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31
+Unimplemented: Read as ‘0’
+bit 30
+INTOD: Interrupt pins Open Drain Mode
+1 = Open Drain Output
+0 = Push/Pull Output
+bit 29
+SOF: Start-Of-Frame signal
+1 = SOF signal on CLKO pin
+0 = Clock on CLKO pin
+bit 28
+TXCANOD: TXCAN Open Drain Mode
+1 = Open Drain Output
+0 = Push/Pull Output
+bit 27-26
+Unimplemented: Read as ‘0’
+bit 25
+PM1: GPIO Pin Mode
+1 = Pin is used as GPIO1
+0 = Interrupt Pin INT1, asserted when CiINT.RXIF and RXIE are set
+bit 24
+PM0: GPIO Pin Mode
+1 = Pin is used as GPIO0
+0 = Interrupt Pin INT0, asserted when CiINT.TXIF and TXIE are set
+bit 23-18
+Unimplemented: Read as ‘0’
+bit 17
+GPIO1: GPIO1 Status
+1 = VGPIO1 > VIH
+0 = VGPIO1 < VIL
+bit 16
+GPIO0: GPIO0 Status
+1 = VGPIO0 > VIH
+0 = VGPIO0 < VIL
+bit 15-10
+Unimplemented: Read as ‘0’
+Note 1:
+If PMx = 0, TRISx will be ignored and the pin will be an output.
+2:
+The bit fields in the IOCON register must be written using single data byte SFR WRITE instructions.
+=== PAGE 19 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 19
+MCP2518FD
+bit 9
+LAT1: GPIO1 Latch
+1 = Drive Pin High
+0 = Drive Pin Low
+bit 8
+LAT0: GPIO0 Latch
+1 = Drive Pin High
+0 = Drive Pin Low
+bit 7
+Unimplemented: Read as ‘0’
+bit 6
+XSTBYEN: Enable Transceiver Standby Pin Control
+1 = XSTBY control enabled
+0 = XSTBY control disabled
+bit 5-2
+Unimplemented: Read as ‘0’
+bit 1
+TRIS1: GPIO1 Data Direction( 1)
+1 = Input Pin
+0 = Output Pin
+bit 0
+TRIS0: GPIO0 Data Direction( 1)
+1 = Input Pin
+0 = Output Pin
+REGISTER 3-2:
+IOCON – INPUT/OUTPUT CONTROL REGISTER (CONTINUED)
+Note 1:
+If PMx = 0, TRISx will be ignored and the pin will be an output.
+2:
+The bit fields in the IOCON register must be written using single data byte SFR WRITE instructions.
+=== PAGE 20 ===
+MCP2518FD
+DS20006027B-page 20
+ 
+ 2019-2020 Microchip Technology Inc.
+REGISTER 3-3:
+CRC – CRC REGISTER
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+R/W-0
+R/W-0
+—
+—
+—
+—
+—
+—
+FERRIE
+CRCERRIE
+bit 31
+bit 24
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+HS/C-0
+HS/C-0
+—
+—
+—
+—
+—
+—
+FERRIF
+CRCERRIF
+bit 23
+bit 16
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+CRC[15:8]
+bit 15
+bit 8
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+CRC[7:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-26
+Unimplemented: Read as ‘0’
+bit 25
+FERRIE: CRC Command Format Error Interrupt Enable
+bit 24
+CRCERRIE: CRC Error Interrupt Enable
+bit 23-18
+Unimplemented: Read as ‘0’
+bit 17
+FERRIF: CRC Command Format Error Interrupt Flag
+1 = Number of Bytes mismatch during “SPI with CRC” command occurred
+0 = No SPI CRC command format error occurred
+bit 16
+CRCERRIF: CRC Error Interrupt Flag
+1 = CRC mismatch occurred
+0 = No CRC error has occurred
+bit 15-0
+CRC[15:0]: Cycle Redundancy Check from last CRC mismatch
+=== PAGE 21 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 21
+MCP2518FD
+REGISTER 3-4:
+ECCCON – ECC CONTROL REGISTER
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 31
+bit 24
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 23
+bit 16
+U-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+—
+PARITY[6:0]
+bit 15
+bit 8
+U-0
+U-0
+U-0
+U-0
+U-0
+R/W-0
+R/W-0
+R/W-0
+—
+—
+—
+—
+—
+DEDIE
+SECIE
+ECCEN
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-15
+Unimplemented: Read as ‘0’
+bit 14-8
+PARITY[6:0]: Parity bits used during write to RAM when ECC is disabled
+bit 7-3
+Unimplemented: Read as ‘0’
+bit 2
+DEDIE: Double Error Detection Interrupt Enable Flag
+bit 1
+SECIE: Single Error Detection Interrupt Enable Flag
+bit 0
+ECCEN: ECC Enable
+1 = ECC enabled
+0 = ECC disabled
+=== PAGE 22 ===
+MCP2518FD
+DS20006027B-page 22
+ 
+ 2019-2020 Microchip Technology Inc.
+REGISTER 3-5:
+ECCSTAT – ECC STATUS REGISTER
+U-0
+U-0
+U-0
+U-0
+R-0
+R-0
+R-0
+R-0
+—
+—
+—
+—
+ERRADDR[11:8]
+bit 31
+bit 24
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+ERRADDR[7:0]
+bit 23
+bit 16
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 15
+bit 8
+U-0
+U-0
+U-0
+U-0
+U-0
+HS/C-0
+HS/C-0
+U-0
+—
+—
+—
+—
+—
+DEDIF
+SECIF
+—
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-28
+Unimplemented: Read as ‘0’
+bit 27-16
+ERRADDR[11:0]: Address where last ECC error occurred
+bit 15-3
+Unimplemented: Read as ‘0’
+bit 2
+DEDIF: Double Error Detection Interrupt Flag
+1 = Double Error was detected
+0 = No Double Error Detection occurred
+bit 1
+SECIF: Single Error Detection Interrupt Flag
+1 = Single Error was detected
+0 = No Single Error occurred
+bit 0
+Unimplemented: Read as ‘0’
+=== PAGE 23 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 23
+MCP2518FD
+REGISTER 3-6:
+DEVID – DEVICE ID REGISTER
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 31
+bit 24
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 23
+bit 16
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 15
+bit 8
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+ID[3:0]
+REV[3:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-8
+Unimplemented: Read as ‘0’
+bit 7-4
+ID[3:0]: Device ID
+bit 3-0
+REV[3:0]: Silicon Revision
+=== PAGE 24 ===
+MCP2518FD
+DS20006027B-page 24
+ 
+ 2019-2020 Microchip Technology Inc.
+NOTES:
+=== PAGE 25 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 25
+MCP2518FD
+3.2
+CAN FD Controller Module 
+Registers
+Configuration Registers
+• Register 3-7: CiCON
+• Register 3-8: CiNBTCFG
+• Register 3-9: CiDBTCFG
+• Register 3-10: CiTDC
+• Register 3-11: CiTBC
+• Register 3-12: CiTSCON
+Interrupt and Status Registers
+• Register 3-13: CiVEC
+• Register 3-14: CiINT
+• Register 3-15: CiRXIF
+• Register 3-16: CiRXOVIF
+• Register 3-17: CiTXIF
+• Register 3-18: CiTXATIF
+• Register 3-19: CiTXREQ
+Error and Diagnostic Registers
+• Register 3-20: CiTREC
+• Register 3-21: CiBDIAG0
+• Register 3-22: CiBDIAG1
+Fifo Control and Status Registers
+• Register 3-23: CiTEFCON
+• Register 3-24: CiTEFSTA
+• Register 3-25: CiTEFUA
+• Register 3-26: CiTXQCON
+• Register 3-27: CiTXQSTA
+• Register 3-28: CiTXQUA
+• Register 3-29: CiFIFOCONm – m = 1 to 31
+• Register 3-30: CiFIFOSTAm – m = 1 to 31
+• Register 3-31: CiFIFOUAm – m = 1 to 31
+Filter Configuration and Control Registers
+• Register 3-32: CiFLTCONm – m = 0 to 7
+• Register 3-33: CiFLTOBJm – m = 0 to 31
+• Register 3-34: CiMASKm – m = 0 to 31 
+EXAMPLE 3-2:
+Note:
+The ‘i’ shown in the register identifier
+denotes CANi, for example, C1CON. The
+MCP2518FD device contains one CAN
+FD Controller Module.
+TABLE 3-4:
+REGISTER LEGEND
+Sym
+Description
+Sym
+Description
+R
+Readable bit
+HC
+Cleared by Hardware only
+W
+Writable bit
+HS
+Set by Hardware only
+U
+Unimplemented bit, read as ‘0’
+1
+Bit is set at Reset
+S
+Settable bit
+0
+Bit is cleared at Reset
+C
+Clearable bit
+x
+Bit is unknown at Reset
+R/W - 0 indicates the bit is both readable and writable, and reads ‘0’ after a Reset.
+=== PAGE 26 ===
+MCP2518FD
+DS20006027B-page 26
+ 2019-2020 Microchip Technology Inc.
+ 
+REGISTER 3-7:
+CiCON – CAN CONTROL REGISTER
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-1
+R/W-0
+R/W-0
+TXBWS[3:0]
+ABAT
+REQOP[2:0]
+bit 31
+bit 24
+R-1
+R-0
+R-0
+R/W-1
+R/W-1
+R/W-0
+R/W-0
+R/W-0
+OPMOD[2:0]
+TXQEN( 1)
+STEF( 1)
+SERR2LOM 
+( 1)
+ESIGM( 1)
+RTXAT( 1)
+bit 23
+bit 16
+U-0
+U-0
+U-0
+R/W-0
+R-0
+R/W-1
+R/W-1
+R/W-1
+—
+—
+—
+BRSDIS
+BUSY
+WFT[1:0]
+WAKFIL( 1)
+bit 15
+bit 8
+U-0
+R/W-1
+R/W-1
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+—
+PXEDIS( 1)
+ISOCRCEN 
+( 1)
+DNCNT[4:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-28
+TXBWS[3:0]: Transmit Bandwidth Sharing bits
+Delay between two consecutive transmissions (in arbitration bit times)
+0000 = No delay
+0001 = 2
+0010 = 4
+0011 = 8
+0100 = 16
+0101 = 32
+0110 = 64
+0111 = 128
+1000 = 256
+1001 = 512
+1010 = 1024
+1011 = 2048
+1111-1100 =  4096
+bit 27
+ABAT: Abort All Pending Transmissions bit
+1 = Signal all transmit FIFOs to abort transmission
+0 = Module will clear this bit when all transmissions were aborted
+Note 1:
+These bits can only be modified in Configuration mode.
+2:
+In Sleep mode, the OPMOD bits indicate Configuration mode (OPMOD = 100) and OSC. OSCDIS will 
+read as ‘1’. The application software should use these bit fields as a handshake indication for the Sleep 
+mode request. 
+=== PAGE 27 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 27
+MCP2518FD
+bit 26-24
+REQOP[2:0]: Request Operation Mode bits
+000 = Set Normal CAN FD mode; supports mixing of CAN FD and Classic CAN 2.0 frames
+001 = Set Sleep mode
+010 = Set Internal Loopback mode
+011 = Set Listen Only mode
+100 = Set Configuration mode
+101 = Set External Loopback mode
+110 = Set Normal CAN 2.0 mode; possible error frames on CAN FD frames
+111 = Set Restricted Operation mode
+bit 23-21
+OPMOD[2:0]: Operation Mode Status bits( 2)
+000 = Module is in Normal CAN FD mode; supports mixing of CAN FD and Classic CAN 2.0 frames
+001 = Module is in Sleep mode 
+010 = Module is in Internal Loopback mode
+011 = Module is in Listen Only mode
+100 = Module is in Configuration mode
+101 = Module is in External Loopback mode
+110 = Module is Normal CAN 2.0 mode; possible error frames on CAN FD frames
+111 = Module is Restricted Operation mode
+bit 20
+TXQEN: Enable Transmit Queue bit( 1)
+1 = Enables TXQ and reserves space in RAM
+0 = Do not reserve space in RAM for TXQ
+bit 19
+STEF: Store in Transmit Event FIFO bit( 1)
+1 = Saves transmitted messages in TEF and reserves space in RAM
+0 = Do not save transmitted messages in TEF
+bit 18
+SERR2LOM: Transition to Listen Only Mode on System Error bit( 1)
+1 = Transition to Listen Only Mode
+0 = Transition to Restricted Operation Mode
+bit 17
+ESIGM: Transmit ESI in Gateway Mode bit( 1)
+1 = ESI is transmitted recessive when ESI of message is high or CAN controller error passive
+0 = ESI reflects error status of CAN controller
+bit 16
+RTXAT: Restrict Retransmission Attempts bit( 1)
+1 = Restricted retransmission attempts, CiFIFOCONm.TXAT is used
+0 = Unlimited number of retransmission attempts, CiFIFOCONm.TXAT will be ignored
+bit 15-13
+Unimplemented: Read as ‘0’
+bit 12
+BRSDIS: Bit Rate Switching Disable bit
+1 = Bit Rate Switching is Disabled, regardless of BRS in the Transmit Message Object
+0 = Bit Rate Switching depends on BRS in the Transmit Message Object
+bit 11
+BUSY: CAN Module is Busy bit
+1 = The CAN module is transmitting or receiving a message
+0 = The CAN module is inactive
+bit 10-9
+WFT[1:0]: Selectable Wake-up Filter Time bits
+00 = T00FILTER
+01 = T01FILTER
+10 = T10FILTER
+11 = T11FILTER
+Note:
+Please refer to Table 7-5.
+bit 8
+WAKFIL: Enable CAN Bus Line Wake-up Filter bit( 1)
+1 = Use CAN bus line filter for wake-up
+0 = CAN bus line filter is not used for wake-up
+REGISTER 3-7:
+CiCON – CAN CONTROL REGISTER (CONTINUED)
+Note 1:
+These bits can only be modified in Configuration mode.
+2:
+In Sleep mode, the OPMOD bits indicate Configuration mode (OPMOD = 100) and OSC. OSCDIS will 
+read as ‘1’. The application software should use these bit fields as a handshake indication for the Sleep 
+mode request. 
+=== PAGE 28 ===
+MCP2518FD
+DS20006027B-page 28
+ 2019-2020 Microchip Technology Inc.
+ 
+bit 7
+Unimplemented: Read as ‘0’
+bit 6
+PXEDIS: Protocol Exception Event Detection Disabled bit( 1)
+A recessive “res bit” following a recessive FDF bit is called a Protocol Exception.
+1 = Protocol Exception is treated as a Form Error. 
+0 = If a Protocol Exception is detected, the CAN FD Controller Module will enter Bus Integrating state.
+bit 5
+ISOCRCEN: Enable ISO CRC in CAN FD Frames bit( 1)
+1 = Include Stuff Bit Count in CRC Field and use Non-Zero CRC Initialization Vector according to ISO
+11898-1:2015
+0 = Do NOT include Stuff Bit Count in CRC Field and use CRC Initialization Vector with all zeros
+bit 4-0
+DNCNT[4:0]: Device Net Filter Bit Number bits
+10011-11111 = Invalid Selection (compare up to 18-bits of data with EID)
+10010 = Compare up to data byte 2 bit 6 with EID17
+...
+00001 = Compare up to data byte 0 bit 7 with EID0
+00000 = Do not compare data bytes
+REGISTER 3-8:
+CiNBTCFG – NOMINAL BIT TIME CONFIGURATION REGISTER
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+BRP[7:0]
+bit 31
+bit 24
+R/W-0
+R/W-0
+R/W-1
+R/W-1
+R/W-1
+R/W-1
+R/W-1
+R/W-0
+TSEG1[7:0]
+bit 23
+bit 16
+U-0
+R/W-0
+R/W-0
+R/W-0
+R/W-1
+R/W-1
+R/W-1
+R/W-1
+—
+TSEG2[6:0]
+bit 15
+bit 8
+U-0
+R/W-0
+R/W-0
+R/W-0
+R/W-1
+R/W-1
+R/W-1
+R/W-1
+—
+SJW[6:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-24
+BRP[7:0]: Baud Rate Prescaler bits
+1111 1111 = TQ = 256/Fsys
+...
+0000 0000 = TQ = 1/Fsys
+Note 1:
+This register can only be modified in Configuration mode.
+REGISTER 3-7:
+CiCON – CAN CONTROL REGISTER (CONTINUED)
+Note 1:
+These bits can only be modified in Configuration mode.
+2:
+In Sleep mode, the OPMOD bits indicate Configuration mode (OPMOD = 100) and OSC. OSCDIS will 
+read as ‘1’. The application software should use these bit fields as a handshake indication for the Sleep 
+mode request. 
+=== PAGE 29 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 29
+MCP2518FD
+bit 23-16
+TSEG1[7:0]: Time Segment 1 bits (Propagation Segment + Phase Segment 1)
+1111 1111 = Length is 256 x TQ
+...
+0000 0000 = Length is 1 x TQ
+bit 15
+Unimplemented: Read as ‘0’
+bit 14-8
+TSEG2[6:0]: Time Segment 2 bits (Phase Segment 2)
+111 1111 = Length is 128 x TQ
+...
+000 0000 = Length is 1 x TQ
+bit 7
+Unimplemented: Read as ‘0’
+bit 6-0
+SJW[6:0]: Synchronization Jump Width bits
+111 1111 = Length is 128 x TQ
+...
+000 0000 = Length is 1 x TQ
+REGISTER 3-8:
+CiNBTCFG – NOMINAL BIT TIME CONFIGURATION REGISTER (CONTINUED)
+Note 1:
+This register can only be modified in Configuration mode.
+=== PAGE 30 ===
+MCP2518FD
+DS20006027B-page 30
+ 2019-2020 Microchip Technology Inc.
+              
+REGISTER 3-9:
+CiDBTCFG – DATA BIT TIME CONFIGURATION REGISTER
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+BRP[7:0]
+bit 31
+bit 24
+U-0
+U-0
+U-0
+R/W-0
+R/W-1
+R/W-1
+R/W-1
+R/W-0
+—
+—
+—
+TSEG1[4:0]
+bit 23
+bit 16
+U-0
+U-0
+U-0
+U-0
+R/W-0
+R/W-0
+R/W-1
+R/W-1
+—
+—
+—
+—
+TSEG2[3:0]
+bit 15
+bit 8
+U-0
+U-0
+U-0
+U-0
+R/W-0
+R/W-0
+R/W-1
+R/W-1
+—
+—
+—
+—
+SJW[3:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-24
+BRP[7:0]: Baud Rate Prescaler bits
+1111 1111 = TQ = 256/Fsys
+...
+0000 0000 = TQ = 1/Fsys
+bit 23-21
+Unimplemented: Read as ‘0’
+bit 20-16
+TSEG1[4:0]: Time Segment 1 bits (Propagation Segment + Phase Segment 1)
+1 1111 = Length is 32 x TQ
+...
+0 0000 = Length is 1 x TQ
+bit 15-12
+Unimplemented: Read as ‘0’
+bit 11-8
+TSEG2[3:0]: Time Segment 2 bits (Phase Segment 2)
+1111 = Length is 16 x TQ
+...
+0000 = Length is 1 x TQ
+bit 7-4
+Unimplemented: Read as ‘0’
+bit 3-0
+SJW[3:0]: Synchronization Jump Width bits
+1111 = Length is 16 x TQ
+...
+0000 = Length is 1 x TQ
+Note 1:
+This register can only be modified in Configuration mode.
+=== PAGE 31 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 31
+MCP2518FD
+              
+REGISTER 3-10:
+CiTDC – TRANSMITTER DELAY COMPENSATION REGISTER
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+R/W-0
+R/W-0
+—
+—
+—
+—
+—
+—
+EDGFLTEN
+SID11EN
+bit 31
+bit 24
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+R/W-1
+R/W-0
+—
+—
+—
+—
+—
+—
+TDCMOD[1:0]
+bit 23
+bit 16
+U-0
+R/W-0
+R/W-0
+R/W-1
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+—
+TDCO[6:0]
+bit 15
+bit 8
+U-0
+U-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+—
+—
+TDCV[5:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-26
+Unimplemented: Read as ‘0’
+bit 25
+EDGFLTEN: Enable Edge Filtering during Bus Integration state bit
+1 = Edge Filtering enabled, according to ISO 11898-1:2015
+0 = Edge Filtering disabled
+bit 24
+SID11EN: Enable 12-Bit SID in CAN FD Base Format Messages bit
+1 = RRS is used as SID11 in CAN FD base format messages: SID[11:0] = {SID[10:0], SID11}
+0 = Do not use RRS; SID[10:0] according to ISO 11898-1:2015
+bit 23-18
+Unimplemented: Read as ‘0’
+bit 17-16
+TDCMOD[1:0]: Transmitter Delay Compensation Mode bits; Secondary Sample Point (SSP)
+10-11 = Auto; measure delay and add TDCO.
+01 = Manual; Do not measure, use TDCV + TDCO from register
+00 = TDC Disabled
+bit 15
+Unimplemented: Read as ‘0’
+bit 14-8
+TDCO[6:0]: Transmitter Delay Compensation Offset bits; Secondary Sample Point (SSP)
+Two’s complement; offset can be positive, zero, or negative.
+011 1111 =  63 x TSYSCLK
+...
+000 0000 = 0 x TSYSCLK
+...
+111 1111 = –64 x TSYSCLK
+bit 7-6
+Unimplemented: Read as ‘0’
+bit 5-0
+TDCV[5:0]: Transmitter Delay Compensation Value bits; Secondary Sample Point (SSP)
+11 1111 = 63 x TSYSCLK
+...
+00 0000 = 0 x TSYSCLK
+Note 1:
+This register can only be modified in Configuration mode.
+=== PAGE 32 ===
+MCP2518FD
+DS20006027B-page 32
+ 2019-2020 Microchip Technology Inc.
+ 
+REGISTER 3-11:
+CiTBC – TIME BASE COUNTER REGISTER
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+TBC[31:24]
+bit 31
+bit 24
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+TBC[23:16]
+bit 23
+bit 16
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+TBC[15:8]
+bit 15
+bit 8
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+TBC[7:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-0
+TBC[31:0]: Time Base Counter bits
+This is a free running timer that increments every TBCPRE clocks when TBCEN is set
+Note 1:
+The TBC will be stopped and reset when TBCEN = 0.
+2:
+The TBC prescaler count will be reset on any write to CiTBC (CiTSCON.TBCPRE will be unaffected).
+=== PAGE 33 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 33
+MCP2518FD
+REGISTER 3-12:
+CiTSCON – TIME STAMP CONTROL REGISTER
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 31
+bit 24
+U-0
+U-0
+U-0
+U-0
+U-0
+R/W-0
+R/W-0
+R/W-0
+—
+—
+—
+—
+—
+TSRES
+TSEOF
+TBCEN
+bit 23
+bit 16
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+R/W-0
+R/W-0
+—
+—
+—
+—
+—
+—
+TBCPRE[9:8]
+bit 15
+bit 8
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+TBCPRE[7:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-19
+Unimplemented: Read as ‘0’
+bit 18
+TSRES: Time Stamp res bit (FD Frames only)
+1 = at sample point of the bit following the FDF bit.
+0 = at sample point of SOF
+bit 17
+TSEOF: Time Stamp EOF bit
+1 = Time Stamp when frame is taken valid: 
+- RX no error until last but one bit of EOF
+- TX no error until the end of EOF
+0 = Time Stamp at “beginning” of Frame:
+- Classical Frame: at sample point of SOF
+- FD Frame: see TSRES bit.
+bit 16
+TBCEN: Time Base Counter Enable bit
+1 = Enable TBC
+0 = Stop and reset TBC
+bit 15-10
+Unimplemented: Read as ‘0’
+bit 9-0
+TBCPRE[9:0]: Time Base Counter Prescaler bits
+1023 = TBC increments every 1024 clocks
+...
+0 = TBC increments every 1 clock
+=== PAGE 34 ===
+MCP2518FD
+DS20006027B-page 34
+ 2019-2020 Microchip Technology Inc.
+ 
+REGISTER 3-13:
+CiVEC – INTERRUPT CODE REGISTER
+U-0
+R-1
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+—
+RXCODE[6:0]( 1)
+bit 31
+bit 24
+U-0
+R-1
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+—
+TXCODE[6:0]( 1)
+bit 23
+bit 16
+U-0
+U-0
+U-0
+R-0
+R-0
+R-0
+R-0
+R-0
+—
+—
+—
+FILHIT[4:0]( 1)
+bit 15
+bit 8
+U-0
+R-1
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+—
+ICODE[6:0]( 1)
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31
+Unimplemented: Read as ‘0’
+bit 30-24
+RXCODE[6:0]: Receive Interrupt Flag Code bits( 1)
+1000001-1111111 = Reserved
+1000000 = No interrupt
+0100000-0111111 = Reserved
+0011111 = FIFO 31 Interrupt (RFIF[31] set)
+...
+0000010 = FIFO 2 Interrupt (RFIF[2] set)
+0000001 = FIFO 1 Interrupt (RFIF[1] set)
+0000000 = Reserved. FIFO 0 cannot receive.
+bit 23
+Unimplemented: Read as ‘0’
+bit 22-16
+TXCODE[6:0]: Transmit Interrupt Flag Code bits( 1)
+1000001-1111111 = Reserved
+1000000 = No interrupt
+0100000-0111111 = Reserved
+0011111 = FIFO 31 Interrupt (TFIF[31] set)
+...
+0000001 = FIFO 1 Interrupt (TFIF[1] set)
+0000000 = TXQ Interrupt (TFIF[0] set)
+bit 15-13
+Unimplemented: Read as ‘0’
+bit 12-8
+FILHIT[4:0]: Filter Hit Number bits( 1)
+11111 = Filter 31
+11110 = Filter 30
+...
+00001 = Filter 1
+00000 = Filter 0
+Note 1:
+If multiple interrupts are pending, the interrupt with the highest number will be indicated.
+=== PAGE 35 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 35
+MCP2518FD
+bit 7
+Unimplemented: Read as ‘0’
+bit 6-0
+ICODE[6:0]: Interrupt Flag Code bits( 1)
+1001011-1111111 = Reserved
+1001010 = Transmit Attempt Interrupt (any bit in CiTXATIF set)
+1001001 = Transmit Event FIFO Interrupt (any bit in CiTEFIF set)
+1001000 = Invalid Message Occurred (IVMIF/IE)
+1000111 = Operation Mode Change Occurred (MODIF/IE)
+1000110 = TBC Overflow (TBCIF/IE)
+1000101 = RX/TX MAB Overflow/Underflow (RX: message received before previous message was
+saved to memory; TX: can't feed TX MAB fast enough to transmit consistent data.)
+(SERRIF/IE)
+1000100 = Address Error Interrupt (illegal FIFO address presented to system) (SERRIF/IE)
+1000011 = Receive FIFO Overflow Interrupt (any bit in CiRXOVIF set)
+1000010 = Wake-up interrupt (WAKIF/WAKIE)
+1000001 = Error Interrupt (CERRIF/IE)
+1000000 = No interrupt
+0100000-0111111 = Reserved
+0011111 = FIFO 31 Interrupt (TFIF[31] or RFIF[31] set)
+...
+0000001 = FIFO 1 Interrupt (TFIF[1] or RFIF[1] set)
+0000000 = TXQ Interrupt (TFIF[0] set)
+REGISTER 3-13:
+CiVEC – INTERRUPT CODE REGISTER (CONTINUED)
+Note 1:
+If multiple interrupts are pending, the interrupt with the highest number will be indicated.
+=== PAGE 36 ===
+MCP2518FD
+DS20006027B-page 36
+ 2019-2020 Microchip Technology Inc.
+ 
+REGISTER 3-14:
+CiINT – INTERRUPT REGISTER
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+IVMIE
+WAKIE
+CERRIE
+SERRIE
+RXOVIE
+TXATIE
+SPICRCIE
+ECCIE
+bit 31
+bit 24
+U-0
+U-0
+U-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+—
+—
+—
+TEFIE
+MODIE
+TBCIE
+RXIE
+TXIE
+bit 23
+bit 16
+HS/C-0
+HS/C-0
+HS/C-0
+HS/C-0
+R-0
+R-0
+R-0
+R-0
+IVMIF( 1)
+WAKIF( 1)
+CERRIF( 1)
+SERRIF( 1)
+RXOVIF
+TXATIF
+SPICRCIF
+ECCIF
+bit 15
+bit 8
+U-0
+U-0
+U-0
+R-0
+HS/C-0
+HS/C-0
+R-0
+R-0
+—
+—
+—
+TEFIF
+MODIF( 1)
+TBCIF( 1)
+RXIF
+TXIF
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31 
+IVMIE: Invalid Message Interrupt Enable bit
+bit 30
+WAKIE: Bus Wake Up Interrupt Enable bit
+bit 29
+CERRIE: CAN Bus Error Interrupt Enable bit
+bit 28
+SERRIE: System Error Interrupt Enable bit
+bit 27
+RXOVIE: Receive FIFO Overflow Interrupt Enable bit
+bit 26
+TXATIE: Transmit Attempt Interrupt Enable bit
+bit 25
+SPICRCIE: SPI CRC Error Interrupt Enable bit
+bit 24
+ECCIE: ECC Error Interrupt Enable bit
+bit 23-21
+Unimplemented: Read as ‘0’
+bit 20
+TEFIE: Transmit Event FIFO Interrupt Enable bit
+bit 19
+MODIE: Mode Change Interrupt Enable bit
+bit 18
+TBCIE: Time Base Counter Interrupt Enable bit
+bit 17
+RXIE: Receive FIFO Interrupt Enable bit
+bit 16
+TXIE: Transmit FIFO Interrupt Enable bit
+bit 15
+IVMIF: Invalid Message Interrupt Flag bit( 1)
+bit 14
+WAKIF: Bus Wake Up Interrupt Flag bit( 1)
+bit 13
+CERRIF: CAN Bus Error Interrupt Flag bit( 1)
+bit 12
+SERRIF: System Error Interrupt Flag bit( 1)
+1 = A system error occurred
+0 = No system error occurred
+bit 11
+RXOVIF: Receive Object Overflow Interrupt Flag bit
+1 = Receive FIFO overflow occurred
+0 = No receive FIFO overflow has occurred
+bit 10
+TXATIF: Transmit Attempt Interrupt Flag bit
+Note 1:
+Flags are set by hardware and cleared by application.
+=== PAGE 37 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 37
+MCP2518FD
+bit 9
+SPICRCIF: SPI CRC Error Interrupt Flag bit
+bit 8
+ECCIF: ECC Error Interrupt Flag bit
+bit 7-5
+Unimplemented: Read as ‘0’
+bit 4
+TEFIF: Transmit Event FIFO Interrupt Flag bit
+1 = TEF interrupt pending
+0 = No TEF interrupts pending
+bit 3
+MODIF: Operation Mode Change Interrupt Flag bit( 1)
+1 = Operation mode change occurred (OPMOD has changed)
+0 = No mode change occurred
+bit 2
+TBCIF: Time Base Counter Overflow Interrupt Flag bit( 1)
+1 = TBC has overflowed
+0 = TBC did not overflow
+bit 1
+RXIF: Receive FIFO Interrupt Flag bit
+1 = Receive FIFO interrupt pending
+0 = No receive FIFO interrupts pending
+bit 0
+TXIF: Transmit FIFO Interrupt Flag bit
+1 = Transmit FIFO interrupt pending
+0 = No transmit FIFO interrupts pending
+REGISTER 3-14:
+CiINT – INTERRUPT REGISTER (CONTINUED)
+Note 1:
+Flags are set by hardware and cleared by application.
+=== PAGE 38 ===
+MCP2518FD
+DS20006027B-page 38
+ 2019-2020 Microchip Technology Inc.
+REGISTER 3-15:
+CiRXIF – RECEIVE INTERRUPT STATUS REGISTER
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+RFIF[31:24]
+bit 31
+bit 24
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+RFIF[23:16]
+bit 23
+bit 16
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+RFIF[15:8]
+bit 15
+bit 8
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+U-0
+RFIF[7:1]
+—
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-1
+RFIF[31:1]: Receive FIFO Interrupt Pending bits( 1)
+1 = One or more enabled receive FIFO interrupts are pending
+0 = No enabled receive FIFO interrupts are pending
+bit 0
+Unimplemented: Read as ‘0’
+Note 1:
+RFIF = ‘or’ of enabled RXFIFO flags; flags will be cleared when the condition of the FIFO terminates.
+=== PAGE 39 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 39
+MCP2518FD
+ 
+REGISTER 3-16:
+CiRXOVIF – RECEIVE OVERFLOW INTERRUPT STATUS REGISTER
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+RFOVIF[31:24]
+bit 31
+bit 24
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+RFOVIF[23:16]
+bit 23
+bit 16
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+RFOVIF[15:8]
+bit 15
+bit 8
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+U-0
+RFOVIF[7:1]
+—
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-1
+RFOVIF[31:1]: Receive FIFO Overflow Interrupt Pending bits
+1 = Interrupt is pending
+0 = Interrupt not pending
+bit 0
+Unimplemented: Read as ‘0’
+Note 1:
+Flags need to be cleared in FIFO register
+=== PAGE 40 ===
+MCP2518FD
+DS20006027B-page 40
+ 2019-2020 Microchip Technology Inc.
+ 
+REGISTER 3-17:
+CiTXIF – TRANSMIT INTERRUPT STATUS REGISTER
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+TFIF[31:24]
+bit 31
+bit 24
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+TFIF[23:16]( 1)
+bit 23
+bit 16
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+TFIF[15:8]( 1)
+bit 15
+bit 8
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+TFIF[7:0]( 1)
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-0
+TFIF[31:0]: Transmit FIFO/TXQ ( 2) Interrupt Pending bits( 1)
+1 = One or more enabled transmit FIFO/TXQ interrupts are pending
+0 = No enabled transmit FIFO/TXQ interrupt are pending
+Note 1:
+TFIF = ‘or’ of the enabled TXFIFO flags; flags will be cleared when the condition of the FIFO terminates.
+2:
+TFIF[0] is for the Transmit Queue.
+=== PAGE 41 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 41
+MCP2518FD
+ 
+REGISTER 3-18:
+CiTXATIF – TRANSMIT ATTEMPT INTERRUPT STATUS REGISTER
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+TFATIF[31:24]( 1)
+bit 31
+bit 24
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+TFATIF[23:16]( 1)
+bit 23
+bit 16
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+TFATIF[15:8]( 1)
+bit 15
+bit 8
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+TFATIF[7:0]( 1)
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-0
+TFATIF[31:0]: Transmit FIFO/TXQ ( 2) Attempt Interrupt Pending bits( 1)
+1 = Interrupt is pending
+0 = Interrupt not pending
+Note 1:
+Flags need to be cleared in FIFO register
+2:
+TFATIF[0] is for the Transmit Queue.
+=== PAGE 42 ===
+MCP2518FD
+DS20006027B-page 42
+ 2019-2020 Microchip Technology Inc.
+ 
+REGISTER 3-19:
+CiTXREQ – TRANSMIT REQUEST REGISTER
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+TXREQ[31:24]
+bit 31
+bit 24
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+TXREQ[23:16]
+bit 23
+bit 16
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+TXREQ[15:8]
+bit 15
+bit 8
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+S/HC-0
+TXREQ[7:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-1
+TXREQ[31:1]: Message Send Request bits
+TXEN= 1 (Object configured as a Transmit Object)
+Setting this bit to ‘1’ requests sending a message. 
+The bit will automatically clear when the message(s) queued in the object is (are) successfully sent.
+This bit can NOT be used for aborting a transmission.
+TXEN= 0 (Object configured as a Receive Object)
+This bit has no effect
+bit 0
+TXREQ[0]: Transmit Queue Message Send Request bit
+Setting this bit to ‘1’ requests sending a message. 
+The bit will automatically clear when the message(s) queued in the object is (are) successfully sent.
+This bit can NOT be used for aborting a transmission.
+=== PAGE 43 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 43
+MCP2518FD
+ 
+REGISTER 3-20:
+CiTREC – TRANSMIT/RECEIVE ERROR COUNT REGISTER
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 31
+bit 24
+U-0
+U-0
+R-1
+R-0
+R-0
+R-0
+R-0
+R-0
+—
+—
+TXBO
+TXBP
+RXBP
+TXWARN
+RXWARN
+EWARN
+bit 23
+bit 16
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+TEC[7:0]
+bit 15
+bit 8
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+R-0
+REC[7:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-22
+Unimplemented: Read as ‘0’
+bit 21
+TXBO: Transmitter in Bus Off State bit (TEC > 255)
+In Configuration mode, TXBO is set, since the module is not on the bus.
+bit 20
+TXBP: Transmitter in Error Passive State bit (TEC > 127)
+bit 19
+RXBP: Receiver in Error Passive State bit (REC > 127)
+bit 18
+TXWARN: Transmitter in Error Warning State bit (128 > TEC > 95)
+bit 17
+RXWARN: Receiver in Error Warning State bit (128 > REC > 95)
+bit 16
+EWARN: Transmitter or Receiver is in Error Warning State bit
+bit 15-8
+TEC[7:0]: Transmit Error Counter bits
+bit 7-0
+REC[7:0]: Receive Error Counter bits
+=== PAGE 44 ===
+MCP2518FD
+DS20006027B-page 44
+ 2019-2020 Microchip Technology Inc.
+ 
+REGISTER 3-21:
+CiBDIAG0 – BUS DIAGNOSTIC REGISTER 0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+DTERRCNT[7:0]
+bit 31
+bit 24
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+DRERRCNT[7:0]
+bit 23
+bit 16
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+NTERRCNT[7:0]
+bit 15
+bit 8
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+NRERRCNT[7:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-24
+DTERRCNT[7:0]: Data Bit Rate Transmit Error Counter bits
+bit 23-16
+DRERRCNT[7:0]: Data Bit Rate Receive Error Counter bits
+bit 15-8
+NTERRCNT[7:0]: Nominal Bit Rate Transmit Error Counter bits
+bit 7-0
+NRERRCNT[7:0]: Nominal Bit Rate Receive Error Counter bits
+=== PAGE 45 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 45
+MCP2518FD
+ 
+REGISTER 3-22:
+CiBDIAG1 – BUS DIAGNOSTICS REGISTER 1
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+U-0
+R/W-0
+R/W-0
+DLCMM
+ESI
+DCRCERR
+DSTUFERR
+DFORMERR
+—
+DBIT1ERR
+DBIT0ERR
+bit 31
+bit 24
+R/W-0
+U-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+TXBOERR
+—
+NCRCERR
+NSTUFERR
+NFORMERR
+NACKERR
+NBIT1ERR
+NBIT0ERR
+bit 23
+bit 16
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+EFMSGCNT[15:8]
+bit 15
+bit 8
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+EFMSGCNT[7:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31
+DLCMM: DLC Mismatch bit
+During a transmission or reception, the specified DLC is larger than the PLSIZE of the FIFO element.
+bit 30
+ESI: ESI flag of a received CAN FD message was set.
+bit 29
+DCRCERR: Same as for nominal bit rate (see below).
+bit 28
+DSTUFERR: Same as for nominal bit rate (see below).
+bit 27
+DFORMERR: Same as for nominal bit rate (see below).
+bit 26
+Unimplemented: Read as ‘0’
+bit 25
+DBIT1ERR: Same as for nominal bit rate (see below).
+bit 24
+DBIT0ERR: Same as for nominal bit rate (see below).
+bit 23
+TXBOERR: Device went to bus-off (and auto-recovered).
+bit 22
+Unimplemented: Read as ‘0’
+bit 21
+NCRCERR: The CRC check sum of a received message was incorrect. The CRC of an incoming
+message does not match with the CRC calculated from the received data.
+bit 20
+NSTUFERR: More than 5 equal bits in a sequence have occurred in a part of a received message
+where this is not allowed.
+bit 19
+NFORMERR: A fixed format part of a received frame has the wrong format.
+bit 18
+NACKERR: Transmitted message was not acknowledged.
+bit 17
+NBIT1ERR: During the transmission of a message (with the exception of the arbitration field), the
+device wanted to send a recessive level (bit of logical value ‘1’), but the monitored bus value was
+dominant.
+bit 16
+NBIT0ERR: During the transmission of a message (or acknowledge bit, or active error flag, or overload
+flag), the device wanted to send a dominant level (data or identifier bit logical value ‘0’), but the
+monitored bus value was recessive. 
+bit 15-0
+EFMSGCNT[15:0]: Error Free Message Counter bits
+=== PAGE 46 ===
+MCP2518FD
+DS20006027B-page 46
+ 2019-2020 Microchip Technology Inc.
+ 
+REGISTER 3-23:
+CiTEFCON – TRANSMIT EVENT FIFO CONTROL REGISTER
+U-0
+U-0
+U-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+—
+—
+—
+FSIZE[4:0]( 1)
+bit 31
+bit 24
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 23
+bit 16
+U-0
+U-0
+U-0
+U-0
+U-0
+S/HC-1
+U-0
+S/HC-0
+—
+—
+—
+—
+—
+FRESET( 2)
+—
+UINC
+bit 15
+bit 8
+U-0
+U-0
+R/W-0
+U-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+—
+—
+TEFTSEN( 1)
+—
+TEFOVIE
+TEFFIE
+TEFHIE
+TEFNEIE
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-29
+Unimplemented: Read as ‘0’
+bit 28-24
+FSIZE[4:0]: FIFO Size bits( 1)
+0_0000 = FIFO is 1 Message deep
+0_0001 = FIFO is 2 Messages deep
+0_0010 = FIFO is 3 Messages deep
+...
+1_1111 = FIFO is 32 Messages deep
+bit 23-11
+Unimplemented: Read as ‘0’
+bit 10
+FRESET: FIFO Reset bit( 2)
+1 = FIFO will be reset when bit is set, cleared by hardware when FIFO was reset. The user should
+wait for this bit to clear before taking any action.
+0 = No effect
+bit 9
+Unimplemented: Read as ‘0’
+bit 8
+UINC: Increment Tail bit
+When this bit is set, the FIFO tail will increment by a single message.
+bit 7-6
+Unimplemented: Read as ‘0’
+bit 5
+TEFTSEN: Transmit Event FIFO Time Stamp Enable bit( 1)
+1 = Time Stamp objects in TEF
+0 = Do not Time Stamp objects in TEF
+bit 4
+Unimplemented: Read as ‘0’
+bit 3
+TEFOVIE: Transmit Event FIFO Overflow Interrupt Enable bit
+1 = Interrupt enabled for overflow event
+0 = Interrupt disabled for overflow event
+bit 2
+TEFFIE: Transmit Event FIFO Full Interrupt Enable bit
+1 = Interrupt enabled for FIFO full
+0 = Interrupt disabled for FIFO full
+Note 1:
+These bits can only be modified in Configuration mode.
+2:
+FRESET is set while in Configuration mode and is automatically cleared in Normal mode.
+=== PAGE 47 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 47
+MCP2518FD
+bit 1
+TEFHIE: Transmit Event FIFO Half Full Interrupt Enable bit
+1 = Interrupt enabled for FIFO half full
+0 = Interrupt disabled for FIFO half full
+bit 0
+TEFNEIE: Transmit Event FIFO Not Empty Interrupt Enable bit
+1 = Interrupt enabled for FIFO not empty
+0 = Interrupt disabled for FIFO not empty
+REGISTER 3-23:
+CiTEFCON – TRANSMIT EVENT FIFO CONTROL REGISTER (CONTINUED)
+Note 1:
+These bits can only be modified in Configuration mode.
+2:
+FRESET is set while in Configuration mode and is automatically cleared in Normal mode.
+=== PAGE 48 ===
+MCP2518FD
+DS20006027B-page 48
+ 2019-2020 Microchip Technology Inc.
+ 
+REGISTER 3-24:
+CiTEFSTA – TRANSMIT EVENT FIFO STATUS REGISTER
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 31
+bit 24
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 23
+bit 16
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 15
+bit 8
+U-0
+U-0
+U-0
+U-0
+HS/C-0
+R-0
+R-0
+R-0
+—
+—
+—
+—
+TEFOVIF
+TEFFIF( 1)
+TEFHIF( 1)
+TEFNEIF( 1)
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-4
+Unimplemented: Read as ‘0’
+bit 3
+TEFOVIF: Transmit Event FIFO Overflow Interrupt Flag bit
+1 = Overflow event has occurred
+0 = No overflow event occurred
+bit 2
+TEFFIF: Transmit Event FIFO Full Interrupt Flag bit( 1)
+1 = FIFO is full
+0 = FIFO is not full
+bit 1
+TEFHIF: Transmit Event FIFO Half Full Interrupt Flag bit( 1)
+1 = FIFO is ≥ half full
+0 = FIFO is < half full
+bit 0
+TEFNEIF: Transmit Event FIFO Not Empty Interrupt Flag bit( 1)
+1 = FIFO is not empty, contains at least one message
+0 = FIFO is empty
+Note 1:
+This bit is read only and reflects the status of the FIFO.
+=== PAGE 49 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 49
+MCP2518FD
+ 
+REGISTER 3-25:
+CiTEFUA – TRANSMIT EVENT FIFO USER ADDRESS REGISTER
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+TEFUA[31:24]
+bit 31
+bit 24
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+TEFUA[23:16]
+bit 23
+bit 16
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+TEFUA[15:8]
+bit 15
+bit 8
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+TEFUA[7:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-0
+TEFUA[31:0]: Transmit Event FIFO User Address bits
+A read of this register will return the address where the next object is to be read (FIFO tail).
+Note 1:
+This register is not guaranteed to read correctly in Configuration mode and should only be accessed when 
+the module is not in Configuration mode.
+=== PAGE 50 ===
+MCP2518FD
+DS20006027B-page 50
+ 2019-2020 Microchip Technology Inc.
+ 
+REGISTER 3-26:
+CiTXQCON – TRANSMIT QUEUE CONTROL REGISTER
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+PLSIZE[2:0]( 1)
+FSIZE[4:0]( 1)
+bit 31
+bit 24
+U-0
+R/W-1
+R/W-1
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+—
+TXAT[1:0]
+TXPRI[4:0]
+bit 23
+bit 16
+U-0
+U-0
+U-0
+U-0
+U-0
+S/HC-1
+R/W/HC-0
+S/HC-0
+—
+—
+—
+—
+—
+FRESET( 3)
+TXREQ( 2)
+UINC
+bit 15
+bit 8
+R-1
+U-0
+U-0
+R/W-0
+U-0
+R/W-0
+U-0
+R/W-0
+TXEN
+—
+—
+TXATIE
+—
+TXQEIE
+—
+TXQNIE
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-29
+PLSIZE[2:0]: Payload Size bits( 1)
+000 = 8 data bytes
+001 = 12 data bytes
+010 = 16 data bytes
+011 = 20 data bytes
+100 = 24 data bytes
+101 = 32 data bytes
+110 = 48 data bytes
+111 = 64 data bytes
+bit 28-24
+FSIZE[4:0]: FIFO Size bits( 1)
+0_0000 = FIFO is 1 Message deep
+0_0001 = FIFO is 2 Messages deep
+0_0010 = FIFO is 3 Messages deep
+...
+1_1111 = FIFO is 32 Messages deep
+bit 23
+Unimplemented: Read as ‘0’
+bit 22-21
+TXAT[1:0]: Retransmission Attempts bits
+This feature is enabled when CiCON.RTXAT is set.
+00 = Disable retransmission attempts
+01 = Three retransmission attempts
+10 = Unlimited number of retransmission attempts
+11 = Unlimited number of retransmission attempts
+bit 20-16
+TXPRI[4:0]: Message Transmit Priority bits
+00000 = Lowest Message Priority
+...
+11111 = Highest Message Priority
+bit 15-11
+Unimplemented: Read as ‘0’
+Note 1:
+These bits can only be modified in Configuration mode.
+2:
+This bit is updated when a message completes (or aborts) or when the FIFO is reset.
+3:
+FRESET is set while in Configuration mode and is automatically cleared in Normal mode.
+=== PAGE 51 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 51
+MCP2518FD
+bit 10
+FRESET: FIFO Reset bit( 3)
+1 = FIFO will be reset when bit is set; cleared by hardware when FIFO was reset. User should wait
+until this bit is clear before taking any action.
+0 = No effect
+bit 9
+TXREQ: Message Send Request bit( 2)
+1 = Requests sending a message; the bit will automatically clear when all the messages queued in
+the TXQ are successfully sent.
+0 = Clearing the bit to ‘0’ while set (‘1’) will request a message abort.
+bit 8
+UINC: Increment Head bit
+When this bit is set, the FIFO head will increment by a single message.
+bit 7
+TXEN: TX Enable
+1 = Transmit Message Queue. This bit always reads as ‘1’.
+bit 6-5
+Unimplemented: Read as ‘0’
+bit 4
+TXATIE: Transmit Attempts Exhausted Interrupt Enable bit
+1 = Enable interrupt
+0 = Disable interrupt
+bit 3
+Unimplemented: Read as ‘0’
+bit 2
+TXQEIE: Transmit Queue Empty Interrupt Enable bit
+1 = Interrupt enabled for TXQ empty
+0 = Interrupt disabled for TXQ empty
+bit 1
+Unimplemented: Read as ‘0’
+bit 0
+TXQNIE: Transmit Queue Not Full Interrupt Enable bit
+1 = Interrupt enabled for TXQ not full
+0 = Interrupt disabled for TXQ not full
+REGISTER 3-26:
+CiTXQCON – TRANSMIT QUEUE CONTROL REGISTER (CONTINUED)
+Note 1:
+These bits can only be modified in Configuration mode.
+2:
+This bit is updated when a message completes (or aborts) or when the FIFO is reset.
+3:
+FRESET is set while in Configuration mode and is automatically cleared in Normal mode.
+=== PAGE 52 ===
+MCP2518FD
+DS20006027B-page 52
+ 2019-2020 Microchip Technology Inc.
+ 
+REGISTER 3-27:
+CiTXQSTA – TRANSMIT QUEUE STATUS REGISTER
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 31
+bit 24
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 23
+bit 16
+U-0
+U-0
+U-0
+R-0
+R-0
+R-0
+R-0
+R-0
+—
+—
+—
+TXQCI[4:0]( 1)
+bit 15
+bit 8
+HS/C-0
+HS/C-0
+HS/C-0
+HS/C-0
+U-0
+R-1
+U-0
+R-1
+TXABT( 2)( 3)
+TXLARB 
+( 2)( 3)
+TXERR( 2)( 3)
+TXATIF
+—
+TXQEIF
+—
+TXQNIF
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 3-13
+Unimplemented: Read as ‘0’
+bit 12-8
+TXQCI[4:0]: Transmit Queue Message Index bits( 1)
+A read of this register will return an index to the message that the FIFO will next attempt to transmit.
+bit 7
+TXABT: Message Aborted Status bit( 2)( 3)
+1 = Message was aborted
+0 = Message completed successfully
+bit 6
+TXLARB: Message Lost Arbitration Status bit( 2)( 3)
+1 = Message lost arbitration while being sent
+0 = Message did not loose arbitration while being sent
+bit 5
+TXERR: Error Detected During Transmission bit( 2)( 3)
+1 = A bus error occurred while the message was being sent
+0 = A bus error did not occur while the message was being sent
+bit 4
+TXATIF: Transmit Attempts Exhausted Interrupt Pending bit
+1 = Interrupt pending
+0 = Interrupt Not pending
+bit 3
+Unimplemented: Read as ‘0’
+bit 2
+TXQEIF: Transmit Queue Empty Interrupt Flag bit
+1 = TXQ is empty
+0 = TXQ is not empty, at least 1 message queued to be transmitted
+bit 1
+Unimplemented: Read as ‘0’
+bit 0
+TXQNIF: Transmit Queue Not Full Interrupt Flag bit
+1 = TXQ is not full
+0 = TXQ is full
+Note 1:
+TXQCI[4:0] gives a zero-indexed value to the message in the TXQ. If the TXQ is 4 messages deep 
+(FSIZE = 5’h03) TXQCI will take on a value of 0 to 3 depending on the state of the TXQ.
+2:
+This bit is cleared when TXREQ is set or by writing a 0 using the SPI.
+3:
+This bit is updated when a message completes (or aborts) or when the TXQ is reset.
+=== PAGE 53 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 53
+MCP2518FD
+ 
+REGISTER 3-28:
+CiTXQUA – TRANSMIT QUEUE USER ADDRESS REGISTER
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+TXQUA[31:24]
+bit 31
+bit 24
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+TXQUA[23:16]
+bit 23
+bit 16
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+TXQUA[15:8]
+bit 15
+bit 8
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+TXQUA[7:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-0
+TXQUA[31:0]: TXQ User Address bits
+A read of this register will return the address where the next message is to be written (TXQ head).
+Note 1:
+This register is not guaranteed to read correctly in Configuration mode and should only be accessed when 
+the module is not in Configuration mode.
+=== PAGE 54 ===
+MCP2518FD
+DS20006027B-page 54
+ 2019-2020 Microchip Technology Inc.
+ 
+REGISTER 3-29:
+CiFIFOCONm – FIFO CONTROL REGISTER m, (m = 1 TO 31)
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+PLSIZE[2:0]( 1)
+FSIZE[4:0]( 1)
+bit 31
+bit 24
+U-0
+R/W-1
+R/W-1
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+—
+TXAT[1:0]
+TXPRI[4:0]
+bit 23
+bit 16
+U-0
+U-0
+U-0
+U-0
+U-0
+S/HC-1
+R/W/HC-0
+S/HC-0
+—
+—
+—
+—
+—
+FRESET( 3)
+TXREQ( 2)
+UINC
+bit 15
+bit 8
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+TXEN( 1)
+RTREN
+RXTSEN( 1)
+TXATIE
+RXOVIE
+TFERFFIE
+TFHRFHIE
+TFNRFNIE
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-29
+PLSIZE[2:0]: Payload Size bits( 1)
+000 = 8 data bytes
+001 = 12 data bytes
+010 = 16 data bytes
+011 = 20 data bytes
+100 = 24 data bytes
+101 = 32 data bytes
+110 = 48 data bytes
+111 = 64 data bytes
+bit 28-24
+FSIZE[4:0]: FIFO Size bits( 1)
+0_0000 = FIFO is 1 Message deep
+0_0001 = FIFO is 2 Messages deep
+0_0010 = FIFO is 3 Messages deep
+...
+1_1111 = FIFO is 32 Messages deep
+bit 23
+Unimplemented: Read as ‘0’
+bit 22-21
+TXAT[1:0]: Retransmission Attempts bits
+This feature is enabled when CiCON.RTXAT is set.
+00 = Disable retransmission attempts
+01 = Three retransmission attempts
+10 = Unlimited number of retransmission attempts
+11 = Unlimited number of retransmission attempts
+bit 20-16
+TXPRI[4:0]: Message Transmit Priority bits
+00000 = Lowest Message Priority
+...
+11111 = Highest Message Priority
+Note 1:
+These bits can only be modified in Configuration mode.
+2:
+This bit is updated when a message completes (or aborts) or when the FIFO is reset.
+3:
+FRESET is set while in Configuration mode and is automatically cleared in Normal mode.
+=== PAGE 55 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 55
+MCP2518FD
+bit 15-11
+Unimplemented: Read as ‘0’
+bit 10
+FRESET: FIFO Reset bit( 3)
+1 = FIFO will be reset when bit is set; cleared by hardware when FIFO was reset. User should wait 
+until this bit is clear before taking any action.
+0 = No effect
+bit 9
+TXREQ: Message Send Request bit( 2)
+TXEN = 1 (FIFO configured as a Transmit FIFO)
+1 = Requests sending a message; the bit will automatically clear when all the messages queued in 
+the FIFO are successfully sent.
+0 = Clearing the bit to ‘0’ while set (‘1’) will request a message abort.
+TXEN = 0 (FIFO configured as a Receive FIFO)
+This bit has no effect.
+bit 8
+UINC: Increment Head/Tail bit
+TXEN = 1 (FIFO configured as a Transmit FIFO)
+When this bit is set, the FIFO head will increment by a single message.
+TXEN = 0 (FIFO configured as a Receive FIFO)
+When this bit is set, the FIFO tail will increment by a single message.
+bit 7
+TXEN: TX/RX FIFO Selection bit( 1)
+1 = Transmit FIFO
+0 = Receive FIFO
+bit 6
+RTREN: Auto RTR Enable bit
+1 = When a remote transmit is received, TXREQ will be set.
+0 = When a remote transmit is received, TXREQ will be unaffected.
+bit 5
+RXTSEN: Received Message Time Stamp Enable bit( 1)
+1 = Capture time stamp in received message object in RAM.
+0 = Do not capture time stamp.
+bit 4
+TXATIE: Transmit Attempts Exhausted Interrupt Enable bit
+1 = Enable interrupt
+0 = Disable interrupt
+bit 3
+RXOVIE: Overflow Interrupt Enable bit
+1 = Interrupt enabled for overflow event
+0 = Interrupt disabled for overflow event
+bit 2
+TFERFFIE: Transmit/Receive FIFO Empty/Full Interrupt Enable bit
+TXEN = 1 (FIFO configured as a Transmit FIFO)
+Transmit FIFO Empty Interrupt Enable
+1 = Interrupt enabled for FIFO empty
+0 = Interrupt disabled for FIFO empty
+TXEN = 0 (FIFO configured as a Receive FIFO)
+Receive FIFO Full Interrupt Enable
+1 = Interrupt enabled for FIFO full
+0 = Interrupt disabled for FIFO full
+REGISTER 3-29:
+CiFIFOCONm – FIFO CONTROL REGISTER m, (m = 1 TO 31) (CONTINUED)
+Note 1:
+These bits can only be modified in Configuration mode.
+2:
+This bit is updated when a message completes (or aborts) or when the FIFO is reset.
+3:
+FRESET is set while in Configuration mode and is automatically cleared in Normal mode.
+=== PAGE 56 ===
+MCP2518FD
+DS20006027B-page 56
+ 2019-2020 Microchip Technology Inc.
+bit 1
+TFHRFHIE: Transmit/Receive FIFO Half Empty/Half Full Interrupt Enable bit
+TXEN = 1 (FIFO configured as a Transmit FIFO)
+Transmit FIFO Half Empty Interrupt Enable
+1 = Interrupt enabled for FIFO half empty
+0 = Interrupt disabled for FIFO half empty
+TXEN = 0 (FIFO configured as a Receive FIFO)
+Receive FIFO Half Full Interrupt Enable
+1 = Interrupt enabled for FIFO half full
+0 = Interrupt disabled for FIFO half full
+bit 0
+TFNRFNIE: Transmit/Receive FIFO Not Full/Not Empty Interrupt Enable bit
+TXEN = 1 (FIFO configured as a Transmit FIFO)
+Transmit FIFO Not Full Interrupt Enable
+1 = Interrupt enabled for FIFO not full
+0 = Interrupt disabled for FIFO not full
+TXEN = 0 (FIFO configured as a Receive FIFO)
+Receive FIFO Not Empty Interrupt Enable
+1 = Interrupt enabled for FIFO not empty
+0 = Interrupt disabled for FIFO not empty
+REGISTER 3-29:
+CiFIFOCONm – FIFO CONTROL REGISTER m, (m = 1 TO 31) (CONTINUED)
+Note 1:
+These bits can only be modified in Configuration mode.
+2:
+This bit is updated when a message completes (or aborts) or when the FIFO is reset.
+3:
+FRESET is set while in Configuration mode and is automatically cleared in Normal mode.
+=== PAGE 57 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 57
+MCP2518FD
+ 
+REGISTER 3-30:
+CiFIFOSTAm – FIFO STATUS REGISTER m, (m = 1 TO 31)
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 31
+bit 24
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+U-0
+—
+—
+—
+—
+—
+—
+—
+—
+bit 23
+bit 16
+U-0
+U-0
+U-0
+R-0
+R-0
+R-0
+R-0
+R-0
+—
+—
+—
+FIFOCI[4:0]( 1)
+bit 15
+bit 8
+HS/C-0
+HS/C-0
+HS/C-0
+HS/C-0
+HS/C-0
+R-0
+R-0
+R-0
+TXABT( 2)( 3)
+TXLARB 
+( 2)( 3)
+TXERR( 2)( 3)
+TXATIF
+RXOVIF
+TFERFFIF
+TFHRFHIF
+TFNRFNIF
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-13
+Unimplemented: Read as ‘0’
+bit 12-8
+FIFOCI[4:0]: FIFO Message Index bits( 1)
+TXEN = 1 (FIFO is configured as a Transmit FIFO)
+A read of this bit field will return an index to the message that the FIFO will next attempt to transmit.
+TXEN = 0 (FIFO is configured as a Receive FIFO)
+A read of this bit field will return an index to the message that the FIFO will use to save the next
+message
+bit 7
+TXABT: Message Aborted Status bit( 2)( 3)
+1 = Message was aborted
+0 = Message completed successfully
+bit 6
+TXLARB: Message Lost Arbitration Status bit( 2)( 3) 
+1 = Message lost arbitration while being sent
+0 = Message did not lose arbitration while being sent
+bit 5
+TXERR: Error Detected During Transmission bit( 2)( 3)
+1 = A bus error occurred while the message was being sent
+0 = A bus error did not occur while the message was being sent
+bit 4
+TXATIF: Transmit Attempts Exhausted Interrupt Pending bit
+TXEN = 1 (FIFO is configured as a Transmit FIFO)
+1 = Interrupt pending
+0 = Interrupt not pending
+TXEN = 0 (FIFO is configured as a Receive FIFO)
+Read as ‘0’
+Note 1:
+FIFOCI[4:0] gives a zero-indexed value to the message in the FIFO. If the FIFO is 4 messages deep 
+(FSIZE = 5’h03) FIFOCI will take on a value of 0 to 3 depending on the state of the FIFO.
+2:
+This bit is cleared when TXREQ is set or by writing a 0 using the SPI.
+3:
+This bit is updated when a message completes (or aborts) or when the FIFO is reset.
+=== PAGE 58 ===
+MCP2518FD
+DS20006027B-page 58
+ 2019-2020 Microchip Technology Inc.
+bit 3
+RXOVIF: Receive FIFO Overflow Interrupt Flag bit
+TXEN = 1 (FIFO is configured as a Transmit FIFO)
+Unused, Read as ‘0’
+TXEN = 0 (FIFO is configured as a Receive FIFO)
+1 = Overflow event has occurred
+0 = No overflow event has occurred
+bit 2
+TFERFFIF: Transmit/Receive FIFO Empty/Full Interrupt Flag bit
+TXEN = 1 (FIFO is configured as a Transmit FIFO) 
+Transmit FIFO Empty Interrupt Flag
+1 = FIFO is empty
+0 = FIFO is not empty; at least one message queued to be transmitted
+TXEN = 0 (FIFO is configured as a Receive FIFO) 
+Receive FIFO Full Interrupt Flag
+1 = FIFO is full
+0 = FIFO is not full
+bit 1
+TFHRFHIF: Transmit/Receive FIFO Half Empty/Half Full Interrupt Flag bit
+TXEN = 1 (FIFO is configured as a Transmit FIFO) 
+Transmit FIFO Half Empty Interrupt Flag
+1 = FIFO is ≤ half full
+0 = FIFO is > half full
+TXEN = 0 (FIFO is configured as a Receive FIFO) 
+Receive FIFO Half Full Interrupt Flag
+1 = FIFO is ≥ half full
+0 = FIFO is < half full
+bit 0
+TFNRFNIF: Transmit/Receive FIFO Not Full/Not Empty Interrupt Flag bit
+TXEN = 1 (FIFO is configured as a Transmit FIFO) 
+Transmit FIFO Not Full Interrupt Flag
+1 = FIFO is not full
+0 = FIFO is full
+TXEN = 0 (FIFO is configured as a Receive FIFO) 
+Receive FIFO Not Empty Interrupt Flag
+1 = FIFO is not empty, contains at least one message
+0 = FIFO is empty
+REGISTER 3-30:
+CiFIFOSTAm – FIFO STATUS REGISTER m, (m = 1 TO 31) (CONTINUED)
+Note 1:
+FIFOCI[4:0] gives a zero-indexed value to the message in the FIFO. If the FIFO is 4 messages deep 
+(FSIZE = 5’h03) FIFOCI will take on a value of 0 to 3 depending on the state of the FIFO.
+2:
+This bit is cleared when TXREQ is set or by writing a 0 using the SPI.
+3:
+This bit is updated when a message completes (or aborts) or when the FIFO is reset.
+=== PAGE 59 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 59
+MCP2518FD
+ 
+REGISTER 3-31:
+CiFIFOUAm – FIFO USER ADDRESS REGISTER m, (m = 1 TO 31)
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+FIFOUA[31:24]
+bit 31
+bit 24
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+FIFOUA[23:16]
+bit 23
+bit 16
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+FIFOUA[15:8]
+bit 15
+bit 8
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+R-x
+FIFOUA[7:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31-0
+FIFOUA[31:0]: FIFO User Address bits
+TXEN = 1 (FIFO is configured as a Transmit FIFO)
+A read of this register will return the address where the next message is to be written (FIFO head).
+TXEN = 0 (FIFO is configured as a Receive FIFO)
+A read of this register will return the address where the next message is to be read (FIFO tail).
+Note 1:
+This bit is not guaranteed to read correctly in Configuration mode and should only be accessed when the 
+module is not in Configuration mode.
+=== PAGE 60 ===
+MCP2518FD
+DS20006027B-page 60
+ 2019-2020 Microchip Technology Inc.
+ 
+REGISTER 3-32:
+CiFLTCONm – FILTER CONTROL REGISTER m, (m = 0 TO 7)
+R/W-0
+U-0
+U-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+FLTEN3
+—
+—
+F3BP[4:0]( 1)
+bit 31
+bit 24
+R/W-0
+U-0
+U-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+FLTEN2
+—
+—
+F2BP[4:0]( 1)
+bit 23
+bit 16
+R/W-0
+U-0
+U-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+FLTEN1
+—
+—
+F1BP[4:0]( 1)
+bit 15
+bit 8
+R/W-0
+U-0
+U-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+FLTEN0
+—
+—
+F0BP[4:0]( 1)
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31
+FLTEN3: Enable Filter 3 to Accept Messages bit
+1 = Filter is enabled
+0 = Filter is disabled
+bit 30-29
+Unimplemented: Read as ‘0’
+bit 28-24
+F3BP[4:0]: Pointer to FIFO when Filter 3 hits bits( 1)
+1_1111 = Message matching filter is stored in FIFO 31
+1_1110 = Message matching filter is stored in FIFO 30
+........
+0_0010 = Message matching filter is stored in FIFO 2
+0_0001 = Message matching filter is stored in FIFO 1
+0_0000 = Reserved FIFO 0 is the TX Queue and cannot receive messages
+bit 23
+FLTEN[2]: Enable Filter 2 to Accept Messages bit
+1 = Filter is enabled
+0 =  Filter is disabled
+bit 22-21
+Unimplemented: Read as ‘0’
+bit 20-16
+F2BP[4:0]: Pointer to FIFO when Filter 2 hits bits( 1)
+1_1111 = Message matching filter is stored in FIFO 31
+1_1110 = Message matching filter is stored in FIFO 30
+........
+0_0010 = Message matching filter is stored in FIFO 2
+0_0001 = Message matching filter is stored in FIFO 1
+0_0000 = Reserved FIFO 0 is the TX Queue and cannot receive messages
+bit 15
+FLTEN1: Enable Filter 1 to Accept Messages bit
+1 = Filter is enabled
+0 =  Filter is disabled
+bit 14-13
+Unimplemented: Read as ‘0’
+Note 1:
+This bit can only be modified if the corresponding filter is disabled (FLTEN = 0).
+=== PAGE 61 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 61
+MCP2518FD
+bit 12-8
+F1BP[4:0]: Pointer to FIFO when Filter 1 hits bits( 1)
+1_1111 = Message matching filter is stored in FIFO 31
+1_1110 = Message matching filter is stored in FIFO 30
+........
+0_0010 = Message matching filter is stored in FIFO 2
+0_0001= Message matching filter is stored in FIFO 1
+0_0000 = Reserved FIFO 0 is the TX Queue and cannot receive messages
+bit 7
+FLTEN[0]: Enable Filter 0 to Accept Messages bit
+1 = Filter is enabled
+0 =  Filter is disabled
+bit 6-5
+Unimplemented: Read as ‘0’
+bit 4-0
+F0BP[4:0]: Pointer to FIFO when Filter 0 hits bits( 1)
+1_1111 = Message matching filter is stored in FIFO 31
+1_1110 = Message matching filter is stored in FIFO 30
+........
+0_0010 = Message matching filter is stored in FIFO 2
+0_0001 = Message matching filter is stored in FIFO 1
+0_0000 = Reserved FIFO 0 is the TX Queue and cannot receive messages
+REGISTER 3-32:
+CiFLTCONm – FILTER CONTROL REGISTER m, (m = 0 TO 7) (CONTINUED)
+Note 1:
+This bit can only be modified if the corresponding filter is disabled (FLTEN = 0).
+=== PAGE 62 ===
+MCP2518FD
+DS20006027B-page 62
+ 2019-2020 Microchip Technology Inc.
+ 
+REGISTER 3-33:
+CiFLTOBJm – FILTER OBJECT REGISTER m,(m = 0 TO 31)
+U-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+—
+EXIDE
+SID11
+EID[17:13]
+bit 31
+bit 24
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+EID[12:5]
+bit 23
+bit 16
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+EID[4:0]
+SID[10:8]
+bit 15
+bit 8
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+SID[7:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31 
+Unimplemented: Read as ‘0’
+bit 30
+EXIDE: Extended Identifier Enable bit
+If MIDE = 1:
+1 = Match only messages with extended identifier
+0 = Match only messages with standard identifier
+bit 29
+SID11: Standard Identifier filter bit
+bit 28-11
+EID[17:0]: Extended Identifier filter bits
+In DeviceNet mode, these are the filter bits for the first 18 data bits
+bit 10-0
+SID[10:0]: Standard Identifier filter bits
+Note 1:
+This register can only be modified when the filter is disabled(CiFLTCON.FLTENm = 0).
+=== PAGE 63 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 63
+MCP2518FD
+ 
+REGISTER 3-34:
+CiMASKm – MASK REGISTER m, (m = 0 TO 31)
+U-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+—
+MIDE
+MSID11
+MEID[17:13]
+bit 31
+bit 24
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+MEID[12:5]
+bit 23
+bit 16
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+MEID[4:0]
+MSID[10:8]
+bit 15
+bit 8
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+R/W-0
+MSID[7:0]
+bit 7
+bit 0
+Legend:
+R = Readable bit
+W = Writable bit
+U = Unimplemented bit, read as ‘0’
+-n = Value at POR
+‘1’ = Bit is set
+‘0’ = Bit is cleared
+x = Bit is unknown
+bit 31 
+Unimplemented: Read as ‘0’
+bit 30
+MIDE: Identifier Receive mode bit
+1 = Match only message types (standard or extended ID) that correspond to EXIDE bit in filter
+0 = Match both standard and extended message frames if filters match
+bit 29
+MSID11: Standard Identifier Mask bit
+bit 28-11
+MEID[17:0]: Extended Identifier Mask bits
+In DeviceNet mode, these are the mask bits for the first 18 data bits
+bit 10-0
+MSID[10:0]: Standard Identifier Mask bits
+=== PAGE 64 ===
+MCP2518FD
+DS20006027B-page 64
+ 2019-2020 Microchip Technology Inc.
+NOTES:
+=== PAGE 65 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 65
+MCP2518FD
+3.3
+Message Memory
+The MCP2518FD device contains a 2 KB RAM that is
+used to store message objects. There are three
+different kinds of message objects:
+• Table 3-5: Transmit Message Objects used by the 
+TXQ and by TX FIFOs.
+• Table 3-6: Receive Message Objects used by RX 
+FIFOs.
+• Table 3-7: TEF objects.
+Figure 3-2 illustrates how message objects are
+mapped into RAM. The number of message objects for
+the TEF, the TXQ, and for each FIFO is configurable.
+Only the message objects for FIFO2 are shown in
+detail. The number of data bytes per message object
+(payload) is individually configurable for the TXQ and
+each FIFO.
+FIFOs and message objects can only be configured in
+Configuration mode.
+The TEF objects are allocated first. Space in RAM will
+only be reserved if CiCON.STEF = 1.
+Next the TXQ objects are allocated. Space in RAM will
+only be reserved if CiCON.TXQEN = 1.
+Next the message objects for FIFO1 through FIFO31
+are allocated.
+This highly flexible configuration results in an efficient
+usage of the RAM.
+The addresses of the message objects depend on the
+selected configuration. The application does not have
+to calculate the addresses. The User Address field pro-
+vides the address of the next message object to read
+from or write to.
+3.3.1
+RAM ECC
+The RAM is protected with an Error Correction Code
+(ECC). The ECC logic supports Single Error Detection
+(SEC) and Double Error Detection (DED). 
+SEC/DED requires seven parity bits in addition to the
+32 data bits.
+Figure 3-3 shows the block diagram of the ECC logic.
+3.3.1.1
+ECC Enable and Disable
+The 
+ECC 
+logic 
+can 
+be 
+enabled 
+by 
+setting
+ECCCON.ECCEN. When ECC is enabled, the data
+written to the RAM is encoded, and the data read from
+RAM is decoded.
+When the ECC logic is disabled, the data is written to
+RAM, the parity bits are taken from ECCCON.PARITY.
+This enables the testing of the ECC logic by the user.
+During a read the parity bits are stripped out and the
+data is read back unchanged.
+3.3.1.2
+RAM Write
+During a RAM write, the Encoder calculates the parity
+bits and adds the parity bits to the input data.
+3.3.1.3
+RAM READ
+During a RAM read, the Decoder checks the output
+data from RAM for consistency and removes the parity
+bits. It corrects single bit errors and detects double bit
+errors.
+FIGURE 3-2:
+MESSAGE MEMORY 
+ORGANIZATION 
+FIGURE 3-3:
+ECC LOGIC
+TEF
+TX Queue
+FIFO1
+FIFO3
+FIFO2: Message Object 0
+FIFO2: Message Object 1
+FIFO2: Message Object n
+FIFO31
+Encoder
+Decoder
+RAM 512x(32+7)
+Write Data
+D<31:0>
+DE<38:0>
+DR<38:0>
+QR<38:0>
+Read Data
+Q<31:0>
+ECCCON.ECCEN
+ECCCON.ECCEN
+ECCSTAT.SECIF
+ECCSTAT.DEDIF
+Data/Parity
+P<6:0>
+DP<38:0>
+QR<31:0>
+without Parity
+ECC.PARITY
+DO<31:0>
+D<31:0>
+=== PAGE 66 ===
+MCP2518FD
+DS20006027B-page 66
+ 2019-2020 Microchip Technology Inc.
+TABLE 3-5:
+TRANSMIT MESSAGE OBJECT (TXQ AND TX FIFO)
+Word
+Bit
+31/23/15/7
+Bit
+30/22/14/6
+Bit
+29/21/13/5
+Bit
+28/20/12/4
+Bit
+27/19/11/3
+Bit
+26/18/10/2
+Bit
+25/17/9/1
+Bit
+24/16/8/0
+T0
+31:24
+—
+—
+SID11
+EID[17:13]
+23:16
+EID[12:5]
+15:8
+EID[4:0]
+SID[10:8]
+7:0
+SID[7:0]
+T1
+31:24
+SEQ[22:15]
+23:16
+SEQ[14:7]
+15:8
+SEQ[6:0]
+ESI
+7:0
+FDF
+BRS
+RTR
+IDE
+DLC[3:0]
+T2 (1)
+31:24
+Transmit Data Byte 3
+23:16
+Transmit Data Byte 2
+15:8
+Transmit Data Byte 1
+7:0
+Transmit Data Byte 0
+T3
+31:24
+Transmit Data Byte 7
+23:16
+Transmit Data Byte 6
+15:8
+Transmit Data Byte 5
+7:0
+Transmit Data Byte 4
+Ti
+31:24
+Transmit Data Byte n
+23:16
+Transmit Data Byte n-1
+15:8
+Transmit Data Byte n-2
+7:0
+Transmit Data Byte n-3
+ 
+bit T0.31-30
+Unimplemented: Read as ‘x’
+bit T0.29
+SID11: In FD mode the standard ID can be extended to 12 bit using r1
+bit T0.28-11
+EID[17:0]: Extended Identifier
+bit T0.10-0
+SID[10:0]: Standard Identifier
+bit T1.31-9
+SEQ[22:0]: Sequence to keep track of transmitted messages in Transmit Event FIFO
+bit T1.8
+ESI: Error Status Indicator 
+In CAN to CAN gateway mode (CiCON.ESIGM=1), the transmitted ESI flag is a “logical OR” of T1.ESI
+and error passive state of the CAN controller; 
+In normal mode ESI indicates the error status
+1 = Transmitting node is error passive
+0 = Transmitting node is error active
+bit T1.7
+FDF: FD Frame; distinguishes between CAN and CAN FD formats
+bit T1.6
+BRS: Bit Rate Switch; selects if data bit rate is switched
+bit T1.5
+RTR: Remote Transmission Request; not used in CAN FD
+bit T1.4
+IDE: Identifier Extension Flag; distinguishes between base and extended format
+bit T1.3-0
+DLC[3:0]: Data Length Code
+Note 1: Data Bytes 0-n: payload size is configured individually in control register (CiFIFOCONm.PLSIZE[2:0]).
+=== PAGE 67 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 67
+MCP2518FD
+TABLE 3-6:
+RECEIVE MESSAGE OBJECT
+Word
+Bit
+31/23/15/7
+Bit
+30/22/14/6
+Bit
+29/21/13/5
+Bit
+28/20/12/4
+Bit
+27/19/11/3
+Bit
+26/18/10/2
+Bit
+25/17/9/1
+Bit
+24/16/8/0
+R0
+31:24
+—
+—
+SID11
+EID[17:13]
+23:16
+EID[12:5]
+15:8
+EID[4:0]
+SID[10:8]
+7:0
+SID[7:0]
+R1
+31:24
+—
+—
+—
+—
+—
+—
+—
+—
+23:16
+—
+—
+—
+—
+—
+—
+—
+—
+15:8
+FILHIT[4:0]
+—
+—
+ESI
+7:0
+FDF
+BRS
+RTR
+IDE
+DLC[3:0]
+R2 (2)
+31:24
+RXMSGTS[31:24]
+23:16
+RXMSGTS[23:16]
+15:8
+RXMSGTS[15:8]
+7:0
+RXMSGTS[7:0]
+R3 (1)
+31:24
+Receive Data Byte 3
+23:16
+Receive Data Byte 2
+15:8
+Receive Data Byte 1
+7:0
+Receive Data Byte 0
+R4
+31:24
+Receive Data Byte 7
+23:16
+Receive Data Byte 6
+15:8
+Receive Data Byte 5
+7:0
+Receive Data Byte 4
+Ri
+31:24
+Receive Data Byte n
+23:16
+Receive Data Byte n-1
+15:8
+Receive Data Byte n-2
+7:0
+Receive Data Byte n-3
+ 
+bit R0.31-30
+Unimplemented: Read as ‘x’
+bit R0.29
+SID[11]: In FD mode the standard ID can be extended to 12 bit using r1
+bit R0.28-11
+EID[17:0]: Extended Identifier
+bit R0.10-0
+SID[10:0]: Standard Identifier
+bit R1.31-16
+Unimplemented: Read as ‘x’
+bit R1.15-11
+FILTHIT[4:0]: Filter Hit, number of filter that matched
+bit R1.10-9
+Unimplemented: Read as ‘x’
+bit R1.8
+ESI: Error Status Indicator
+1 = Transmitting node is error passive
+0 = Transmitting node is error active
+bit R1.7
+FDF: FD Frame; distinguishes between CAN and CAN FD formats
+bit R1.6
+BRS: Bit Rate Switch; indicates if data bit rate was switched
+bit R1.5
+RTR: Remote Transmission Request; not used in CAN FD
+bit R1.4
+IDE: Identifier Extension Flag; distinguishes between base and extended format
+bit R1.3-0
+DLC[3:0]: Data Length Code
+bit R2.31-0
+RXMSGTS[31:0]: Receive Message Time Stamp
+Note 1:
+RXMOBJ: Data Bytes 0-n: payload size is configured individually in the FIFO control register (CiFIFOCONm.PLSIZE[2:0]).
+2:
+R2 (RXMSGTS) only exits in objects where CiFIFOCONm.RXTSEN is set.
+=== PAGE 68 ===
+MCP2518FD
+DS20006027B-page 68
+ 2019-2020 Microchip Technology Inc.
+TABLE 3-7:
+TRANSMIT EVENT FIFO OBJECT
+Word
+Bit
+31/23/15/7
+Bit
+30/22/14/6
+Bit
+29/21/13/5
+Bit
+28/20/12/4
+Bit
+27/19/11/3
+Bit
+26/18/10/2
+Bit
+25/17/9/1
+Bit
+24/16/8/0
+TE0
+31:24
+—
+—
+SID11
+EID[17:13]
+23:16
+EID[12:5]
+15:8
+EID[4:0]
+SID[10:8]
+7:0
+SID[7:0]
+TE1
+31:24
+SEQ[22:15]
+23:16
+SEQ[14:7]
+15:8
+SEQ[6:0]
+ESI
+7:0
+FDF
+BRS
+RTR
+IDE
+DLC[3:0]
+TE2 (1)
+31:24
+TXMSGTS[31:24]
+23:16
+TXMSGTS[23:16]
+15:8
+TXMSGTS[15:8]
+7:0
+TXMSGTS[7:0]
+ 
+bit TE0.31-30
+Unimplemented: Read as ‘x’
+bit TE0.29
+SID11: In FD mode the standard ID can be extended to 12 bit using r1
+bit TE0.28-11
+EID[17:0]: Extended Identifier
+bit TE0.10-0
+SID[10:0]: Standard Identifier
+bit TE1.31-9
+SEQ[22:0]: Sequence to keep track of transmitted messages
+bit TE1.8
+ESI: Error Status Indicator 
+1 =
+Transmitting node is error passive
+0 =
+Transmitting node is error active
+bit TE1.7
+FDF: FD Frame; distinguishes between CAN and CAN FD formats
+bit TE1.6
+BRS: Bit Rate Switch; selects if data bit rate is switched
+bit TE1.5
+RTR: Remote Transmission Request; not used in CAN FD
+bit TE1.4
+IDE: Identifier Extension Flag; distinguishes between base and extended format
+bit TE1.3-0
+DLC[3:0]: Data Length Code
+bit TE2.31-0
+TXMSGTS[31:0]: Transmit Message Time Stamp (1)
+Note 1: TE2 (TXMSGTS) only exits in objects where CiTEFCON.TEFTSEN is set.
+=== PAGE 69 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 69
+MCP2518FD
+4.0
+SPI INTERFACE
+The MCP2518FD device is designed to interface
+directly with a Serial Peripheral Interface port available
+on 
+most 
+microcontrollers. 
+The 
+SPI 
+in 
+the
+microcontroller must be configured in mode 0,0 or
+1,1 in 8-bit operating mode. 
+SFR and Message Memory (RAM) are accessed
+using SPI instructions. Figure 4-1 illustrates the
+generic format of the SPI instructions (SPI mode 0,0).
+Each instruction starts with driving nCS low (falling
+edge on nCS). The 4-bit command and the 12-bit
+address are shifted into SDI on the rising edge of SCK.
+During a write instruction, data bits are shifted into SDI
+on the rising edge of SCK. During a read instruction,
+data bits are shifted out of SDO on the falling edge of
+SCK. One or more data bytes are transfered with one
+instruction. Data bits are updated on the falling edge of
+SCK and must be valid on the rising edge of SCK.
+Each instruction ends with driving nCS high (rising
+edge on nCS).
+Refer to Figure 7-1 for detailed input and output timing
+for both mode 0,0 and mode 1,1. 
+Table 4-1 lists the SPI instructions and their format.
+FIGURE 4-1:
+SPI INSTRUCTION FORMAT
+Note 1: The frequency of SCK has to be less than
+or equal to 0.85 half the frequency of
+SYSCLK. 
+This 
+ensures 
+that 
+the
+synchronization 
+between 
+SCK 
+and
+SYSCLK works correctly.
+2: In order to minimize the Sleep current, the
+SDO pin of the MCP2518FD device must
+not be left floating while the device is in
+Sleep mode. This can be achieved by
+enabling a pull-up or pull-down resistor
+inside the MCU on the pin that is
+connected to the SDO pin, while the
+MCP2518FD device is in Sleep mode.
+TABLE 4-1:
+SPI INSTRUCTIONS
+Name
+Format
+Description
+RESET
+C = 0b0000; A = 0x000
+Resets internal registers to default state; selects Configuration mode.
+READ
+C = 0b0011; A; D = SDO Read SFR/RAM from address A.
+WRITE
+C = 0b0010; A; D = SDI Write SFR/RAM to address A.
+READ_CRC
+C = 0b1011; A; N;
+D = SDO; CRC = SDO
+Read SFR/RAM from address A. N data bytes. Two bytes CRC.
+CRC is calculated on C, A, N and D.
+WRITE_CRC
+C = 0b1010; A; N;
+D = SDI; CRC = SDI
+Write SFR/RAM to address A. N data bytes. Two bytes CRC.
+CRC is calculated on C, A, N and D.
+WRITE_SAFE
+C = 0b1100; A; 
+D = SDI; CRC = SDI
+Write SFR/RAM to address A. Check CRC before write. CRC is calcu-
+lated on C, A and D.
+Legend:
+C = Command (4 bit), A = Address (12 bit), D = Data (1 to n bytes), N = Number of Bytes (1 byte), CRC 
+(2 bytes)
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+10
+15
+16
+17
+18
+19
+20
+21
+22
+23
+nCS
+SCK
+SDI
+SDO
+C<3>
+C<2>
+C<1>
+C<0>
+A<11>
+A<10>
+A<9>
+A<8>
+A<7>
+A<6>
+A<5>
+A<4>
+A<3>
+A<2>
+A<1>
+A<0>
+24
+D<7>
+D<6>
+D<5>
+D<4>
+D<3>
+D<2>
+D<1>
+D<0>
+D<7>
+D<6>
+D<5>
+D<4>
+D<3>
+D<2>
+D<1>
+D<0>
+Sample
+Update
+Sample
+Sample
+Update
+=== PAGE 70 ===
+MCP2518FD
+DS20006027B-page 70
+ 2019-2020 Microchip Technology Inc.
+4.1
+SFR Access
+The SFR access is byte-oriented. Any number of data
+bytes can be read or written with one instruction. The
+address is incremented by one automatically after
+every data byte. The address rolls over from 0xFFF to
+0x000.
+The following SPI instructions only show the different
+fields and their values. Every instruction follows the
+generic format illustrated in Figure 4-1.
+4.1.1
+RESET
+Figure 4-2 illustrates the RESET instruction. The
+instruction starts with nCS going low. The Command
+(C[3:0] = 0b0000) 
+is 
+followed 
+by 
+the Address
+(A[11:0] = 0x000). The instruction ends when nCS
+goes high.
+The RESET instruction should only be issued after the
+device enters Configuration mode. All SFR and State
+Machines are reset just like during a Power-on Reset
+(POR), and the device transitions immediately to Con-
+figuration mode.
+The Message Memory is not changed.
+The actual reset happens at the end of the instruction
+when nCS goes high.
+4.1.2
+SFR READ – READ
+Figure 4-3 illustrates the READ instruction, while
+accessing SFR. The instruction starts with nCS going
+low. The Command (C[3:0] = 0b0011), is followed by
+the Address (A[11:0]). Afterwards, the data byte from
+address A (DB[A]) is shifted out, followed by data byte
+from address A+1 (DB[A+1]). Any number of data
+bytes can be read. The instruction ends when nCS
+goes high.
+4.1.3
+SFR WRITE – WRITE
+Figure 4-4 illustrates the WRITE instruction, while
+accessing SFR. The instruction starts with nCS going
+low. The Command (C[3:0] = 0b0010), is followed by
+the Address (A[11:0]). Afterwards, the data byte is
+shifted into address A (DB[A]), next into address A+1
+(DB[A+1]). Any number of data bytes can be written.
+The instruction ends when nCS goes high.
+Data bytes are written to the register with the falling
+edge on SCK following the 8th data bit.
+FIGURE 4-2:
+RESET INSTRUCTION
+FIGURE 4-3:
+SFR READ INSTRUCTION 
+FIGURE 4-4:
+SFR WRITE INSTRUCTION 
+Note:
+The bit fields in the IOCON register must
+be written using the single data byte SFR
+WRITE instructions.
+0b0000
+0x000
+nCS Low
+nCS High
+0b0011
+A<11:0>
+DB[A]
+DB[A+1]
+DB[A+n-1]
+nCS Low
+nCS High
+0b0010
+A<11:0>
+DB[A]
+DB[A+1]
+DB[A+n-1]
+nCS Low
+nCS High
+=== PAGE 71 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 71
+MCP2518FD
+4.2
+Message Memory Access
+The Message Memory (RAM) access is word-oriented
+(4 bytes at a time). Any multiple of 4 data bytes can be
+read or written with one instruction. The address is
+incremented by one automatically after every data
+byte. The address rolls over from 0xBFF to 0x400.
+Writes and Reads must be word-aligned. The lower two
+bits of the address are always assumed to be 0. It is not
+possible to do unaligned reads/writes.
+The following SPI instructions only show the different
+fields and their values. Every instruction follows the
+generic format illustrated in Figure 4-1.
+4.2.1
+MESSAGE MEMORY READ – READ
+Figure 4-5 illustrates the READ instruction, while
+accessing RAM. The instruction starts with nCS going
+low. The Command (C[3:0] = 0b0011), is followed by
+the Address (A[11:0]). Afterwards, the data byte from
+address A (DB[A]) is shifted out, followed by data byte
+from address A+1 (DB[A+1]). The instruction ends
+when nCS goes high.
+Read commands from RAM must always read a multi-
+ple of 4 data bytes. A word is internally read from RAM
+after the address field, and after every fourth data byte
+read on the SPI. In case nCS goes high before a multi-
+ple of 4 data bytes is read on SDO, the incomplete
+read should be discarded by the microcontroller.
+4.2.2
+MESSAGE MEMORY
+WRITE – WRITE
+Figure 4-6 illustrates the WRITE instruction, while
+accessing RAM. The instruction starts with nCS going
+low. The Command (C[3:0] = 0b0010), is followed by
+the Address (A[11:0]). Afterwards, the data byte is
+shifted into address A (DB[A]), next into address A+1
+(DB[A+1]). The instruction ends when nCS goes high.
+Write commands must always write a multiple of 4
+data bytes. After every fourth data byte, with the falling
+edge on SCK, the RAM Word gets written. In case
+nCS goes high before a multiple of 4 data bytes is
+received on SDI, the data of the incomplete Word will
+not be written to RAM.
+FIGURE 4-5:
+MESSAGE MEMORY READ INSTRUCTION 
+FIGURE 4-6:
+MESSAGE MEMORY WRITE INSTRUCTION 
+DW[A]
+DB[A]
+DB[A+1]
+DB[A+3]
+DB[A+2]
+0b0011
+A<11:0>
+nCS Low
+nCS High
+DW[A]
+DB[A]
+DB[A+1]
+DB[A+3]
+DB[A+2]
+0b0010
+A<11:0>
+nCS Low
+nCS High
+=== PAGE 72 ===
+MCP2518FD
+DS20006027B-page 72
+ 2019-2020 Microchip Technology Inc.
+4.3
+SPI Commands with CRC
+In order to detect or avoid bit errors during SPI
+communication, SPI commands with CRC are
+available.
+4.3.1
+CRC CALCULATION
+The CRC is calculated in parallel with the SPI shift
+register (see Figure 4-7). 
+When nCS is asserted, the CRC calculator is reset to
+0xFFFF.
+The result of the CRC calculation is available after the
+Data section of a CRC command. The result of the
+CRC calculation is written to the CRC register in case
+a CRC mismatch is detected. In case of a CRC
+mismatch, CRC.CRCERRIF is set.
+The MCP2518FD device uses the following generator
+polynomial: CRC-16/USB (0x8005). CRC-16 detects
+all single and double-bit errors, all errors with an odd
+number of bits, all burst errors of length 16 or less, and
+most errors for longer bursts. This allows an excellent
+detection of SPI communication errors that can hap-
+pen in the system, and heavily reduces the risk of
+miscommunication, even under noisy environments.
+The maximum number of data bits is used while read-
+ing and writing TX or RX Message Objects. A RX Mes-
+sage Object with 64 Bytes of data + 12 Bytes ID and
+Time Stamp contains 76 Bytes or 608 bits. In compari-
+son, USB data packets contain up to 1024 bits.
+CRC-16 has a Hamming Distance of 4 up to 1024 bits.
+FIGURE 4-7:
+CRC CALCULATION 
+SPI Shift Register
+CRC Calculator
+SCK
+SDI
+CRC Result
+nCS
+SDO
+SDI
+SDO
+Reset
+Safe
+CRC command:
+End of Data section
+=== PAGE 73 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 73
+MCP2518FD
+4.3.2
+SFR READ WITH CRC – READ_CRC
+Figure 4-8 illustrates the READ_CRC instruction,
+while accessing SFR. The instruction starts with nCS
+going low. The Command (C[3:0] = 0b1011), is
+followed by the Address (A[11:0]), and the number of
+data bytes (N[7:0]). Afterwards, the data byte from
+address A (DB[A]) is shifted out, followed by the data
+byte from address A+1 (DB[A+1]). Any number of data
+bytes can be read. Next the CRC is shifted out
+(CRC[15:0]). The instruction ends when nCS goes
+high.
+The CRC is provided to the microcontroller. The micro-
+controller checks the CRC. No interrupt is generated
+on CRC mismatch during a READ_CRC command
+inside the MCP2518FD device.
+If nCS goes high before the last byte of the CRC is
+shifted out, a CRC Form Error interrupt is generated:
+CRC.FERRIF.
+4.3.3
+SFR WRITE
+WITH CRC – WRITE_CRC
+Figure 4-9 illustrates the WRITE_CRC instruction,
+while accessing SFR. The instruction starts with nCS
+going low. The Command (C[3:0] = 0b1010), is fol-
+lowed by the Address (A[11:0]), and the number of
+data bytes (N[7:0]). Afterwards, the data byte is shifted
+into address A (DB[A]), next into address A+1
+(DB[A+1]). Any number of data bytes can be written.
+Next the CRC is shifted in (CRC[15:0]). The instruction
+ends when nCS goes high.
+The SFR is written to the register after the data byte
+was shifted in on SDI, with the falling edge on SCK.
+Data bytes are written to the register before the CRC
+is checked.
+The CRC is checked at the end of the write access. In
+case of a CRC mismatch, a CRC Error interrupt is
+generated: CRC.CRCERRIF.
+If nCS goes high before the last byte of the CRC is
+shifted in, a CRC Form Error interrupt is generated:
+CRC.FERRIF.
+FIGURE 4-8:
+SFR READ WITH CRC INSTRUCTION 
+FIGURE 4-9:
+SFR WRITE WITH CRC INSTRUCTION 
+4.3.4
+SFR WRITE SAFE
+WITH CRC – WRITE_SAFE
+This instruction ensures that only correct data is writ-
+ten to the SFR.
+Figure 4-10 illustrates the WRITE_SAFE instruction,
+while accessing SFR. The instruction starts with nCS
+going low. The Command (C[3:0] = 0b1100), is fol-
+lowed by the Address (A[11:0]). Afterwards, one data
+byte is shifted into address A (DB[A]). Next the CRC
+(CRC[15:0]) is shifted in. The instruction ends when
+nCS goes high.
+The data byte is only written to the SFR after the CRC
+is checked and if it matches.
+If the CRC mismatches, the data byte is not written to
+the SFR and a CRC Error interrupt is generated:
+CRC.CRCERRIF.
+If nCS goes high before the last byte of the CRC is
+shifted in, a CRC Form Error interrupt is generated:
+CRC.FERRIF.
+FIGURE 4-10:
+SFR WRITE SAFE WITH CRC INSTRUCTION 
+0b1011
+A<11:0>
+DB[A]
+DB[A+1]
+DB[A+n-1]
+nCS Low
+CRC<15:8>
+CRC<7:0>
+nCS High
+N<7:0>
+0b1010
+A<11:0>
+DB[A]
+DB[A+1]
+DB[A+n-1]
+nCS Low
+CRC<15:8>
+CRC<7:0>
+nCS High
+N<7:0>
+0b1100
+A<11:0>
+DB[A]
+CRC<15:8>
+CRC<7:0>
+nCS Low
+nCS High
+=== PAGE 74 ===
+MCP2518FD
+DS20006027B-page 74
+ 2019-2020 Microchip Technology Inc.
+4.3.5
+MESSAGE MEMORY READ
+WITH CRC – READ_CRC
+Figure 4-11 illustrates the READ_CRC instruction,
+while accessing RAM. The instruction starts with nCS
+going low. The Command (C[3:0] = 0b1011), is fol-
+lowed by the Address (A[11:0]), and the number of
+data Words (N[7:0]). Afterwards, the data byte from
+address A (DB[A]) is shifted out, followed by data byte
+from 
+address A+1 
+(DB[A+1]). 
+Next 
+the 
+CRC
+(CRC[15:0]) is shifted out. The instruction ends when
+nCS goes high.
+Writes and Reads must be word-aligned. The lower
+two bits of the address are always assumed to be 0. It
+is not possible to do unaligned reads/writes.
+Read commands should always read a multiple of 4
+data bytes. A word is internally read from RAM after
+the “N” field, and after every fourth data byte read on
+the SPI. In case nCS goes high before a multiple of 4
+data bytes are read on SDO, the incomplete read
+should be discarded by the microcontroller.
+The CRC is provided to the microcontroller. The micro-
+controller checks the CRC. No interrupt is generated
+on CRC mismatch during a READ_CRC command
+inside the MCP2518FD device.
+If nCS goes high before the last byte of the CRC is
+shifted out, a CRC Form Error interrupt is generated:
+CRC.FERRIF.
+4.3.6
+MESSAGE MEMORY WRITE
+WITH CRC – WRITE_CRC
+Figure 4-12 illustrates the WRITE instruction access-
+ing the RAM. The instruction starts with nCS going
+low. The Command (C[3:0] = 0b1010), is followed by
+the Address (A[11:0]), and the number of data Words
+(N[7:0]). Afterwards, the data byte is shifted into
+address A (DB[A]), next into address A+1 (DB[A+1]).
+Next the CRC (CRC[15:0]) is shifted in. The instruction
+ends when nCS goes high.
+Write commands must always write a multiple of 4
+data bytes. After every fourth data byte, with the falling
+edge on SCK, the RAM gets written. In case nCS goes
+high before a multiple of 4 data bytes is received on
+SDI, the data of the incomplete Word will not be
+written to RAM.
+The CRC is checked at the end of the write access. In
+case of a CRC mismatch, a CRC interrupt is
+generated: CRC.CRCERRIF.
+If nCS goes high before the last byte of the CRC is
+shifted in, a CRC interrupt is generated: CRC.FERRIF.
+FIGURE 4-11:
+MESSAGE MEMORY READ WITH CRC INSTRUCTION 
+FIGURE 4-12:
+MESSAGE MEMORY WRITE WITH CRC INSTRUCTION 
+4.3.7
+MESSAGE MEMORY WRITE SAFE
+WITH CRC – WRITE_SAFE
+This instruction ensures that only correct data is
+written to RAM.
+Figure 4-10 illustrates the WRITE_SAFE instruction,
+while accessing RAM. The instruction starts with nCS
+going low. The Command (C[3:0] = 0b1100), is
+followed by the Address (A[11:0]). Afterwards, the data
+byte is shifted into address A (DB[A]), next into
+address A+1 (DB[A+1]), A+2 (DB[A+2]), and A+3
+(DB[A+3]). Next the CRC (CRC[15:0]) is shifted in.
+The instruction ends when nCS goes high.
+The data word is only written to RAM after the CRC is
+checked and if it matches.
+If the CRC mismatches, the data word is not written to
+RAM and a CRC Error interrupt is generated:
+CRC.CRCERRIF.
+If nCS goes high before the last byte of the CRC is
+shifted in, a CRC interrupt is generated: CRC.FERRIF.
+FIGURE 4-13:
+MESSAGE MEMORY WRITE SAFE WITH CRC INSTRUCTION 
+DW[A]
+DB[A]
+DB[A+1]
+DB[A+3]
+DB[A+2]
+0b1011
+A<11:0>
+nCS Low
+nCS High
+N<7:0>
+CRC<15:8>
+CRC<7:0>
+DW[A]
+DB[A]
+DB[A+1]
+DB[A+3]
+DB[A+2]
+0b1010
+A<11:0>
+nCS Low
+nCS High
+N<7:0>
+CRC<15:8>
+CRC<7:0>
+DW[A]
+DB[A]
+DB[A+1]
+DB[A+3]
+DB[A+2]
+0b1100
+A<11:0>
+nCS Low
+nCS High
+CRC<15:8>
+CRC<7:0>
+=== PAGE 75 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 75
+MCP2518FD
+5.0
+OSCILLATOR
+Figure 5-1 shows the block diagram of the oscillator in
+the MCP2518FD device. The oscillator system gener-
+ates the SYSCLK, which is used in the CAN FD Con-
+troller module and for RAM accesses. It is
+recommended by the CAN FD community to use
+either a 40 or 20 MHz SYSCLK. 
+The time reference for clock generation can be an
+external 40, 20 or 4 MHz crystal, ceramic resonator or
+external clock. 
+The OSC register controls the oscillator. The PLL can
+be enabled to multiply the 4 MHz clock by 10.
+The internal 40/20 MHz can be divided by two.
+The internally generated clock can be divided and pro-
+vided on the CLKO pin.
+FIGURE 5-1:
+MCP2518FD OSCILLATOR BLOCK DIAGRAM
+OSC1
+OSC2
+RU0+]
+&/.,1
+&U\VWDORU
+&HUDPLF5HV
+PLLEN
+OSCDIS
+Divide
+By 1, 2
+SCLKDIV
+SYSCLK
+Divide
+By 1, 2, 4, 10
+CLKO
+CLKODIV
+PLL
+x10
+40/20 MHz
+=== PAGE 76 ===
+MCP2518FD
+DS20006027B-page 76
+ 2019-2020 Microchip Technology Inc.
+6.0
+I/O CONFIGURATION
+The IOCON register is used to configure the I/O pins:
+• CLKO/SOF: select Clock Output or Start of 
+Frame.
+• TXCANOD: TXCAN can be configured as 
+Push-Pull or as Open Drain output. Open Drain 
+outputs allows the user to connect multiple con-
+trollers together to build a CAN network without 
+using a transceiver.
+• INT0 and INT1 can be configured as GPIO with 
+similar registers as in the PIC microcontrollers or 
+as Transmit and Receive interrupts.
+• INT0/GPIO0/XSTBY can also be used to automati-
+cally control the standby pin of the transceiver.
+• INTOD: The interrupt pins can be configured as 
+open-drain or push/pull outputs.
+6.0.1
+INTERRUPT PINS
+The MCP2518FD device contains three different
+interrupt pins, see Figure 6-1:
+• INT is asserted on any interrupt in the CiINT 
+register (xIF & xIE), including the RX and TX 
+interrupts.
+• INT1/GPIO1 can be configured as GPIO or RX 
+interrupt pin (CiINT.RXIF & RXIE).
+• INT0/GPIO0 can be configured as GPIO or TX 
+interrupt pin (CiINT.TXIF & TXIE).
+All interrupt pins are active low.
+FIGURE 6-1:
+INTERRUPT PINS
+INT
+OR
+RX Interrupt
+TX Interrupt
+Info Interrupt
+INT1
+INT0
+=== PAGE 77 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 77
+MCP2518FD
+7.0
+ELECTRICAL SPECIFICATIONS
+7.1
+Absolute Maximum Ratings†
+VDD............................................................................................................................................................... -0.3V to 6.0V
+DC Voltage at all I/O w.r.t GND .........................................................................................................-0.3V to VDD + 0.3V
+Virtual Junction Temperature, TVJ (IEC60747-1) ....................................................................................-40°C to +165°C
+Soldering temperature of leads (10 seconds) ....................................................................................................... +300°C
+ESD protection on all pins (IEC 801; Human Body Model)...................................................................................... ±4 kV
+ESD protection on all pins (IEC 801; Machine Model)............................................................................................±400V
+ESD protection on all pins (IEC 801; Charge Device Model)..................................................................................±750V
+† NOTICE: Stresses above those listed under “Maximum ratings” may cause permanent damage to the device. This
+is a stress rating only and functional operation of the device at those or any other conditions above those indicated in
+the operational listings of this specification is not implied. Exposure to maximum rating conditions for extended periods
+may affect device reliability.
+=== PAGE 78 ===
+MCP2518FD
+DS20006027B-page 78
+ 2019-2020 Microchip Technology Inc.
+TABLE 7-1:
+DC CHARACTERISTICS 
+DC Specifications
+Electrical Characteristics:
+Extended (E): TAMB = -40°C to +125°C; High (H): TAMB = -40°C to +150°C;
+VDD = 2.7V to 5.5V
+Sym.
+Characteristic
+Min.
+Typ.
+Max.
+Units
+Conditions/Comments
+VDD Pin
+VDD
+Voltage Range
+2.7
+—
+5.5
+V
+RAM data retention guaranteed
+VPORH
+Power-on Reset Voltage
+—
+—
+2.65
+V
+Highest voltage on VDD before 
+device releases POR
+VPORL
+Power-on Reset Voltage
+2.2
+—
+—
+V
+Lowest voltage on VDD before 
+device asserts POR
+SVDD
+VDD Rise Rate to ensure 
+POR
+0.05
+—
+—
+V/ms
+Note 1
+IDD
+Supply Current
+—
+15
+20
+mA
+40 MHz SYSCLK,
+20 MHz SPI activity
+IDDS
+Sleep Current
+—
+15
+60
+A
+Clock is stopped
+TAMB ≤+85°C (Note 1)
+—
+—
+600
+—
+Clock is stopped
+TAMB ≤+150°C
+IDDLPM
+LPM Current
+—
+4
+10
+A
+Digital logic powered down
+Digital Input Pins
+VIH
+High-Level Input Voltage
+0.7 VDD
+—
+VDD + 0.3
+V
+VIL
+Low-Level Input Voltage
+-0.3
+—
+0.3 VDD
+V
+VOSCPP
+OSC1 detection Voltage
+0.5
+—
+—
+V
+Minimum peak-to-peak voltage on 
+OSC1 pin (Note 1)
+ILI
+Input Leakage Current
+OSC1
+-5
+—
++5
+A
+All other
+-1
+—
++1
+A
+Digital Output Pins
+VOH
+High-Level Output Voltage VDD – 0.7
+—
+—
+V
+IOH = -2 mA, VDD = 2.7V
+VOL
+Low-Level Output Voltage
+TXCAN
+—
+—
+0.6
+V
+IOL = 8 mA, VDD = 2.7V
+All other
+—
+—
+0.6
+V
+IOL = 2 mA, VDD = 2.7V
+Note
+1:
+Characterized; not 100% tested.
+=== PAGE 79 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 79
+MCP2518FD
+TABLE 7-2:
+CLKOUT AND SOF AC CHARACTERISTICS 
+TABLE 7-3:
+CRYSTAL OSCILLATOR AC CHARACTERISTICS  
+AC Specifications
+Electrical Characteristics:
+Extended (E): TAMB = -40°C to +125°C; High (H): TAMB = -40°C to +150°C;
+VDD = 2.7V to 5.5V
+Sym.
+Characteristic
+Min.
+Typ.
+Max.
+Units
+Conditions/Comments
+TCLKOH
+CLKO Output High 
+8
+—
+—
+ns
+at 40 MHz (Note 1)
+TCLKOL
+CLKO Output Low
+8
+—
+—
+ns
+Note 1
+TCLKOR
+CLKO Output Rise
+—
+—
+5
+ns
+Note 1
+TCLKOF
+CLKO Output Fall
+—
+—
+5
+ns
+Note 1
+TSOFH
+SOF Output High 
+—
+31 TOSC
+—
+ns
+Note 2
+TSOFPD
+SOF Propagation Delay: 
+RXCAN falling edge to SOF 
+rising edge
+—
+1 TOSC
+—
+ns
+Note 2
+Note 1:
+Characterized; not 100% tested.
+2:
+Design guidance only.
+AC Specifications
+Electrical Characteristics:
+Extended (E): TAMB = -40°C to +125°C; High (H): TAMB = -40°C to +150°C;
+VDD = 2.7V to 5.5V
+Sym.
+Characteristic
+Min.
+Typ.
+Max.
+Units
+Conditions/Comments
+FOSC1,CLKI
+OSC1 Input Frequency
+2
+40
+40
+MHz
+External digital clock
+FOSC1,4M
+OSC1 Input Frequency
+4 - 0.5%
+4
+4 + 0.5%
+MHz
+4 MHz crystal/resonator (Note 1)
+FDRIFT
+SYSCLK frequency drift 
+—
+—
+10
+ppm
+Additional frequency drift of     
+SYSCLK due to internal PLL at 
+4 MHz (Note 1)
+FOSC1,20M
+OSC1 Input Frequency
+20 - 0.5%
+20
+20 + 0.5%
+MHz
+20 MHz crystal/resonator 
+(Note 1)
+FOSC1,40M
+OSC1 Input Frequency
+40 - 0.5%
+40
+40 + 0.5%
+MHz
+40 MHz crystal/resonator 
+(Note 1)
+TOSC1
+ TOSC1=1/FOSC1,x
+25
+—
+—
+ns
+TOSC1H
+OSC1 Input High 
+0.45 *
+TOSC
+—
+0.55 *
+TOSC
+ns
+Note 1
+TOSC1L
+OSC1 Input Low
+0.45 *
+TOSC
+—
+0.55 *
+TOSC
+ns
+Note 1
+TOSC1R
+OSC1 Input Rise
+—
+—
+20
+ns
+Note 2
+TOSC1F
+OSC1 Input Fall
+—
+—
+20
+ns
+Note 2
+DCOSC1
+Duty Cycle on OSC1
+45
+50
+55
+%
+External clock duty cycle require-
+ment (Note 1)
+TOSCSTAB
+Oscillator stabilization 
+period
+—
+—
+3
+ms
+From POR to final frequency 
+(Note 1)
+TOSCSLEEP Oscillator stabilization from 
+Sleep
+—
+—
+3
+ms
+From Sleep to final frequency 
+(Note 1)
+GM,4M
+Transconductance
+1470
+—
+2210
+A/V
+4 MHz crystal (Note 2)
+GM,40M
+Transconductance
+2040
+—
+3060
+A/V
+40 MHz crystal (Note 2)
+Note 1:
+Characterized; not 100% tested.
+2:
+Design guidance only.
+=== PAGE 80 ===
+MCP2518FD
+DS20006027B-page 80
+ 2019-2020 Microchip Technology Inc.
+TABLE 7-4:
+CAN BIT RATE  
+TABLE 7-5:
+CAN RX FILTER AC CHARACTERISTICS  
+AC Specifications
+Electrical Characteristics:
+Extended (E): TAMB = -40°C to +125°C; High (H): TAMB = -40°C to +150°C;
+VDD = 2.7V to 5.5V
+Sym
+Characteristic
+Min
+Typ
+Max
+Units
+Conditions/Comments
+BRNOM
+Nominal Bit Rate
+0.125
+0.5
+1
+Mbps
+BRDATA
+Data Bit Rate
+0.5
+2
+8
+Mbps
+BRDATA ≥BRNOM
+Note 1:
+Tested bit rates. Device allows the configuration of more bit rates, including slower bit rates than the mini-
+mum stated.
+AC Specifications
+Electrical Characteristics:
+Extended (E): TAMB = -40°C to +125°C; High (H): TAMB = -40°C to +150°C;
+VDD = 2.7V to 5.5V
+Sym.
+Characteristic
+Min.
+Typ.
+Max.
+Units
+Conditions/Comments
+TPROP
+Filter propagation delay
+—
+1
+—
+ns
+Note 2
+TFILTER
+Filter time
+50
+80
+130
+225
+—
+100
+140
+220
+390
+ns
+T00FILTER
+T01FILTER
+T10FILTER
+T11FILTER
+Note 3
+TREVO-
+CERY
+Minimum high time on input 
+for output to go high again 
+5
+—
+—
+ns
+Note 2
+Note 1:
+Characterized; not 100% tested.
+2:
+Design guidance only.
+3:
+Pulses on RXCAN shorter than the minimum TFILTER time will be ignored; pulses longer than the maxi-
+mum TFILTER time will wake-up the device.
+=== PAGE 81 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 81
+MCP2518FD
+TABLE 7-6:
+SPI AC CHARACTERISTICS 
+FIGURE 7-1:
+SPI I/O TIMING
+TABLE 7-7:
+TEMPERATURE SPECIFICATIONS
+AC Specifications
+Electrical Characteristics:
+Extended (E): TAMB = -40°C to +125°C;
+High (H): TAMB = -40°C to +150°C, VDD = 2.7V to 5.5V
+Param.
+Sym.
+Characteristic
+Min.
+Typ.
+Max.
+Units
+Conditions
+FSCK
+SCK Input Frequency
+—
+—
+17
+MHz
+Note 3
+TSCK
+SCK Period, TSCK=1/FSCK
+59
+—
+—
+ns
+Note 3
+1
+TSCKH
+SCK High Time
+20
+—
+—
+ns
+2
+TSCKL
+SCK Low Time
+20
+—
+—
+ns
+3
+TSCKR
+SCK Rise Time
+—
+—
+100
+ns
+Note 2
+4
+TSCKF
+SCK Fall Time
+—
+—
+100
+ns
+Note 2
+5
+TCS2SCK
+nCS ↓ to SCK ↑
+TSCK/2
+—
+—
+ns
+6
+TSCK2CS
+SCK ↑ to nCS ↑
+TSCK
+—
+—
+ns
+7
+TSDI2SCK
+SDI Setup: SDI ↕ to SCK ↑
+5
+—
+—
+ns
+8
+TSCK2SDI
+SDI Hold: SCK ↑ to SDI ↕
+5
+—
+—
+ns
+9
+TSCK2SDO
+SDO Valid: SCK ↓ to SDO ↕
+—
+—
+20
+ns
+CLOAD = 50 pF
+10
+TCS2SDOZ
+SDO High Z: nCS ↑ to SDO Z
+—
+—
+2 TSCK
+ns
+CLOAD = 50 pF
+11
+TCSD
+nCS ↑ to nCS ↓
+TSCK
+—
+—
+ns
+Note 2
+Note 1:
+Characterized; not 100% tested.
+2:
+Design guidance only.
+3:
+FSCK must be less than or equal to 0.85*(FSYSCLK/2).
+nCS
+SCK
+SDI
+SDO
+Mode 1,1
+Mode 0,0
+5
+C<3>
+1
+2
+3
+4
+7
+8
+A<0>
+D<7>
+D<7>
+D<0>
+D<0>
+9
+Mode 1,1
+Mode 0,0
+11
+10
+6
+9
+Parameters
+Sym.
+Min.
+Typ.
+Max.
+Units
+Conditions
+Temperature Ranges
+Operating Temperature Range
+TA
+-40
+—
++150
+°C
+Storage Temperature Range
+TA
+-55
+—
++150
+°C
+Thermal Package Resistance
+Thermal Resistance for SOIC-14
+JA
+—
++110
+—
+°C/W
+Thermal Resistance for DFN-14
+JA
+—
++45
+—
+°C/W
+=== PAGE 82 ===
+MCP2518FD
+DS20006027B-page 82
+ 2019-2020 Microchip Technology Inc.
+NOTES:
+=== PAGE 83 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 83
+MCP2518FD
+8.0
+TYPICAL PERFORMANCE CURVES
+FIGURE 8-1:
+Average IDDS vs. 
+Temperature.
+FIGURE 8-2:
+Average IDDLPM vs. 
+Temperature.
+Note:
+The graphs and tables provided following this note are a statistical summary based on a limited number of
+samples and are provided for informational purposes only. The performance characteristics listed herein
+are not tested or guaranteed. In some graphs or tables, the data presented may be outside the specified
+operating range (for example, outside specified power supply range) and therefore outside the warranted
+range.
+0
+50
+100
+150
+200
+250
+300
+350
+400
+450
+-40
+-20
+0
+20
+40
+60
+80
+100 120 140 160
+IDDS [PA]
+Temperature [°C]
+VDD=3.3V
+VDD=5.5V
+0
+1
+2
+3
+4
+5
+6
+7
+8
+-40
+-20
+0
+20
+40
+60
+80
+100
+120
+140
+160
+IDDLPM [PA]
+Temperature [°C]
+VDD=3.3V
+VDD=5.5V
+=== PAGE 84 ===
+MCP2518FD
+DS20006027B-page 84
+ 2019-2020 Microchip Technology Inc.
+NOTES:
+=== PAGE 85 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 85
+MCP2518FD
+9.0
+PACKAGING INFORMATION
+9.1
+Package Marking Information
+Legend:
+XX...X
+Customer-specific information
+Y
+Year code (last digit of calendar year)
+YY
+Year code (last 2 digits of calendar year)
+WW
+Week code (week of January 1 is week ‘01’)
+NNN
+Alphanumeric traceability code
+  
+Pb-free JEDEC® designator for Matte Tin (Sn)
+*
+This package is Pb-free. The Pb-free JEDEC designator (     )
+can be found on the outer packaging for this package.
+Note:
+In the event the full Microchip part number cannot be marked on one line, it will be carried over to
+the next line, thus limiting the number of available characters for customer-specific information.
+3
+e
+3
+e
+Example:
+14-Lead SOIC 
+Example:
+14-Lead VDFN 
+MCP2518FD
+SL
+1814256
+3
+e
+MCP2518FD
+QBB
+       1814256
+3
+e
+=== PAGE 86 ===
+MCP2518FD
+DS20006027B-page 86
+ 2019-2020 Microchip Technology Inc.
+Microchip Technology Drawing No. C04-065-SL Rev D Sheet 1 of 2
+For the most current package drawings, please see the Microchip Packaging Specification located at
+http://www.microchip.com/packaging
+Note:
+14-Lead Plastic Small Outline (SL) - Narrow, 3.90 mm Body [SOIC]
+0.20 C
+0.25
+C A–B D
+1
+2
+N
+2X N/2 TIPS
+TOP VIEW
+SIDE VIEW
+VIEW A–A
+A
+e
+B
+E
+D
+E
+2
+D
+E1
+E2
+2
+NX b
+A1
+A2
+A
+C
+SEATING
+PLANE
+0.10 C
+14X
+0.10 C A–B
+0.10 C D
+c
+h
+h
+H
+SEE VIEW C
+(L1)
+L
+R0.13
+R0.13
+VIEW C
+NOTE 1
+3
+0.10 C
+NOTE 5
+NOTE 5
+2X
+2X
+=== PAGE 87 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 87
+MCP2518FD
+Microchip Technology Drawing No. C04-065-SL Rev D Sheet 2 of 2
+14-Lead Plastic Small Outline (SL) - Narrow, 3.90 mm Body [SOIC]
+For the most current package drawings, please see the Microchip Packaging Specification located at
+http://www.microchip.com/packaging
+Note:
+Foot Angle
+0°
+-
+8°
+15°
+-
+5°
+Mold Draft Angle Bottom
+15°
+-
+5°
+Mold Draft Angle Top
+0.51
+-
+0.31
+b
+Lead Width
+0.25
+-
+0.10
+c
+Lead Thickness
+1.04 REF
+L1
+Footprint
+0.50
+-
+0.25
+h
+Chamfer (Optional)
+8.65 BSC
+D
+Overall Length
+3.90 BSC
+E1
+Molded Package Width
+6.00 BSC
+E
+Overall Width
+0.25
+-
+0.10
+A1
+Standoff
+-
+-
+1.25
+A2
+Molded Package Thickness
+1.75
+-
+-
+A
+Overall Height
+1.27 BSC
+e
+Pitch
+14
+N
+Number of Pins
+MAX
+NOM
+MIN
+Dimension Limits
+MILLIMETERS
+Units
+Foot Length
+L
+0.40
+-
+1.27
+§
+or protrusion, which shall not exceed 0.25 mm per side.
+3.
+REF: Reference Dimension, usually without tolerance, for information purposes only.
+BSC: Basic Dimension. Theoretically exact value shown without tolerances.
+1.
+2.
+4.
+Notes:
+Dimension D does not include mold flash, protrusions or gate burrs, which shall
+Pin 1 visual index feature may vary, but must be located within the hatched area.
+§ Significant Characteristic
+Dimensioning and tolerancing per ASME Y14.5M
+not exceed 0.15 mm per end.  Dimension E1 does not include interlead flash
+5.
+Datums A & B to be determined at Datum H.
+Lead Angle
+0°
+-
+-
+=== PAGE 88 ===
+MCP2518FD
+DS20006027B-page 88
+ 2019-2020 Microchip Technology Inc.
+RECOMMENDED LAND PATTERN
+Dimension Limits
+Units
+Contact Pitch
+MILLIMETERS
+1.27 BSC
+MIN
+E
+MAX
+Contact Pad Length (X14)
+Contact Pad Width (X14)
+Y
+X
+1.55
+0.60
+NOM
+C
+Contact Pad Spacing
+5.40
+BSC: Basic Dimension. Theoretically exact value shown without tolerances.
+Notes:
+Dimensioning and tolerancing per ASME Y14.5M
+1.
+For the most current package drawings, please see the Microchip Packaging Specification located at
+http://www.microchip.com/packaging
+Note:
+E
+X
+Y
+C
+SILK SCREEN
+Microchip Technology Drawing No. C04-2065-SL Rev D
+14-Lead Plastic Small Outline (SL) - Narrow, 3.90 mm Body [SOIC]
+1
+2
+14
+=== PAGE 89 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 89
+MCP2518FD
+B
+A
+0.10 C
+0.10 C
+0.10
+C A B
+0.05
+C
+(DATUM B)
+C
+SEATING
+PLANE
+1
+2
+N
+2X
+TOP VIEW
+SIDE VIEW
+BOTTOM VIEW
+0.10
+C A B
+0.10
+C A B
+0.10 C
+0.08 C
+Microchip Technology Drawing  C04-21361 Rev B Sheet 1 of 2
+2X
+14X
+For the most current package drawings, please see the Microchip Packaging Specification located at
+http://www.microchip.com/packaging
+Note:
+14-Lead Very Thin Plastic Dual Flat, No Lead Package (QBB) - 4.5x3 mm Body [VDFN]
+With 1.6x4.2 mm Exposed Pad and Stepped Wettable Flanks
+D
+E
+NOTE 1
+(A3)
+1
+2
+N
+D2
+E2
+NOTE 1
+L
+K
+e
+A
+A
+(DATUM A)
+A
+A1
+14X b
+=== PAGE 90 ===
+MCP2518FD
+DS20006027B-page 90
+ 2019-2020 Microchip Technology Inc.
+Microchip Technology Drawing  C04-21361 Rev B Sheet 2 of 2
+Number of Terminals
+Overall Height
+Terminal Width
+Overall Width
+Terminal Length
+Exposed Pad Width
+Terminal Thickness
+Pitch
+Standoff
+Units
+Dimension Limits
+A1
+A
+b
+E2
+A3
+e
+L
+E
+N
+0.65 BSC
+0.203 REF
+1.50
+0.35
+0.27
+0.80
+0.00
+0.32
+0.40
+1.60
+0.85
+0.03
+3.00 BSC
+MILLIMETERS
+MIN
+NOM
+14
+1.70
+0.45
+0.37
+0.90
+0.05
+MAX
+K
+-
+0.20
+-
+REF: Reference Dimension, usually without tolerance, for information purposes only.
+BSC: Basic Dimension. Theoretically exact value shown without tolerances.
+1.
+2.
+3.
+Notes:
+Pin 1 visual index feature may vary, but must be located within the hatched area.
+Package is saw singulated
+Dimensioning and tolerancing per ASME Y14.5M
+Terminal-to-Exposed-Pad
+14-Lead Very Thin Plastic Dual Flat, No Lead Package (QBB) - 4.5x3 mm Body [VDFN]
+For the most current package drawings, please see the Microchip Packaging Specification located at
+http://www.microchip.com/packaging
+Note:
+With 1.6x4.2 mm Exposed Pad and Stepped Wettable Flanks
+Overall Length
+Exposed Pad Length
+D
+D2
+4.15
+4.50 BSC
+4.20
+4.25
+A4
+E3
+SECTION A–A
+Wettable Flank Step Cut Depth
+A4
+0.10
+0.13
+0.15
+E3
+-
+-
+0.04
+Wettable Flank Step Cut Width
+PARTIALLY
+PLATED
+=== PAGE 91 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 91
+MCP2518FD
+RECOMMENDED LAND PATTERN
+Dimension Limits
+Units
+Optional Center Pad Width
+Optional Center Pad Length
+Contact Pitch
+Y2
+X2
+4.25
+1.70
+MILLIMETERS
+0.65 BSC
+MIN
+E
+MAX
+Contact Pad Length (X14)
+Contact Pad Width (X14)
+Y1
+X1
+0.80
+0.35
+Microchip Technology Drawing  C04-23361 Rev B
+NOM
+14-Lead Very Thin Plastic Dual Flat, No Lead Package (QBB) - 4.5x3 mm Body [VDFN]
+1
+2
+14
+C
+Contact Pad Spacing
+3.00
+Contact Pad to Center Pad (X14)
+G1
+0.20
+Thermal Via Diameter
+V
+Thermal Via Pitch
+EV
+0.30
+1.00
+BSC: Basic Dimension. Theoretically exact value shown without tolerances.
+Notes:
+Dimensioning and tolerancing per ASME Y14.5M
+For best soldering results, thermal vias, if used, should be filled or tented to avoid solder loss during
+reflow process
+1.
+2.
+For the most current package drawings, please see the Microchip Packaging Specification located at
+http://www.microchip.com/packaging
+Note:
+With 1.6x4.2 mm Exposed Pad and Stepped Wettable Flanks
+C
+E
+X1
+Y2
+ØV
+Y1
+G1
+EV
+SILK SCREEN
+G2
+Contact Pad to Center Pad (X12)
+G2
+0.20
+Pin 1 Index Chamfer
+CH
+X2
+EV
+0.30
+CH
+=== PAGE 92 ===
+MCP2518FD
+DS20006027B-page 92
+ 2019-2020 Microchip Technology Inc.
+NOTES:
+=== PAGE 93 ===
+ 2019-2020 Microchip Technology Inc.
+ 
+DS20006027B-page 93
+MCP2518FD
+APPENDIX A:
+REVISION HISTORY
+Revision B (December 2020)
+• Added AEC-Q100 qualification to 
+Special Features section.
+• Updated Table 3-1.
+• Updated Register 3-2.
+• Updated Register 3-4.
+• Updated Register 3-5.
+• Updated Register 3-7.
+• Updated Register 3-23.
+• Updated Section 3.3.1, RAM ECC.
+• Updated Section 4.1, SFR Access.
+• Updated Section 4.1.3, SFR WRITE – WRITE.
+• Updated Table 7-6.
+Revision A (April 2019)
+• Original release of this document
+=== PAGE 94 ===
+MCP2518FD
+DS20006027B-page 94
+ 
+ 2019-2020 Microchip Technology Inc.
+APPENDIX B:
+CAN FD CONFORMANCE
+The MCP2518FD passed the CAN FD conformance tests specified in ISO 16845-1:2016.
+ISO 11898-1:2015 lists non-mandatory features. Table B-1 clarifies which optional features are implemented.
+TABLE B-1:
+ISO OPTIONAL FEATURES
+No.
+Optional Feature
+Implemented
+1
+FD frame format
+Yes
+2
+Disabling of frame formats
+Yes. Classical CAN frame format.
+3
+Limited LLC frames
+No. Full range of IDs and DLCs implemented.
+4
+No transmission of frames including padding bytes
+N/A. See No. 3.
+5
+LLC Abort interface
+Yes
+6
+ESI and BRS bit values
+Yes
+7
+Method to provide MAC data consistency
+Yes
+8
+Time and time triggering
+Start of Frame output.
+9
+Time stamping
+Yes. 32 bit TBC.
+10
+Bus monitoring mode
+Yes
+11
+Handle
+Yes
+12
+Restricted operation
+Yes
+13
+Separate prescalers for nominal bits and for data bits
+Yes
+14
+Disabling of automatic retransmission
+Yes
+15
+Maximum number of retransmissions
+Yes. One, 3 or unlimited.
+16
+Disabling of protocol exception event on res bit detected 
+recessive
+Yes. Selectable.
+17
+PCS_Status
+No
+18
+Edge filtering during the bus integration state
+Yes. Selectable.
+19
+Time resolution for SSP placement
+Yes. 128 TQ. Measured, manual or disabled.
+20
+FD_T/R message
+TX and RX interrupts.
+=== PAGE 95 ===
+ 2019-2020 Microchip Technology Inc.
+ 
+DS20006027B-page 95
+MCP2518FD
+PRODUCT IDENTIFICATION SYSTEM
+To order or obtain information, e.g., on pricing or delivery, refer to the factory or the listed sales office.
+PART NO.
+-X
+/XX
+Package
+Temperature
+Range
+Device
+   
+Device:
+MCP2518FD:
+CAN FD Controller
+Tape and Reel 
+Option:
+T
+= Tape and Reel(1)
+Temperature 
+Range:
+E
+= -40C to +125C
+(Extended)
+H
+= -40C to +150C
+(High)
+Package:
+SL
+=
+Plastic SOIC (150 mil Body), 14-Lead
+QBB
+=
+Plastic VDFN (4.5 x 3 mm Body),
+                    14-Lead with 1.6 x 4.2 mm Exposed 
+Pad and Stepped Wettable Flanks
+Qualification
+Blank
+=
+Standard qualification
+VAO
+=
+Automotive Qualification
+Examples:
+a) MCP2518FDT-E/SL = 
+Tape and Reel, Extended Temperature,
+Plastic SOIC (150 mil Body), 14-Lead
+b) MCP2518FDT-H/SL = 
+Tape and Reel, High Temperature, 
+Plastic SOIC (150 mil Body), 14-Lead
+c) MCP2518FDT- E/QBB = Tape and Reel, Extended Temperature, 
+Plastic VDFN (4.5 x 3 mm Body)  
+14-Lead with 1.6 x 4.2 mm Exposed Pad 
+and Stepped Wettable Flanks 
+d) MCP2518FDT-H/QBB = 
+Tape and Reel, High Temperature,
+Plastic VDFN (4.5 x 3 mm Body), 
+14-Lead, with 1.6 x 4.2 mm, Exposed Pad
+and Stepped Wettable Flanks
+e) MCP2518FDT-H/QBBVAO = Tape and Reel, High Temperature,
+Plastic VDFN (4.5 x 3 mm Body), 
+14-Lead, with 1.6 x 4.2 mm, Exposed
+Pad and Stepped Wettable Flanks, 
+Automotive Qualified
+Note 1:
+Tape and Reel identifier only appears in the catalog part 
+number description. This identifier is used for ordering 
+purposes and is not printed on the device package. Check 
+with your Microchip Sales Office for package availability with 
+the Tape and Reel option.
+X(1)
+Tape and Reel
+Option
+XXX
+Qualification
+=== PAGE 96 ===
+MCP2518FD
+DS20006027B-page 96
+ 2019-2020 Microchip Technology Inc.
+NOTES:
+=== PAGE 97 ===
+ 2019-2020 Microchip Technology Inc.
+DS20006027B-page 97
+Information contained in this publication is provided for the sole
+purpose of designing with and using Microchip products. Infor-
+mation regarding device applications and the like is provided
+only for your convenience and may be superseded by updates.
+It is your responsibility to ensure that your application meets
+with your specifications. 
+THIS INFORMATION IS PROVIDED BY MICROCHIP "AS IS".
+MICROCHIP MAKES NO REPRESENTATIONS OR WAR-
+RANTIES OF ANY KIND WHETHER EXPRESS OR IMPLIED,
+WRITTEN OR ORAL, STATUTORY OR OTHERWISE,
+RELATED TO THE INFORMATION INCLUDING BUT NOT
+LIMITED TO ANY IMPLIED WARRANTIES OF NON-
+INFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A
+PARTICULAR PURPOSE OR WARRANTIES RELATED TO
+ITS CONDITION, QUALITY, OR PERFORMANCE. 
+IN NO EVENT WILL MICROCHIP BE LIABLE FOR ANY INDI-
+RECT, SPECIAL, PUNITIVE, INCIDENTAL OR CONSEQUEN-
+TIAL LOSS, DAMAGE, COST OR EXPENSE OF ANY KIND
+WHATSOEVER RELATED TO THE INFORMATION OR ITS
+USE, HOWEVER CAUSED, EVEN IF MICROCHIP HAS
+BEEN ADVISED OF THE POSSIBILITY OR THE DAMAGES
+ARE 
+FORESEEABLE. 
+TO 
+THE 
+FULLEST 
+EXTENT
+ALLOWED BY LAW, MICROCHIP'S TOTAL LIABILITY ON
+ALL CLAIMS IN ANY WAY RELATED TO THE INFORMATION
+OR ITS USE WILL NOT EXCEED THE AMOUNT OF FEES, IF
+ANY, THAT YOU HAVE PAID DIRECTLY TO MICROCHIP
+FOR THE INFORMATION. Use of Microchip devices in life sup-
+port and/or safety applications is entirely at the buyer's risk, and
+the buyer agrees to defend, indemnify and hold harmless
+Microchip from any and all damages, claims, suits, or expenses
+resulting from such use. No licenses are conveyed, implicitly or
+otherwise, under any Microchip intellectual property rights
+unless otherwise stated.
+Trademarks
+The Microchip name and logo, the Microchip logo, Adaptec, 
+AnyRate, AVR, AVR logo, AVR Freaks, BesTime, BitCloud, chipKIT, 
+chipKIT logo, CryptoMemory, CryptoRF, dsPIC, FlashFlex, 
+flexPWR, HELDO, IGLOO, JukeBlox, KeeLoq, Kleer, LANCheck, 
+LinkMD, maXStylus, maXTouch, MediaLB, megaAVR, Microsemi, 
+Microsemi logo, MOST, MOST logo, MPLAB, OptoLyzer, 
+PackeTime, PIC, picoPower, PICSTART, PIC32 logo, PolarFire, 
+Prochip Designer, QTouch, SAM-BA, SenGenuity, SpyNIC, SST, 
+SST Logo, SuperFlash, Symmetricom, SyncServer, Tachyon, 
+TempTrackr, TimeSource, tinyAVR, UNI/O, Vectron, and XMEGA 
+are registered trademarks of Microchip Technology Incorporated in 
+the U.S.A. and other countries.
+APT, ClockWorks, The Embedded Control Solutions Company, 
+EtherSynch, FlashTec, Hyper Speed Control, HyperLight Load, 
+IntelliMOS, Libero, motorBench, mTouch, Powermite 3, Precision 
+Edge, ProASIC, ProASIC Plus, ProASIC Plus logo, Quiet-Wire, 
+SmartFusion, SyncWorld, Temux, TimeCesium, TimeHub, 
+TimePictra, TimeProvider, Vite, WinPath, and ZL are registered 
+trademarks of Microchip Technology Incorporated in the U.S.A.
+Adjacent Key Suppression, AKS, Analog-for-the-Digital Age, Any 
+Capacitor, AnyIn, AnyOut, BlueSky, BodyCom, CodeGuard, 
+CryptoAuthentication, CryptoAutomotive, CryptoCompanion, 
+CryptoController, dsPICDEM, dsPICDEM.net, Dynamic Average 
+Matching, DAM, ECAN, EtherGREEN, In-Circuit Serial 
+Programming, ICSP, INICnet, Inter-Chip Connectivity, JitterBlocker, 
+KleerNet, KleerNet logo, memBrain, Mindi, MiWi, MPASM, MPF, 
+MPLAB Certified logo, MPLIB, MPLINK, MultiTRAK, NetDetach, 
+Omniscient Code Generation, PICDEM, PICDEM.net, PICkit, 
+PICtail, PowerSmart, PureSilicon, QMatrix, REAL ICE, Ripple 
+Blocker, SAM-ICE, Serial Quad I/O, SMART-I.S., SQI, 
+SuperSwitcher, SuperSwitcher II, Total Endurance, TSHARC, 
+USBCheck, VariSense, ViewSpan, WiperLock, Wireless DNA, and 
+ZENA are trademarks of Microchip Technology Incorporated in the 
+U.S.A. and other countries.
+SQTP is a service mark of Microchip Technology Incorporated in 
+the U.S.A.
+The Adaptec logo, Frequency on Demand, Silicon Storage 
+Technology, and Symmcom are registered trademarks of Microchip 
+Technology Inc. in other countries.
+GestIC is a registered trademark of Microchip Technology Germany 
+II GmbH & Co. KG, a subsidiary of Microchip Technology Inc., in 
+other countries. 
+All other trademarks mentioned herein are property of their 
+respective companies.
+© 2019-2020, Microchip Technology Incorporated, All Rights 
+Reserved.
+ISBN: 978-1-5224-7119-6
+Note the following details of the code protection feature on Microchip devices:
+•
+Microchip products meet the specifications contained in their particular Microchip Data Sheet.
+•
+Microchip believes that its family of products is secure when used in the intended manner and under normal conditions. 
+•
+There are dishonest and possibly illegal methods being used in attempts to breach the code protection features of the Microchip 
+devices. We believe that these methods  require using the Microchip products in a manner outside the operating specifications 
+contained in Microchip's Data Sheets. Attempts to breach these code protection features, most likely, cannot be accomplished 
+without violating Microchip's intellectual property rights. 
+•
+Microchip is willing to work with any customer who is concerned about the integrity of its code.
+•
+Neither Microchip nor any other semiconductor manufacturer can guarantee the security of its code. Code protection does not 
+mean that we are guaranteeing the product is "unbreakable." Code protection is constantly evolving. We at Microchip are 
+committed to continuously improving the code protection features of our products. Attempts to break Microchip's code protection 
+feature may be a violation of the Digital Millennium Copyright Act. If such acts allow unauthorized access to your software or 
+other copyrighted work, you may have a right to sue for relief under that Act.
+For information regarding Microchip’s Quality Management Systems, 
+please visit www.microchip.com/quality.
+=== PAGE 98 ===
+DS20006027B-page 98
+ 2019-2020 Microchip Technology Inc.
+AMERICAS
+Corporate Office
+2355 West Chandler Blvd.
+Chandler, AZ 85224-6199
+Tel: 480-792-7200 
+Fax: 480-792-7277
+Technical Support: 
+http://www.microchip.com/
+support
+Web Address: 
+www.microchip.com
+Atlanta
+Duluth, GA 
+Tel: 678-957-9614 
+Fax: 678-957-1455
+Austin, TX
+Tel: 512-257-3370 
+Boston
+Westborough, MA 
+Tel: 774-760-0087 
+Fax: 774-760-0088
+Chicago
+Itasca, IL 
+Tel: 630-285-0071 
+Fax: 630-285-0075
+Dallas
+Addison, TX 
+Tel: 972-818-7423 
+Fax: 972-818-2924
+Detroit
+Novi, MI 
+Tel: 248-848-4000
+Houston, TX 
+Tel: 281-894-5983
+Indianapolis
+Noblesville, IN 
+Tel: 317-773-8323
+Fax: 317-773-5453
+Tel: 317-536-2380
+Los Angeles
+Mission Viejo, CA 
+Tel: 949-462-9523
+Fax: 949-462-9608
+Tel: 951-273-7800 
+Raleigh, NC 
+Tel: 919-844-7510
+New York, NY 
+Tel: 631-435-6000
+San Jose, CA 
+Tel: 408-735-9110
+Tel: 408-436-4270
+Canada - Toronto
+Tel: 905-695-1980 
+Fax: 905-695-2078
+ASIA/PACIFIC
+Australia - Sydney
+Tel: 61-2-9868-6733
+China - Beijing
+Tel: 86-10-8569-7000 
+China - Chengdu
+Tel: 86-28-8665-5511
+China - Chongqing
+Tel: 86-23-8980-9588
+China - Dongguan
+Tel: 86-769-8702-9880 
+China - Guangzhou
+Tel: 86-20-8755-8029 
+China - Hangzhou
+Tel: 86-571-8792-8115 
+China - Hong Kong SAR
+Tel: 852-2943-5100 
+China - Nanjing
+Tel: 86-25-8473-2460
+China - Qingdao
+Tel: 86-532-8502-7355
+China - Shanghai
+Tel: 86-21-3326-8000 
+China - Shenyang
+Tel: 86-24-2334-2829
+China - Shenzhen
+Tel: 86-755-8864-2200 
+China - Suzhou
+Tel: 86-186-6233-1526 
+China - Wuhan
+Tel: 86-27-5980-5300
+China - Xian
+Tel: 86-29-8833-7252
+China - Xiamen
+Tel: 86-592-2388138 
+China - Zhuhai
+Tel: 86-756-3210040 
+ASIA/PACIFIC
+India - Bangalore
+Tel: 91-80-3090-4444 
+India - New Delhi
+Tel: 91-11-4160-8631
+India - Pune
+Tel: 91-20-4121-0141
+Japan - Osaka
+Tel: 81-6-6152-7160 
+Japan - Tokyo
+Tel: 81-3-6880- 3770 
+Korea - Daegu
+Tel: 82-53-744-4301
+Korea - Seoul
+Tel: 82-2-554-7200
+Malaysia - Kuala Lumpur
+Tel: 60-3-7651-7906
+Malaysia - Penang
+Tel: 60-4-227-8870
+Philippines - Manila
+Tel: 63-2-634-9065
+Singapore
+Tel: 65-6334-8870
+Taiwan - Hsin Chu
+Tel: 886-3-577-8366
+Taiwan - Kaohsiung
+Tel: 886-7-213-7830
+Taiwan - Taipei
+Tel: 886-2-2508-8600 
+Thailand - Bangkok
+Tel: 66-2-694-1351
+Vietnam - Ho Chi Minh
+Tel: 84-28-5448-2100
+EUROPE
+Austria - Wels
+Tel: 43-7242-2244-39
+Fax: 43-7242-2244-393
+Denmark - Copenhagen
+Tel: 45-4485-5910 
+Fax: 45-4485-2829
+Finland - Espoo
+Tel: 358-9-4520-820
+France - Paris
+Tel: 33-1-69-53-63-20 
+Fax: 33-1-69-30-90-79 
+Germany - Garching
+Tel: 49-8931-9700
+Germany - Haan
+Tel: 49-2129-3766400
+Germany - Heilbronn
+Tel: 49-7131-72400
+Germany - Karlsruhe
+Tel: 49-721-625370
+Germany - Munich
+Tel: 49-89-627-144-0 
+Fax: 49-89-627-144-44
+Germany - Rosenheim
+Tel: 49-8031-354-560
+Israel - Ra’anana 
+Tel: 972-9-744-7705
+Italy - Milan 
+Tel: 39-0331-742611 
+Fax: 39-0331-466781
+Italy - Padova
+Tel: 39-049-7625286 
+Netherlands - Drunen
+Tel: 31-416-690399 
+Fax: 31-416-690340
+Norway - Trondheim
+Tel: 47-7288-4388
+Poland - Warsaw
+Tel: 48-22-3325737 
+Romania - Bucharest
+Tel: 40-21-407-87-50
+Spain - Madrid
+Tel: 34-91-708-08-90
+Fax: 34-91-708-08-91
+Sweden - Gothenberg
+Tel: 46-31-704-60-40
+Sweden - Stockholm
+Tel: 46-8-5090-4654
+UK - Wokingham
+Tel: 44-118-921-5800
+Fax: 44-118-921-5820
+Worldwide Sales and Service
+02/28/20
