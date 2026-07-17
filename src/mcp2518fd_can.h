@@ -106,8 +106,8 @@ public:
 
     // Write one CAN FD frame into the TX FIFO and request transmission.
     // Returns true when TXREQ clears (frame accepted by the controller).
-    // Returns false if the TX FIFO is full or the controller does not
-    // acknowledge within 10 ms.
+    // Timeout is derived from the configured bit timing — worst-case 64-byte
+    // frame × 3 retransmission attempts + 2ms margin.
     bool transmit(const CanMsg& msg);
 
     // Read one CAN FD frame from the RX FIFO.
@@ -122,6 +122,21 @@ public:
 
 private:
     MCP2518SPI mSpi;
+    uint32_t   mTxTimeoutMs = 10;  // recalculated by calcTxTimeout() on every configure/setDataBitTiming
+    uint32_t   mNbtcfg      = 0;
+
+    // Derive worst-case TX timeout from configured bit timing.
+    // Worst case: 64-byte CAN FD frame (BRS=true), 3 retransmission attempts.
+    //
+    // Frame bit budget (standard 11-bit ID, BRS=true, ref ISO 11898-1):
+    //   Nominal phase: SOF(1) + arb(11) + ctrl(6) + CRC-delim(1) + ACK(2) + EOF+IFS(10) + stuff(~5) = ~36 bits
+    //   Data phase:    ESI(1) + DLC(4) + data(512) + stuff-count(4) + CRC21(21) + stuff(~20) = ~562 bits
+    //
+    // NBT_ns = (BRP+1) * (1 + TSEG1 + TSEG2) * 25  [ns, at 40 MHz]
+    // DBT_ns = (BRP+1) * (1 + TSEG1 + TSEG2) * 25  [ns, at 40 MHz]
+    // frame_us = (36 * NBT_ns + 562 * DBT_ns) / 1000
+    // timeout_ms = ceil(frame_us * 3 / 1000) + 2   [3 attempts + 2ms margin]
+    void calcTxTimeout(uint32_t nbtcfg, uint32_t dbtcfg);
 
     void     configFifos();
     void     configFilter();
