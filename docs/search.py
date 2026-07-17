@@ -1,6 +1,6 @@
 """
-search.py - search extracted PDF text for keywords
-Usage: python search.py keyword1 keyword2 ...
+search.py - search PDF text for keywords
+Usage: python docs/search.py keyword1 keyword2 ...
 Output: docs/reference/search_results.txt
 
 Searches both PDFs, prints surrounding context for every hit.
@@ -11,12 +11,15 @@ import sys
 import os
 import fitz
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+REF_DIR    = os.path.join(SCRIPT_DIR, "reference")
+
 PDFS = {
-    "DATASHEET": r"C:\Users\d1\repos\mcp2518fd\docs\reference\External-CAN-FD-Controller-with-SPI-Interface-DS20006027B.pdf",
-    "REFMANUAL": r"C:\Users\d1\repos\mcp2518fd\docs\reference\MCP25XXFD-CAN-FD-Controller-Module-Family-Reference-Manual-DS20005678E.pdf",
+    "DATASHEET": os.path.join(REF_DIR, "External-CAN-FD-Controller-with-SPI-Interface-DS20006027B.pdf"),
+    "REFMANUAL": os.path.join(REF_DIR, "MCP25XXFD-CAN-FD-Controller-Module-Family-Reference-Manual-DS20005678E.pdf"),
 }
 
-OUTFILE = r"C:\Users\d1\repos\mcp2518fd\docs\reference\search_results.txt"
+OUTFILE = os.path.join(REF_DIR, "search_results.txt")
 CONTEXT = 400  # chars either side of a hit
 
 
