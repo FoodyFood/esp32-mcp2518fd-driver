@@ -26,7 +26,7 @@ Never assume a register address or bit position. Always verify from the PDFs fir
 Every change must follow this exact sequence. Do not skip steps.
 
 1. Make the code change
-2. Build + Upload + Monitor in one step: `pio run -e loopback --target upload --upload-port COM4 && python monitor.py COM4 115200`
+2. Build + Upload + Monitor in one step: `pio run -e loopback --target upload --upload-port COM4 && python tools/run_test.py --env loopback --port COM4`
    - Framework objects are cached in `.cache/` — only changed files recompile after the first build
 3. Verify the output matches expected values from the datasheet
 4. If verification passes, commit: `git add . && git commit -m "step N: description"`
@@ -93,7 +93,7 @@ After every verified step, end with a single plain-English sentence summarising 
 - `src/main.cpp` — interactive test harness
 - `src/mcp2518fd_registers.h` — all register addresses, masks, constants
 - `src/mcp2518fd_spi.h` / `src/mcp2518fd_spi.cpp` — SPI transport + mode control
-- `monitor.py` — closed-loop serial monitor (reset, trigger, read, exit)
+- `tools/run_test.py` — test runner (loopback and future two-node)
 - `docs/status.md` — milestone tracker
 - `docs/context.md` — hardware and architecture context
 - `docs/registers.md` — register field reference

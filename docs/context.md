@@ -46,7 +46,7 @@ Build the driver incrementally, one verified feature at a time.
 | docs/status.md        | Verified milestone tracker                   |
 | docs/registers.md     | Register field reference                     |
 
-| monitor.py            | Closed-loop serial tool — reset ESP32, trigger test, read output, exit |
+| tools/run_test.py     | Test runner — loopback and (future) two-node, coordinates serial reset + trigger |
 | docs/search.py        | PDF search tool — queries both reference PDFs                |
 
 ## Key Decisions

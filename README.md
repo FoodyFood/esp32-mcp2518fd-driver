@@ -113,7 +113,7 @@ docs/
   search.py                 # PDF search tool — queries both datasheets
   reference/                # Place downloaded PDFs here (see reference/README.md)
 
-monitor.py                  # Closed-loop serial monitor (reset, trigger, read, exit)
+  tools/run_test.py          # Test runner — loopback and (future) two-node
 platformio.ini              # PlatformIO build config
 ```
 
@@ -125,7 +125,7 @@ Each feature is implemented in a single numbered step:
 2. Write the minimal code to achieve it
 3. Build, upload and monitor in one command:
    ```
-   pio run --target upload --upload-port COM4 && python monitor.py COM4 115200
+   pio run -e loopback --target upload --upload-port COM4 && python tools/run_test.py --env loopback --port COM4
    ```
 4. A step is only verified when every assertion prints `OK` on real hardware — no assumptions
 5. Commit code + docs together — never commit unverified code
@@ -162,6 +162,11 @@ pio run --target upload --upload-port <PORT> && python monitor.py <PORT> 115200
 ```
 
 Replace `<PORT>` with your serial port (`COM4` on Windows, `/dev/ttyUSB0` on Linux/macOS).
+
+For two-node tests (once implemented):
+```bash
+pio run -e two_node --target upload --upload-port <PORT> && python tools/run_test.py --env two_node --port-a <PORT_A> --port-b <PORT_B>
+```
 
 ## License
 
