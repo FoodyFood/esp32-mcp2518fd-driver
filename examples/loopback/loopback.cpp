@@ -83,9 +83,8 @@ void runTest()
         bool match = rxOk
                   && r.sid == t.sid
                   && r.fdf && r.brs
-                  && r.dlc == 8
-                  && r.data[0] == t.data[0]
-                  && r.data[7] == t.data[7];
+                  && r.dlc == 8;
+        for (int j = 0; j < 8 && match; j++) match &= (r.data[j] == t.data[j]);
 
         char label[48];
         snprintf(label, sizeof(label), "frame %d SID=0x%03X", i, cases[i].sid);
@@ -113,6 +112,24 @@ void runTest()
     bool data2Ok = true;
     for (int i = 0; i < 8; i++) data2Ok &= (rx2.data[i] == tx2.data[i]);
     CHECK("data matches after switch", data2Ok);
+
+    // ------------------------------------------------------------------
+    // 64-byte CAN FD frame — DLC=15, all 64 bytes verified
+    // ------------------------------------------------------------------
+    Serial.println("64-byte CAN FD frame (DLC=15):");
+
+    CanMsg tx3;
+    tx3.sid = 0x555; tx3.fdf = true; tx3.brs = true; tx3.dlc = 15;
+    for (int i = 0; i < 64; i++) tx3.data[i] = (uint8_t)(i ^ 0xA5);
+
+    CHECK("transmit() 64-byte", can.transmit(tx3));
+    CanMsg rx3 = {};
+    CHECK("receive() 64-byte", can.receive(rx3));
+    CHECK("SID matches",  rx3.sid == tx3.sid);
+    CHECK("DLC matches",  rx3.dlc == 15);
+    bool data3Ok = true;
+    for (int i = 0; i < 64; i++) data3Ok &= (rx3.data[i] == tx3.data[i]);
+    CHECK("all 64 bytes match", data3Ok);
 
     Serial.println();
 }

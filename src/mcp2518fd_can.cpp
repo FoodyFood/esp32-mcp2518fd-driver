@@ -53,21 +53,19 @@ bool MCP2518Driver::transmit(const CanMsg& msg)
                 | ((msg.brs ? 1u : 0u) << 6)
                 | (msg.dlc & 0xFu);
 
-    mSpi.write32(addr,      t0);
-    mSpi.write32(addr + 4,  t1);
+    mSpi.write32(addr,     t0);
+    mSpi.write32(addr + 4, t1);
 
-    // Data — little-endian, 4 bytes per word
-    uint32_t w0 = (uint32_t)msg.data[0]
-                | ((uint32_t)msg.data[1] << 8)
-                | ((uint32_t)msg.data[2] << 16)
-                | ((uint32_t)msg.data[3] << 24);
-    uint32_t w1 = (uint32_t)msg.data[4]
-                | ((uint32_t)msg.data[5] << 8)
-                | ((uint32_t)msg.data[6] << 16)
-                | ((uint32_t)msg.data[7] << 24);
-
-    mSpi.write32(addr + 8,  w0);
-    mSpi.write32(addr + 12, w1);
+    // Data — little-endian, 4 bytes per word, up to 64 bytes (16 words)
+    uint8_t len = dlcToLen(msg.dlc);
+    for (uint8_t i = 0; i < len; i += 4)
+    {
+        uint32_t w = (uint32_t)msg.data[i]
+                   | ((uint32_t)msg.data[i+1] << 8)
+                   | ((uint32_t)msg.data[i+2] << 16)
+                   | ((uint32_t)msg.data[i+3] << 24);
+        mSpi.write32(addr + 8 + i, w);
+    }
 
     mSpi.write32(FIFO_CON(1), FIFOCON_TXEN | FIFOCON_UINC | FIFOCON_TXREQ);
 
@@ -92,22 +90,22 @@ bool MCP2518Driver::receive(CanMsg& msg)
 
     uint32_t r0 = mSpi.read32(addr);
     uint32_t r1 = mSpi.read32(addr + 4);
-    uint32_t r2 = mSpi.read32(addr + 8);
-    uint32_t r3 = mSpi.read32(addr + 12);
 
-    msg.sid  = r0 & 0x7FFu;
-    msg.fdf  = (r1 >> 7) & 1;
-    msg.brs  = (r1 >> 6) & 1;
-    msg.dlc  = r1 & 0xFu;
+    msg.sid = r0 & 0x7FFu;
+    msg.fdf = (r1 >> 7) & 1;
+    msg.brs = (r1 >> 6) & 1;
+    msg.dlc = r1 & 0xFu;
 
-    msg.data[0] = (r2)       & 0xFF;
-    msg.data[1] = (r2 >> 8)  & 0xFF;
-    msg.data[2] = (r2 >> 16) & 0xFF;
-    msg.data[3] = (r2 >> 24) & 0xFF;
-    msg.data[4] = (r3)       & 0xFF;
-    msg.data[5] = (r3 >> 8)  & 0xFF;
-    msg.data[6] = (r3 >> 16) & 0xFF;
-    msg.data[7] = (r3 >> 24) & 0xFF;
+    // Data — little-endian, 4 bytes per word, up to 64 bytes
+    uint8_t len = dlcToLen(msg.dlc);
+    for (uint8_t i = 0; i < len; i += 4)
+    {
+        uint32_t w = mSpi.read32(addr + 8 + i);
+        msg.data[i]   =  w        & 0xFF;
+        msg.data[i+1] = (w >> 8)  & 0xFF;
+        msg.data[i+2] = (w >> 16) & 0xFF;
+        msg.data[i+3] = (w >> 24) & 0xFF;
+    }
 
     mSpi.write32(FIFO_CON(2), FIFOCON_UINC);
     return true;
@@ -122,8 +120,9 @@ uint8_t MCP2518Driver::getMode()
 
 void MCP2518Driver::configFifos()
 {
-    mSpi.write32(FIFO_CON(1), FIFOCON_TXEN);   // FIFO1 = TX
-    mSpi.write32(FIFO_CON(2), 0x00000000UL);   // FIFO2 = RX
+    uint32_t plsize = (uint32_t)PLSIZE_64 << FIFOCON_PLSIZE_SHIFT;
+    mSpi.write32(FIFO_CON(1), plsize | FIFOCON_TXEN);  // FIFO1 = TX, 64-byte payload
+    mSpi.write32(FIFO_CON(2), plsize);                 // FIFO2 = RX, 64-byte payload
 }
 
 void MCP2518Driver::configFilter()

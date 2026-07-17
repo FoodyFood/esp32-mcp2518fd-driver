@@ -48,6 +48,11 @@ Every runTest() must include ALL previously verified checks, not just the new on
 Before adding a new test, confirm all existing assertions still pass.
 If any previously passing check fails, stop and fix the regression before continuing.
 
+- Tests are ADDITIVE — never remove or replace an existing assertion
+- If a new feature requires a configuration change that would break an existing test, add a NEW separate test block after all existing ones rather than modifying the existing ones
+- Existing test blocks must remain byte-for-byte identical to their last verified state
+- If an existing spot-check is found to be incomplete (e.g. only checking first/last byte), expand it in-place — this is a fix, not a replacement
+
 ## Step-by-Step Discipline
 - One feature per step
 - Each step has a clear expected output defined before writing code

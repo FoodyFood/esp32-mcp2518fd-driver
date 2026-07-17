@@ -41,13 +41,26 @@ constexpr uint32_t TDC_2M_40MHZ   = 0x00021300;  // TDCMOD=auto TDCO=19  (2 Mbps
 // Used for both transmit and receive. On transmit, populate all fields.
 // On receive, all fields are filled in by receive().
 //
+// CAN FD DLC → byte length (DS20006027B Table 3-3)
+// DLC 0-8 map 1:1; DLC 9=12, 10=16, 11=20, 12=24, 13=32, 14=48, 15=64
+inline constexpr uint8_t dlcToLen(uint8_t dlc)
+{
+    return (dlc <=  8) ? dlc
+         : (dlc ==  9) ? 12
+         : (dlc == 10) ? 16
+         : (dlc == 11) ? 20
+         : (dlc == 12) ? 24
+         : (dlc == 13) ? 32
+         : (dlc == 14) ? 48 : 64;
+}
+
 struct CanMsg
 {
-    uint16_t sid;      // Standard identifier, 11-bit (0x000–0x7FF)
-    bool     fdf;      // true = CAN FD frame, false = Classic CAN
-    bool     brs;      // true = switch to data bit rate in payload phase
-    uint8_t  dlc;      // Data Length Code (0–8 for 8-byte payload)
-    uint8_t  data[8];  // Payload bytes
+    uint16_t sid;       // Standard identifier, 11-bit (0x000–0x7FF)
+    bool     fdf;       // true = CAN FD frame, false = Classic CAN
+    bool     brs;       // true = switch to data bit rate in payload phase
+    uint8_t  dlc;       // Data Length Code (0–15)
+    uint8_t  data[64];  // Payload bytes (up to 64 for CAN FD)
 };
 
 // ----------------------------------------------------------------------------
@@ -79,8 +92,8 @@ public:
 
     // Change the data bit rate at runtime without disturbing the nominal rate.
     // Performs a config-mode round-trip, rewrites DBTCFG + TDC, re-enables the
-    // acceptance filter, then returns to MODE_INTERNAL_LB.
-    // Returns true when the chip confirms MODE_INTERNAL_LB.
+    // acceptance filter, then returns to the previous mode.
+    // Returns true when the chip confirms the mode.
     bool setDataBitTiming(uint32_t dbtcfg, uint32_t tdcfg);
 
     // Write one CAN FD frame into the TX FIFO and request transmission.
