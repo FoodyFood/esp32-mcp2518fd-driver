@@ -32,11 +32,12 @@ bool MCP2518Driver::configure(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, 
 
 bool MCP2518Driver::setDataBitTiming(uint32_t dbtcfg, uint32_t tdcfg)
 {
+    uint8_t prevMode = mSpi.getMode();  // remember active mode before entering config
     mSpi.setMode(MODE_CONFIG);
     mSpi.write32(REG_CiDBTCFG, dbtcfg);
     mSpi.write32(REG_CiTDC,    tdcfg);
     configFilter();  // re-enable filter after config mode entry resets FIFOs
-    return mSpi.setMode(MODE_INTERNAL_LB);
+    return mSpi.setMode(prevMode);
 }
 
 bool MCP2518Driver::transmit(const CanMsg& msg)
@@ -70,7 +71,7 @@ bool MCP2518Driver::transmit(const CanMsg& msg)
     mSpi.write32(FIFO_CON(1), FIFOCON_TXEN | FIFOCON_UINC | FIFOCON_TXREQ);
 
     uint32_t start = millis();
-    while (millis() - start < 10)
+    while (millis() - start < 500)
     {
         if (!(mSpi.read32(FIFO_CON(1)) & FIFOCON_TXREQ))
             return true;
@@ -81,7 +82,7 @@ bool MCP2518Driver::transmit(const CanMsg& msg)
 bool MCP2518Driver::receive(CanMsg& msg)
 {
     uint32_t tw = millis();
-    while (millis() - tw < 10 && !(mSpi.read32(FIFO_STA(2)) & FIFOSTA_TFNRFNIF)) {}
+    while (millis() - tw < 500 && !(mSpi.read32(FIFO_STA(2)) & FIFOSTA_TFNRFNIF)) {}
 
     if (!(mSpi.read32(FIFO_STA(2)) & FIFOSTA_TFNRFNIF))
         return false;
