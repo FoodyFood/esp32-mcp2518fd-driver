@@ -1,2 +1,9 @@
+# PlatformIO
 .pio/
+
+# IDE
 .vscode/
+
+# Datasheet PDFs — download from Microchip, do not commit
+docs/reference/*.pdf
+docs/reference/*.txt

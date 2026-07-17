@@ -33,6 +33,15 @@ Every change must follow this exact sequence. Do not skip steps.
 
 Never commit unverified code.
 
+## Verification Standard
+A step is only considered verified when ALL of the following are true:
+- The code was built and uploaded to real hardware
+- The serial output was read back via monitor.py
+- Every assertion in runTest() printed "OK" — no FAILs, no skipped checks
+- The observed values match the expected values derived from the datasheet
+
+Assumptions, reasoning, or "it should work" are NOT verification. Only hardware output counts.
+
 ## Regression Testing
 Every runTest() must include ALL previously verified checks, not just the new ones.
 Before adding a new test, confirm all existing assertions still pass.
