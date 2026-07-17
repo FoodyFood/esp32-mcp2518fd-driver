@@ -27,21 +27,21 @@ Build the driver incrementally, one verified feature at a time.
 
 - No ACAN library
 - No interrupts (polling only, for now)
-- No filters
 - No TEF
 - No TXQ
-- No CAN bus (Internal Loopback only, for now)
 - One TX FIFO, one RX FIFO
 - Minimal code — only what is needed for the current milestone
 
 ## Architecture
 
-| File                  | Purpose                                      |
-|-----------------------|----------------------------------------------|
-| src/main.cpp          | Test harness — interactive, key-triggered    |
-| src/mcp2518fd_spi.h   | MCP2518SPI class declaration                 |
-| src/mcp2518fd_spi.cpp | SPI transport + mode control implementation  |
-| src/mcp2518fd_registers.h | Register addresses, masks, constants    |
+| File                      | Purpose                                                    |
+|---------------------------|------------------------------------------------------------||
+| src/main.cpp              | Regression test harness — pure driver consumer             |
+| src/mcp2518fd_can.h       | MCP2518Driver public API declaration                       |
+| src/mcp2518fd_can.cpp     | CAN driver — configure, transmit, receive, bitrate switch  |
+| src/mcp2518fd_spi.h       | MCP2518SPI class declaration                               |
+| src/mcp2518fd_spi.cpp     | SPI transport + mode control implementation                |
+| src/mcp2518fd_registers.h | Register addresses, masks, constants                       |
 | docs/context.md       | This file                                    |
 | docs/status.md        | Verified milestone tracker                   |
 | docs/registers.md     | Register field reference                     |
@@ -57,6 +57,8 @@ Build the driver incrementally, one verified feature at a time.
 - All multi-byte reads/writes are little-endian (LSB first), matching MCP2518FD SPI byte order.
 - SPI transaction is opened once in `begin()` and left open (no per-transfer beginTransaction/endTransaction).
 - FIFO1 = TX, FIFO2 = RX. TXQ and TEF not used.
+- Acceptance filter 0 configured as catch-all (SID/mask all zeros) pointing to FIFO2.
+- TDC (Transmitter Delay Compensation) required at data rates >= 1 Mbps. Use TDCMOD=auto, TDCO=(BRP+1)*(TSEG1+1).
 
 ## Discoveries
 
@@ -73,6 +75,12 @@ Observed on hardware: CiTXQCON = 0x00600080, TXEN bit (bit 7) = 1 at all times. 
 FRESET (bit 10 of CiFIFOCONm) is set automatically when entering Configuration mode
 and cleared automatically when leaving it. Do not poll or set it manually while in config mode.
 Observed: FRESET=0 when read in loopback mode (after config mode exit). Expected.
+
+### TDC required at >= 1 Mbps data rate
+At data bit rates of 1 Mbps and above the chip cannot reliably sample the loopback signal without
+Transmitter Delay Compensation. Symptoms: TX completes (TXREQ clears, no errors) but FIFO2
+remains empty. Fix: set TDCMOD=2 (auto) and TDCO=(BRP+1)*(TSEG1+1) in CiTDC before
+entering the active mode. Verified at 2 Mbps with TDCO=19.
 
 ### CiFIFOUAm reports offset, not absolute address
 CiFIFOUAm holds the byte offset from RAM base (0x400), not the absolute SPI address.

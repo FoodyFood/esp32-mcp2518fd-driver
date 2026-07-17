@@ -8,7 +8,8 @@ A register-level CAN FD driver for the **MCP2518FD** external CAN FD controller,
 graph LR
     subgraph ESP32["🔵 ESP32-D0WD-V3"]
         APP["Application\nmain.cpp"]
-        DRV["SPI Driver\nmcp2518fd_spi"]
+        CAN["CAN Driver\nmcp2518fd_can"]
+        DRV["SPI Transport\nmcp2518fd_spi"]
     end
 
     subgraph SPI["⚡ SPI Bus (VSPI 1MHz)"]
@@ -32,7 +33,8 @@ graph LR
         CANL["CANL"]
     end
 
-    APP --> DRV
+    APP --> CAN
+    CAN --> DRV
     DRV <--> SPI
     SPI <--> CTRL
     CTRL <--> RAM
@@ -70,13 +72,16 @@ The result is a minimal, auditable reference implementation that anyone can foll
 |---|---|
 | SPI transport (read8/16/32, write8/32, reset) | ✅ Verified |
 | Mode control (config, internal loopback) | ✅ Verified |
-| Nominal + data bit timing (125 kbps / 40 MHz) | ✅ Verified |
+| Nominal + data bit timing (125 kbps nominal / 2 Mbps data) | ✅ Verified |
+| TDC (transmitter delay compensation, auto mode) | ✅ Verified |
 | FIFO register definitions | ✅ Verified |
 | FIFO1=TX, FIFO2=RX configuration | ✅ Verified |
 | RAM allocation (UA offsets confirmed) | ✅ Verified |
 | Transmit a frame (internal loopback) | ✅ Verified |
 | Receive a frame (internal loopback) | ✅ Verified |
 | Full loopback round-trip verify | ✅ Verified |
+| Multi-frame + runtime bitrate switch | ✅ Verified |
+| Driver refactor — clean layered API | ✅ Verified |
 | Normal CAN FD mode (two-node) | 🔲 Not started |
 
 See [`docs/status.md`](docs/status.md) for detailed notes and observed values from each verified step.
@@ -96,9 +101,10 @@ PDFs are not committed to this repo. Download them from the links above and plac
 
 ```
 src/
-  main.cpp                  # Interactive test harness (key-triggered via Serial)
+  main.cpp                  # Regression test harness — pure driver consumer, key-triggered
+  mcp2518fd_can.h/.cpp      # CAN driver — configure, transmit, receive, bitrate switching
   mcp2518fd_registers.h     # All register addresses, masks and constants
-  mcp2518fd_spi.h/.cpp      # SPI transport + mode control
+  mcp2518fd_spi.h/.cpp      # SPI transport — raw byte/word reads and writes
 
 docs/
   status.md                 # Verified milestone tracker
@@ -126,11 +132,14 @@ Each feature is implemented in a single numbered step:
 
 ## Key implementation decisions
 
+- **Three-layer architecture** — `mcp2518fd_spi` owns SPI transport, `mcp2518fd_can` owns all chip logic, `main.cpp` is a pure consumer with no register names or RAM addresses
+- **Self-documenting configuration** — named presets (`NBTCFG_125K_40MHZ`, `DBTCFG_2M_40MHZ`, `TDC_2M_40MHZ`) mean users configure without needing the datasheet
 - **No third-party CAN libraries** — every register touched is sourced directly from the datasheet
 - **No 32-bit RMW of CiCON** — REQOP is written via `write8()` to byte 3 only; a full 32-bit read-modify-write was found unreliable on this chip
-- **No TXQ, no TEF, no filters** — FIFO1=TX, FIFO2=RX only, keeping the driver minimal and auditable
+- **No TXQ, no TEF** — FIFO1=TX, FIFO2=RX only, keeping the driver minimal and auditable
 - **No interrupts** — polling only until the core driver is proven correct
 - **UA is an offset, not an absolute address** — `CiFIFOUAm` holds the byte offset from RAM base `0x400`; actual address = `0x400 + UA`
+- **TDC required at >= 1 Mbps data rate** — automatic mode, TDCO = (BRP+1) × (TSEG1+1)
 
 ## Prerequisites
 

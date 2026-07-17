@@ -30,8 +30,8 @@ Each item below has been tested on real hardware and confirmed working.
 | Feature                        | Status       | Notes                                           |
 |--------------------------------|--------------|-------------------------------------------------|
 | CiNBTCFG (nominal bit timing)  | ✅ Verified  | BRP=0 TSEG1=30 TSEG2=7 SJW=7 → 125kbps @ 40MHz |
-| CiDBTCFG (data bit timing)     | ✅ Verified  | BRP=0 TSEG1=14 TSEG2=3 SJW=3                   |
-| CiTDC (transmitter delay comp) | 🔲 Not started |                                               |
+| CiDBTCFG (data bit timing)     | ✅ Verified  | 2 Mbps @ 40MHz: BRP=0 TSEG1=18 TSEG2=1 SJW=1     |
+| CiTDC (transmitter delay comp) | ✅ Verified  | TDCMOD=auto TDCO=19 @ 2 Mbps, loopback passes     |
 
 ## FIFO / Messaging
 
@@ -43,6 +43,9 @@ Each item below has been tested on real hardware and confirmed working.
 | TXQEN/STEF cleared in CiCON    | ✅ Verified  | Step 2 — byte-write to CiCON+2, confirmed TXQEN=0 STEF=0 |
 | RAM initialisation             | ✅ Verified  | Step 3 — chip allocates RAM automatically, no explicit init needed |
 | RAM allocation for FIFOs       | ✅ Verified  | Step 3 — UA1=0x000 (RAM 0x400), UA2=0x010 (RAM 0x410). UA is offset from RAM base, not absolute address |
-| Send one frame                 | ✅ Verified  | Step 4 — T0=0x123 FDF BRS DLC=8, TXREQ cleared, no errors. CiFIFOSTA1=0x00000007 before and after |
-| Receive a frame (internal loopback) | ✅ Verified  | Step 5 — Filter 0 accept-all→FIFO2, R0=0x00000123 R1=0x000000C8 R2=0x04030201 R3=0x08070605 |
-| Full loopback round-trip verify | ✅ Verified  | Step 5 — TX SID=0x123 FDF BRS DLC=8 data=0x01..0x08 received intact in FIFO2 |
+| Send one frame                 | ✅ Verified  | Step 4 — T0=0x123 FDF BRS DLC=8, TXREQ cleared, no errors |
+| Receive a frame (internal loopback) | ✅ Verified  | Step 5 — Filter 0 accept-all→FIFO2, all fields match |
+| Full loopback round-trip verify | ✅ Verified  | Step 5 — TX SID=0x123 FDF BRS DLC=8 data=0x01..0x08 received intact |
+| Multi-frame loopback (3 frames) | ✅ Verified  | Step 6 — SIDs 0x001 0x7FF 0x456 all OK at 2 Mbps |
+| setDataBitTiming() runtime switch | ✅ Verified  | Step 6 — config round-trip, re-enable filter, TX+RX OK |
+| Driver refactor (SRP)           | ✅ Verified  | mcp2518fd_can.h/.cpp — main.cpp is pure consumer, all assertions pass |
