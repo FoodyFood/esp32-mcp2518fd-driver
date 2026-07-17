@@ -19,8 +19,12 @@ constexpr uint32_t NBTCFG_500K_40MHZ = 0x00060303;  // 500 kbps  @ 40 MHz
 constexpr uint32_t NBTCFG_1M_40MHZ   = 0x00060101;  // 1 Mbps    @ 40 MHz
 
 // Data bit rate (BRS phase — requires TDC at >= 1 Mbps):
-constexpr uint32_t DBTCFG_1M_40MHZ   = 0x00260101;  // 1 Mbps    @ 40 MHz  (no TDC needed)
-constexpr uint32_t DBTCFG_2M_40MHZ   = 0x00120101;  // 2 Mbps    @ 40 MHz  (use TDC_2M_40MHZ)
+// Formula: DBR = FSYS / ((BRP+1) * (1 + TSEG1 + TSEG2))  [ref manual Eq 3-2/3-4]
+constexpr uint32_t DBTCFG_1M_40MHZ   = 0x00260101;  // 1 Mbps    @ 40 MHz  BRP=0 TSEG1=38 TSEG2=1 SJW=1  (TDC optional)
+constexpr uint32_t DBTCFG_2M_40MHZ   = 0x00120101;  // 2 Mbps    @ 40 MHz  BRP=0 TSEG1=18 TSEG2=1 SJW=1
+constexpr uint32_t DBTCFG_4M_40MHZ   = 0x00070202;  // 4 Mbps    @ 40 MHz  BRP=0 TSEG1=7  TSEG2=2 SJW=2
+constexpr uint32_t DBTCFG_5M_40MHZ   = 0x00050202;  // 5 Mbps    @ 40 MHz  BRP=0 TSEG1=5  TSEG2=2 SJW=2
+constexpr uint32_t DBTCFG_8M_40MHZ   = 0x00030101;  // 8 Mbps    @ 40 MHz  BRP=0 TSEG1=3  TSEG2=1 SJW=1
 
 // ----------------------------------------------------------------------------
 // TDC (Transmitter Delay Compensation) presets
@@ -31,9 +35,13 @@ constexpr uint32_t DBTCFG_2M_40MHZ   = 0x00120101;  // 2 Mbps    @ 40 MHz  (use 
 //
 // Formula: TDCO = (BRP+1) * (TSEG1+1)  [ref manual Table 3-5]
 //
+// TDCO = (BRP+1) * (TSEG1+1)  [ref manual Table 3-5, verified example: BRP=0 TSEG1=14 -> TDCO=15]
 constexpr uint32_t TDC_DISABLED   = 0x00000000;  // TDC off  (use for < 1 Mbps data rate)
 constexpr uint32_t TDC_1M_40MHZ   = 0x00022700;  // TDCMOD=auto TDCO=39  (1 Mbps  @ 40 MHz, TSEG1=38)
 constexpr uint32_t TDC_2M_40MHZ   = 0x00021300;  // TDCMOD=auto TDCO=19  (2 Mbps  @ 40 MHz, TSEG1=18)
+constexpr uint32_t TDC_4M_40MHZ   = 0x00020800;  // TDCMOD=auto TDCO=8   (4 Mbps  @ 40 MHz, TSEG1=7)
+constexpr uint32_t TDC_5M_40MHZ   = 0x00020600;  // TDCMOD=auto TDCO=6   (5 Mbps  @ 40 MHz, TSEG1=5)
+constexpr uint32_t TDC_8M_40MHZ   = 0x00020400;  // TDCMOD=auto TDCO=4   (8 Mbps  @ 40 MHz, TSEG1=3)
 
 // ----------------------------------------------------------------------------
 // CAN message
