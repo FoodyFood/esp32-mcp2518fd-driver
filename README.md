@@ -7,7 +7,7 @@ A register-level CAN FD driver for the **MCP2518FD** external CAN FD controller,
 ```mermaid
 graph LR
     subgraph ESP32["🔵 ESP32-D0WD-V3"]
-        APP["Application\nmain.cpp"]
+        APP["Application\nloopback.cpp"]
         CAN["CAN Driver\nmcp2518fd_can"]
         DRV["SPI Transport\nmcp2518fd_spi"]
     end
@@ -101,10 +101,13 @@ PDFs are not committed to this repo. Download them from the links above and plac
 
 ```
 src/
-  main.cpp                  # Regression test harness — pure driver consumer, key-triggered
   mcp2518fd_can.h/.cpp      # CAN driver — configure, transmit, receive, bitrate switching
   mcp2518fd_registers.h     # All register addresses, masks and constants
   mcp2518fd_spi.h/.cpp      # SPI transport — raw byte/word reads and writes
+
+examples/
+  loopback/loopback.cpp     # Regression test — single-board internal loopback
+  two_node/two_node.cpp     # Two-node CAN FD test (not yet implemented)
 
 docs/
   status.md                 # Verified milestone tracker
@@ -113,7 +116,11 @@ docs/
   search.py                 # PDF search tool — queries both datasheets
   reference/                # Place downloaded PDFs here (see reference/README.md)
 
-  tools/run_test.py          # Test runner — loopback and (future) two-node
+tools/
+  run_test.py               # Test runner — loopback and (future) two-node
+
+library.json                # PlatformIO library manifest
+library.properties          # Arduino IDE library manifest
 platformio.ini              # PlatformIO build config
 ```
 
@@ -132,7 +139,7 @@ Each feature is implemented in a single numbered step:
 
 ## Key implementation decisions
 
-- **Three-layer architecture** — `mcp2518fd_spi` owns SPI transport, `mcp2518fd_can` owns all chip logic, `main.cpp` is a pure consumer with no register names or RAM addresses
+- **Three-layer architecture** — `mcp2518fd_spi` owns SPI transport, `mcp2518fd_can` owns all chip logic, `examples/loopback/loopback.cpp` is a pure consumer with no register names or RAM addresses
 - **Self-documenting configuration** — named presets (`NBTCFG_125K_40MHZ`, `DBTCFG_2M_40MHZ`, `TDC_2M_40MHZ`) mean users configure without needing the datasheet
 - **No third-party CAN libraries** — every register touched is sourced directly from the datasheet
 - **No 32-bit RMW of CiCON** — REQOP is written via `write8()` to byte 3 only; a full 32-bit read-modify-write was found unreliable on this chip
@@ -147,7 +154,7 @@ Each feature is implemented in a single numbered step:
 - [PlatformIO Core](https://docs.platformio.org/en/latest/core/installation/index.html) 6.x
 - Espressif32 platform 7.0.1 (pinned in `platformio.ini`)
 
-**PDF search tool** (optional — only needed to query the datasheets)
+**Test runner and PDF search tool** (optional)
 ```bash
 pip install -r requirements.txt
 ```
@@ -158,7 +165,7 @@ Then place the two Microchip PDFs in `docs/reference/` — see [`docs/reference/
 Requires [PlatformIO](https://platformio.org/).
 
 ```bash
-pio run --target upload --upload-port <PORT> && python monitor.py <PORT> 115200
+pio run -e loopback --target upload --upload-port <PORT> && python tools/run_test.py --env loopback --port <PORT>
 ```
 
 Replace `<PORT>` with your serial port (`COM4` on Windows, `/dev/ttyUSB0` on Linux/macOS).

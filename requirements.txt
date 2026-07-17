@@ -1,3 +1,7 @@
-# Required for docs/search.py — PDF search tool
 # Install with: pip install -r requirements.txt
+
+# Required for tools/run_test.py — serial test runner
+pyserial>=3.5
+
+# Required for docs/search.py — PDF search tool
 PyMuPDF>=1.28.0
