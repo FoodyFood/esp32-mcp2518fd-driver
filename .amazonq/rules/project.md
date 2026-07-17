@@ -70,6 +70,8 @@ After every successful verified step:
 
 If something unexpected is discovered during testing (e.g. a register behaves differently than the datasheet suggests), document it immediately in `docs/context.md` under a "Discoveries" section before moving on.
 
+After every verified step, end with a single plain-English sentence summarising what was achieved and specifically how it moves closer to the goal of loopback/CAN FD communication.
+
 ## Commit Rules
 - Commit after every successful verified iteration — no exceptions
 - Commit message format: `step N: short description`

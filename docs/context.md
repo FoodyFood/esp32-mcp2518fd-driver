@@ -74,7 +74,7 @@ FRESET (bit 10 of CiFIFOCONm) is set automatically when entering Configuration m
 and cleared automatically when leaving it. Do not poll or set it manually while in config mode.
 Observed: FRESET=0 when read in loopback mode (after config mode exit). Expected.
 
-### CiFIFOUAm is only valid outside Configuration mode
-The UA register holds the RAM address of the next message slot.
-Reading it in config mode returns an undefined value.
-Always exit config mode before reading UA to calculate RAM write address.
+### CiFIFOUAm reports offset, not absolute address
+CiFIFOUAm holds the byte offset from RAM base (0x400), not the absolute SPI address.
+Actual RAM address = 0x400 + UA.
+Verified: UA1=0x000 → RAM 0x400, UA2=0x010 → RAM 0x410 (16-byte objects, PLSIZE=0, no TEF/TXQ).

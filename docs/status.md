@@ -42,7 +42,7 @@ Each item below has been tested on real hardware and confirmed working.
 | RX FIFO configuration          | ✅ Verified  | Step 2 — FIFO2=RX (all zeros), readback 0x00000400 (FRESET set by HW) |
 | TXQEN/STEF cleared in CiCON    | ✅ Verified  | Step 2 — byte-write to CiCON+2, confirmed TXQEN=0 STEF=0 |
 | RAM initialisation             | 🔲 Not started | Step 3                                        |
-| RAM allocation for FIFOs       | 🔲 Not started | Step 4                                        |
-| Send one frame                 | 🔲 Not started | Step 7-8                                      |
-| Receive one frame              | 🔲 Not started | Step 9                                        |
-| Loopback frame verify          | 🔲 Not started | Step 9                                        |
+| RAM allocation for FIFOs       | ✅ Verified  | Step 3 — UA1=0x000 (RAM 0x400), UA2=0x010 (RAM 0x410). UA is offset from RAM base, not absolute address |
+| Send one frame                 | 🔲 Not started | Step 5                                        |
+| Receive one frame              | 🔲 Not started | Step 6                                        |
+| Loopback frame verify          | 🔲 Not started | Step 6                                        |

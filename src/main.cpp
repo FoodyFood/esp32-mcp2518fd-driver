@@ -111,12 +111,27 @@ void runTest()
     Serial.printf("CiFIFOCON2= 0x%08lX  expect 0x00000400  %s\n",
         f2con, f2con == 0x00000400UL ? "OK" : "FAIL");
 
-    // Now enter loopback
-    can.setMode(MODE_INTERNAL_LB);
+    // ------------------------------------------------------------------
+    // Step 3: Read CiFIFOUA1 and CiFIFOUA2 in loopback mode (outside config)
+    // TEF=0, TXQ=0 => FIFO1 starts at RAM base 0x400
+    // Message object size = 8 bytes header + 8 bytes payload (PLSIZE=0) = 16 bytes
+    // Expected: UA1=0x400, UA2=0x410
+    // ------------------------------------------------------------------
+
+    uint32_t ua1 = can.read32(FIFO_UA(1));
+    uint32_t ua2 = can.read32(FIFO_UA(2));
 
     Serial.println();
-    Serial.println("After LOOPBACK:");
-    dumpCiCON();
+    Serial.println("Step 3 — FIFO UA (RAM addresses):");
+    // UA holds the offset from RAM base (0x400), not the absolute address
+    // Actual address = 0x400 + UA. With no TEF/TXQ:
+    // FIFO1: offset 0x000, FIFO2: offset 0x010 (16 bytes per object)
+    Serial.printf("CiFIFOUA1 = 0x%08lX  expect 0x00000000  %s\n",
+        ua1, ua1 == 0x00000000UL ? "OK" : "FAIL");
+    Serial.printf("CiFIFOUA2 = 0x%08lX  expect 0x00000010  %s\n",
+        ua2, ua2 == 0x00000010UL ? "OK" : "FAIL");
+    Serial.printf("RAM addr FIFO1 = 0x%03lX  RAM addr FIFO2 = 0x%03lX\n",
+        0x400UL + ua1, 0x400UL + ua2);
 
     Serial.println();
 }
