@@ -2,6 +2,8 @@
 
 A register-level CAN FD driver for the **MCP2518FD** external CAN FD controller, running on an **ESP32** over SPI. Built directly from the Microchip datasheet as the source of truth — every register address, bit position and field definition is verified against the official documentation before any code is written.
 
+Development is spec-driven: every new feature starts as a spec in [`docs/specs/`](docs/specs/), is implemented against that spec, and is verified on two real hardware nodes before being committed. See [`docs/use_case_coverage.md`](docs/use_case_coverage.md) for the full real-world use case analysis and gap tracking.
+
 ## System overview
 
 ```mermaid
@@ -65,7 +67,7 @@ The result is a minimal, auditable reference implementation that anyone can foll
 | Oscillator | 20 MHz crystal (SCLKDIV=0, PLLEN=0 → FSYS=20 MHz) |
 | Transceiver | ATA6561 |
 | SPI bus | VSPI — SCK=33, MISO=35, MOSI=32, CS=25 |
-| INT | GPIO 34 (unused) |
+| INT | GPIO 34 (interrupt input — used by SPEC-004) |
 
 ## Progress
 
@@ -91,7 +93,19 @@ The result is a minimal, auditable reference implementation that anyone can foll
 | Correct timing for 20 MHz hardware (scope: 24 µs @ 125 kbps) | ✅ Verified |
 | RATE_NOT_ACHIEVABLE error path + raw API loopback | ✅ Verified |
 
+### Roadmap
+
+| Spec | Feature | Status |
+|---|---|---|
+| [SPEC-001](docs/specs/SPEC-001-extended-id.md) | 29-bit extended ID (EID) | Pending |
+| [SPEC-002](docs/specs/SPEC-002-acceptance-filters.md) | Acceptance filter API | Pending |
+| [SPEC-003](docs/specs/SPEC-003-bus-error-and-tx-result.md) | Bus error detection + TX error detail | Pending |
+| [SPEC-004](docs/specs/SPEC-004-interrupt-rx-and-fifo-depth.md) | Interrupt-driven RX + configurable FIFO depth | Pending |
+| [SPEC-005](docs/specs/SPEC-005-rx-timestamp-and-listen-only.md) | RX timestamp + listen-only mode | Pending |
+| [SPEC-006](docs/specs/SPEC-006-stop-restart-sleep.md) | stop() / restart() / sleep() | Pending |
+
 See [`docs/status.md`](docs/status.md) for detailed notes and observed values from each verified step.
+See [`docs/specs/README.md`](docs/specs/README.md) for the full spec index and implementation order.
 
 ## Repository layout
 
@@ -118,6 +132,15 @@ docs/
   status.md                 # Verified milestone tracker
   context.md                # Hardware decisions and discoveries
   registers.md              # Register field reference
+  use_case_coverage.md      # Real-world use case analysis and gap tracking
+  specs/                    # One spec per feature — read before implementing
+    README.md               # Spec index and implementation order
+    SPEC-001-*.md           # 29-bit extended ID
+    SPEC-002-*.md           # Acceptance filters
+    SPEC-003-*.md           # Bus error detection + TX error detail
+    SPEC-004-*.md           # Interrupt RX + configurable FIFO depth
+    SPEC-005-*.md           # RX timestamp + listen-only mode
+    SPEC-006-*.md           # stop() / restart() / sleep()
   search.py                 # PDF search tool — queries both datasheets
   reference/                # Place downloaded PDFs here (see reference/README.md)
 
@@ -264,9 +287,9 @@ Presets for 20 MHz and 40 MHz oscillators are defined in `mcp2518fd_can.h` (e.g.
 - **setDataRate() fails before touching the chip** — timing is calculated before entering config mode; a `RATE_NOT_ACHIEVABLE` result leaves the chip in its current mode untouched
 - **No 32-bit RMW of CiCON** — REQOP is written via `write8()` to byte 3 only
 - **No TXQ, no TEF** — FIFO1=TX, FIFO2=RX only
-- **No interrupts** — polling only
 - **UA is an offset** — `CiFIFOUAm` holds byte offset from RAM base `0x400`; actual address = `0x400 + UA`
 - **TDC required at ≥ 1 Mbps** — automatic mode, TDCO = (BRP+1) × (TSEG1+1)
+- **Spec-driven development** — every new feature starts as a spec in `docs/specs/`, is implemented against that spec, and is verified on two real hardware nodes before commit
 
 ## Source of truth
 

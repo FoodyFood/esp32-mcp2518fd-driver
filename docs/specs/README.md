@@ -1,8 +1,20 @@
 # Spec Index
 
-Each spec closes one or more gaps from `docs/use_case_coverage.md`.
+Each spec closes one or more gaps from [`docs/use_case_coverage.md`](../use_case_coverage.md).
 Specs are ordered by priority and grouped by theme.
 Implement in order — later specs may depend on earlier ones (noted below).
+
+## How to work a spec
+
+1. **Read** — open the spec, understand every acceptance criterion, verify all register references against the PDFs
+2. **Design** — plan the API and register changes; confirm the design satisfies every criterion before writing code
+3. **Implement** — minimum code to satisfy the spec; update all affected call sites and examples in the same change
+4. **Test on hardware** — loopback first (single board, COM4), then two-node (COM4 + COM3); both must pass all assertions; run any spec-specific hardware check listed in the spec
+5. **Commit** — only after hardware passes; update Status below from `Pending` → `In Progress` → `Done`
+
+Never mark a spec Done without two-node hardware evidence.
+
+---
 
 ## Group A — EV Battery (highest priority)
 
