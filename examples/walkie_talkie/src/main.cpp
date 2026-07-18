@@ -65,11 +65,7 @@ void setup()
     Serial.begin(115200);
     spi.begin(PIN_SCK, PIN_MISO, PIN_MOSI, PIN_CS);
 
-    bool ok = can.configure(
-        NBTCFG_125K_40MHZ,
-        DBTCFG_2M_40MHZ,
-        TDC_2M_40MHZ,
-        MODE_NORMAL);
+    bool ok = can.configure(125000, 2000000, MODE_NORMAL) == CanStatus::OK;
 
     Serial.println();
     Serial.println("==========================");

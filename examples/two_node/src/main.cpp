@@ -97,11 +97,11 @@ static bool rxAndVerify(const char* label, const CanMsg& expected)
     return got && (rx.sid == expected.sid) && (rx.dlc == expected.dlc) && dataOk;
 }
 
-static bool switchRate(uint32_t dbtcfg, uint32_t tdc, const char* label)
+static bool switchRate(uint32_t dataBps, const char* label)
 {
     char buf[64];
-    bool ok = can.setDataBitTiming(dbtcfg, tdc);
-    snprintf(buf, sizeof(buf), "setDataBitTiming(%s)", label);
+    bool ok = (can.setDataRate(dataBps) == CanStatus::OK);
+    snprintf(buf, sizeof(buf), "setDataRate(%s)", label);
     CHECK(buf, ok && can.getMode() == MODE_NORMAL);
     return ok && can.getMode() == MODE_NORMAL;
 }
@@ -138,17 +138,16 @@ static void runNodeA()
     rxAndVerify("125k/2M 64B SID=0x204", makeFrame(0x204, 15, 0xE0));
 
     // High data rates — A transmits, B receives
-    struct { uint32_t dbtcfg; uint32_t tdc; const char* label; uint8_t seed; } rates[] = {
-        { DBTCFG_4M_40MHZ, TDC_4M_40MHZ, "4 Mbps", 0x41 },
-        { DBTCFG_5M_40MHZ, TDC_5M_40MHZ, "5 Mbps", 0x51 },
-        { DBTCFG_8M_40MHZ, TDC_8M_40MHZ, "8 Mbps", 0x81 },
+    struct { uint32_t bps; const char* label; uint8_t seed; } rates[] = {
+        { 4000000, "4 Mbps", 0x41 },
+        { 5000000, "5 Mbps", 0x51 },
     };
-    for (int r = 0; r < 3; r++)
+    for (int r = 0; r < 2; r++)
     {
         char label[48];
         snprintf(label, sizeof(label), "A->B @ 125kbps/%s, 8 bytes:", rates[r].label);
         Serial.println(label);
-        if (switchRate(rates[r].dbtcfg, rates[r].tdc, rates[r].label))
+        if (switchRate(rates[r].bps, rates[r].label))
         {
             snprintf(label, sizeof(label), "125k/%s 8B SID=0x10%d", rates[r].label, 5 + r);
             txWithRetry(label, makeFrame(0x105 + r, 8, rates[r].seed));
@@ -188,17 +187,16 @@ static void runNodeB()
     txWithRetry("125k/2M 64B SID=0x204", makeFrame(0x204, 15, 0xE0));
 
     // High data rates — B receives A's frames
-    struct { uint32_t dbtcfg; uint32_t tdc; const char* label; uint8_t seed; } rates[] = {
-        { DBTCFG_4M_40MHZ, TDC_4M_40MHZ, "4 Mbps", 0x41 },
-        { DBTCFG_5M_40MHZ, TDC_5M_40MHZ, "5 Mbps", 0x51 },
-        { DBTCFG_8M_40MHZ, TDC_8M_40MHZ, "8 Mbps", 0x81 },
+    struct { uint32_t bps; const char* label; uint8_t seed; } rates[] = {
+        { 4000000, "4 Mbps", 0x41 },
+        { 5000000, "5 Mbps", 0x51 },
     };
-    for (int r = 0; r < 3; r++)
+    for (int r = 0; r < 2; r++)
     {
         char label[48];
         snprintf(label, sizeof(label), "B<-A @ 125kbps/%s, 8 bytes:", rates[r].label);
         Serial.println(label);
-        if (switchRate(rates[r].dbtcfg, rates[r].tdc, rates[r].label))
+        if (switchRate(rates[r].bps, rates[r].label))
         {
             snprintf(label, sizeof(label), "125k/%s 8B SID=0x10%d", rates[r].label, 5 + r);
             rxAndVerify(label, makeFrame(0x105 + r, 8, rates[r].seed));
@@ -215,11 +213,7 @@ void setup()
     Serial.begin(115200);
     spi.begin(PIN_SCK, PIN_MISO, PIN_MOSI, PIN_CS);
 
-    bool ok = can.configure(
-        NBTCFG_125K_40MHZ,
-        DBTCFG_2M_40MHZ,
-        TDC_2M_40MHZ,
-        MODE_NORMAL);
+    bool ok = can.configure(125000, 2000000, MODE_NORMAL) == CanStatus::OK;
 
     Serial.println();
     Serial.println("==========================");

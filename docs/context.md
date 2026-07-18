@@ -6,7 +6,7 @@
 |--------------|-------------------------------|
 | MCU          | ESP32-D0WD-V3 (rev 3.1)       |
 | CAN chip     | MCP2518FD                     |
-| Oscillator   | 40 MHz crystal                |
+| Oscillator   | 20 MHz crystal (OSC reg: SCLKDIV=0, PLLEN=0 → FSYS=20 MHz) |
 | SPI bus      | VSPI                          |
 | SCK          | GPIO 33                       |
 | MISO         | GPIO 35                       |
@@ -56,6 +56,9 @@ Build the driver incrementally, one verified feature at a time.
 
 ## Key Decisions
 
+- `configure(nominalBps, dataBps, mode)` is the primary API. It reads the OSC register after reset, derives FSYS, and calculates NBTCFG/DBTCFG/TDC from first principles. No preset knowledge required from the caller.
+- `configureRaw()` and `setDataBitTimingRaw()` exist for direct register access (non-standard rates, custom oscillators). Presets in the header are for this path only.
+- `setDataRate()` calculates timing before entering config mode. A `RATE_NOT_ACHIEVABLE` result leaves the chip in its current mode completely untouched.
 - `setMode()` writes only byte 3 of CiCON (REQOP bits 2:0) via `write8`.
   A 32-bit read-modify-write of CiCON was found to be unreliable on this chip.
 - `getMode()` reads byte 2 of CiCON and extracts OPMOD from bits 7:5.
@@ -87,19 +90,17 @@ transceiver while ACKing its own frames internally. Clean waveforms observed on 
 125 kbps nominal / 2 Mbps data, SID=0x123 DLC=8, 10ms frame interval.
 This confirms the transceiver wiring is correct and the physical bus layer is ready for two-node.
 
-### NBTCFG preset values were incorrect (discovered during timeout calculation)
-The original NBTCFG presets (e.g. `0x001E0707` for 125 kbps) were producing rates ~8x too high
-(~1 Mbps instead of 125 kbps). The loopback tests passed because both TX and RX used the same
-incorrect timing. Discovered when implementing the calculated TX timeout — the formula produced
-unexpected results, leading to a systematic check of all presets.
+### Oscillator is 20 MHz, not 40 MHz
+The OSC register (0xE00) after reset reads 0x00000460: SCLKDIV=0 (bit 4), PLLEN=0 (bit 0), OSCREADY=1 (bit 10).
+This means FSYS = 20 MHz directly from the crystal with no PLL and no divider.
+All timing presets and the auto-calculation in detectFsys() are based on 20 MHz for this hardware.
+Scope verification: 125 kbps nominal → first dominant run = 24 µs = 3 bits × 8 µs/bit. Correct.
+8 Mbps data rate is not achievable at 20 MHz (20M/8M = 2.5 TQ, non-integer). RATE_NOT_ACHIEVABLE returned.
 
-Corrected values derived from: `NBR = FSYS / ((BRP+1) * (1 + TSEG1 + TSEG2))`
-All corrected presets use BRP=0, ~80% sample point, verified passing loopback on hardware.
-
-Note: the scope verification in step 15 was therefore at ~1 Mbps nominal (not 125 kbps) —
-the waveform was correct for the configured timing, just not the timing we thought it was.
-This will be re-verified on the scope with the corrected presets.
-### TDC required at >= 1 Mbps data rate
+### setDataRate() must calculate before touching the chip
+Early implementation entered config mode before checking if the rate was achievable, leaving the chip
+in config mode on failure. Fixed: calcBitTiming() is called first; only if it succeeds does the driver
+enter config mode. A RATE_NOT_ACHIEVABLE result is now completely non-destructive.
 At data bit rates of 1 Mbps and above the chip cannot reliably sample the loopback signal without
 Transmitter Delay Compensation. Symptoms: TX completes (TXREQ clears, no errors) but FIFO2
 remains empty. Fix: set TDCMOD=2 (auto) and TDCO=(BRP+1)*(TSEG1+1) in CiTDC before

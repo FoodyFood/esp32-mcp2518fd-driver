@@ -5,8 +5,9 @@ Clean-room direct register-level CAN FD driver for MCP2518FD on ESP32.
 No third-party CAN library. Target: two-node CAN FD communication via ATA6561 transceiver.
 
 ## Hardware
-- MCU: ESP32-D0WD-V3 (rev 3.1), 40MHz crystal
+- MCU: ESP32-D0WD-V3 (rev 3.1)
 - CAN controller: MCP2518FD
+- Oscillator: 20 MHz crystal (OSC reg 0x00000460: SCLKDIV=0, PLLEN=0 → FSYS=20 MHz)
 - Transceiver: ATA6561
 - SPI: VSPI — SCK=33, MISO=35, MOSI=32, CS=25, INT=34
 - Upload port: COM4 @ 115200 baud
@@ -26,9 +27,8 @@ Never assume a register address or bit position. Always verify from the PDFs fir
 Every change must follow this exact sequence. Do not skip steps.
 
 1. Make the code change
-2. Build + Upload + Monitor in one step: `pio run -e loopback --target upload --upload-port COM4 && python tools/run_test.py --env loopback --port COM4`
-   - Framework objects are cached in `.cache/` — only changed files recompile after the first build
-3. Verify the output matches expected values from the datasheet
+2. Build + Upload + Test: `cd examples/loopback && pio run -e loopback --target upload --upload-port COM4 && python ../../tools/run_test.py --env loopback --port COM4`
+3. Verify all assertions print OK — no FAILs
 4. If verification passes, commit: `git add . && git commit -m "step N: description"`
 5. If verification fails, diagnose before proceeding
 
@@ -62,19 +62,23 @@ If any previously passing check fails, stop and fix the regression before contin
 ## Key Implementation Rules
 - NEVER do a 32-bit read-modify-write of CiCON — use byte-level write8() to CiCON+3 for REQOP
 - NEVER read CiFIFOUAm while in Configuration mode — UA is only valid outside config mode
+- NEVER enter config mode before validating that the requested rate is achievable — calcBitTiming() first, chip access second
 - Always check TFNRFNIF before writing a TX message to RAM
 - Always set UINC and TXREQ in the same write32() call when appending to a transmitting FIFO
 - FRESET is set automatically in config mode and cleared automatically on mode exit — do not poll it in config mode
 - All registers are little-endian (LSB at lower address)
+- FSYS = 20 MHz on this hardware — 8 Mbps data rate is not achievable (non-integer TQ count)
 
 ## Code Style
 - No third-party CAN libraries
 - No interrupts (polling only for now)
 - No TEF, no filters, no TXQ (use FIFO1=TX, FIFO2=RX only)
 - Minimal code — only what is needed for the current milestone
-- All register constants in `mcp2518fd_registers.h`
-- All SPI transport in `mcp2518fd_spi.h` / `mcp2518fd_spi.cpp`
-- Test harness in `main.cpp` — key-triggered via Serial
+- All register constants in `include/mcp2518fd_registers.h`
+- All SPI transport in `include/mcp2518fd_spi.h` / `src/mcp2518fd_spi.cpp`
+- Public driver API in `include/mcp2518fd_can.h` / `src/mcp2518fd_can.cpp`
+- Examples use only the public API — no register names, no raw addresses
+- Test harness in `examples/loopback/src/main.cpp` — key-triggered via Serial
 
 ## Documentation
 After every successful verified step:
@@ -95,10 +99,13 @@ After every verified step, end with a single plain-English sentence summarising 
 - Docs and code go in the same commit
 
 ## Files
-- `src/main.cpp` — interactive test harness
-- `src/mcp2518fd_registers.h` — all register addresses, masks, constants
-- `src/mcp2518fd_spi.h` / `src/mcp2518fd_spi.cpp` — SPI transport + mode control
-- `tools/run_test.py` — test runner (loopback and future two-node)
+- `examples/loopback/src/main.cpp` — regression test harness
+- `include/mcp2518fd_can.h` — public driver API, CanMsg, CanStatus, bit timing presets
+- `include/mcp2518fd_registers.h` — all register addresses, masks, constants
+- `include/mcp2518fd_spi.h` / `src/mcp2518fd_spi.cpp` — SPI transport + mode control
+- `src/mcp2518fd_can.cpp` — driver implementation
+- `tools/run_test.py` — test runner (loopback and two-node)
+- `tools/check_timing.py` — verify bit timing presets for both 20 MHz and 40 MHz
 - `docs/status.md` — milestone tracker
 - `docs/context.md` — hardware and architecture context
 - `docs/registers.md` — register field reference

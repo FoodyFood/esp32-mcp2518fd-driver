@@ -31,12 +31,15 @@ Each item below has been tested on real hardware and confirmed working.
 
 | Feature                              | Status      | Notes                                                                 |
 |--------------------------------------|-------------|-----------------------------------------------------------------------|
-| CiNBTCFG (nominal bit timing)        | ✅ Verified | 125 kbps @ 40MHz: BRP=7 TSEG1=31 TSEG2=8 SJW=8 — scope verified     |
-| CiDBTCFG (data bit timing)           | ✅ Verified | 2 Mbps @ 40MHz: BRP=0 TSEG1=18 TSEG2=1 SJW=1                        |
-| CiTDC (transmitter delay comp)       | ✅ Verified | TDCMOD=auto TDCO=19 @ 2 Mbps, loopback passes                        |
-| Data rates 4/5/8 Mbps                | ✅ Verified | DBTCFG+TDC presets derived from datasheet, loopback passes on 2 boards |
+| CiNBTCFG (nominal bit timing)        | ✅ Verified | 125 kbps @ 20 MHz: BRP=0 TSEG1=127 TSEG2=32 SJW=32 — scope: 24 µs first dominant run |
+| CiDBTCFG (data bit timing)           | ✅ Verified | 2 Mbps @ 20 MHz: BRP=0 TSEG1=7 TSEG2=2 SJW=2                        |
+| CiTDC (transmitter delay comp)       | ✅ Verified | TDCMOD=auto TDCO=8 @ 2 Mbps/20 MHz, loopback passes                  |
+| Data rates 4/5 Mbps @ 20 MHz         | ✅ Verified | Auto-calculated, loopback passes                                      |
+| Data rate 8 Mbps @ 20 MHz            | ❌ Not achievable | 20 MHz / 8 MHz = 2.5 TQ — RATE_NOT_ACHIEVABLE returned correctly |
+| Data rates 1/2/4/5/8 Mbps (40 MHz presets via raw API) | ✅ Verified | configureRaw() + setDataBitTimingRaw(), loopback passes on 20 MHz hardware |
+| OSC auto-detection                   | ✅ Verified | detectFsys() reads PLLEN+SCLKDIV from OSC reg — reports 20000000 Hz  |
 | Calculated TX timeout                | ✅ Verified | Derived from bit timing at runtime — worst-case 64B frame × 3 attempts |
-| NBTCFG preset correction             | ✅ Verified | Original presets were 8× too fast; corrected and scope-verified       |
+| NBTCFG/DBTCFG preset correction      | ✅ Verified | All presets now BRP=0, exact rates, 80% SP — verified by check_timing.py |
 
 ## FIFO / Messaging
 
@@ -58,6 +61,18 @@ Each item below has been tested on real hardware and confirmed working.
 | `receive(msg, timeoutMs)` overload   | ✅ Verified | Blocking receive with explicit timeout                                |
 | TXABT/TXERR checked after transmit   | ✅ Verified | Returns false on no-ACK or bus error, not just on timeout             |
 
+## API
+
+| Feature                              | Status      | Notes                                                                 |
+|--------------------------------------|-------------|-----------------------------------------------------------------------|
+| `configure(nominalBps, dataBps, mode)` | ✅ Verified | Rate-based API — auto-detects FSYS, calculates all timing registers   |
+| `setDataRate(dataBps)`               | ✅ Verified | Calculates before entering config mode — chip state unchanged on failure |
+| `configureRaw(nbtcfg, dbtcfg, tdc, mode)` | ✅ Verified | Direct register control, bypasses auto-detection                 |
+| `setDataBitTimingRaw(dbtcfg, tdc)`   | ✅ Verified | Direct register control for data rate                                 |
+| `CanStatus` enum                     | ✅ Verified | OK / MODE_TIMEOUT / RATE_NOT_ACHIEVABLE / CLOCK_NOT_READY             |
+| `getFsys()`                          | ✅ Verified | Returns detected FSYS in Hz after configure()                         |
+| `readOsc()`                          | ✅ Verified | Returns raw OSC register value for diagnostics                        |
+
 ## Two-Node (Real Bus)
 
 | Feature                              | Status      | Notes                                                                 |
@@ -73,5 +88,5 @@ Each item below has been tested on real hardware and confirmed working.
 | loopback         | ✅ Verified | 34 assertions, all OK on COM3 and COM4                                |
 | two_node         | ✅ Verified | Full bidirectional test, all assertions OK on both nodes              |
 | walkie_talkie    | ✅ Verified | Text chat working between two boards over real bus                    |
-| scope_loopback   | ✅ Built    | Not yet run on hardware                                               |
+| scope_loopback   | ✅ Verified | FSYS=20 MHz detected, 24 µs first dominant run @ 125 kbps scope-confirmed |
 | bus_monitor      | ✅ Built    | Not yet run on hardware                                               |
