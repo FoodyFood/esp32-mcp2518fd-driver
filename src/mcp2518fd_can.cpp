@@ -88,13 +88,24 @@ bool MCP2518Driver::transmit(const CanMsg& msg)
     return false;
 }
 
+bool MCP2518Driver::available()
+{
+    return !!(mSpi.read32(FIFO_STA(2)) & FIFOSTA_TFNRFNIF);
+}
+
 bool MCP2518Driver::receive(CanMsg& msg)
 {
-    uint32_t tw = millis();
-    while (millis() - tw < 500 && !(mSpi.read32(FIFO_STA(2)) & FIFOSTA_TFNRFNIF)) {}
+    if (!available()) return false;
+    return receive(msg, 0);
+}
 
-    if (!(mSpi.read32(FIFO_STA(2)) & FIFOSTA_TFNRFNIF))
-        return false;
+bool MCP2518Driver::receive(CanMsg& msg, uint32_t timeoutMs)
+{
+    uint32_t tw = millis();
+    while (!available())
+    {
+        if (millis() - tw >= timeoutMs) return false;
+    }
 
     uint16_t addr = rxRamAddr();
 

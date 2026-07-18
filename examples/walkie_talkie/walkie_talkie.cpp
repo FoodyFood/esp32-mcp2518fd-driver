@@ -26,8 +26,10 @@ constexpr uint16_t CHAT_SID = 0x7E0;
 SPIClass      spi(VSPI);
 MCP2518Driver can(spi, PIN_CS);
 
-static char txBuf[64];   // serial input accumulator
-static int  txLen = 0;
+static char     txBuf[64];
+static int      txLen    = 0;
+static uint32_t txLastChar = 0;  // millis() of last received serial char
+constexpr uint32_t TX_IDLE_MS = 300;  // send after 300ms of no new chars
 
 // Send a null-terminated string as a sequence of 8-byte CAN FD frames.
 static void sendText(const char* text)
@@ -44,6 +46,17 @@ static void sendText(const char* text)
         memcpy(msg.data, text + offset, min(8, len - offset));
         if (!can.transmit(msg))
             Serial.println("[TX failed]");
+    }
+}
+
+static void flushTx()
+{
+    if (txLen > 0)
+    {
+        txBuf[txLen] = '\0';
+        Serial.printf("ME: %s\n", txBuf);
+        sendText(txBuf);
+        txLen = 0;
     }
 }
 
@@ -69,46 +82,46 @@ void setup()
 
 void loop()
 {
-    // Accumulate serial input, send on newline
+    // Accumulate serial input — send on newline or after 300ms idle
     while (Serial.available())
     {
         char c = Serial.read();
         if (c == '\n' || c == '\r')
         {
-            if (txLen > 0)
-            {
-                txBuf[txLen] = '\0';
-                Serial.printf("ME: %s\n", txBuf);
-                sendText(txBuf);
-                txLen = 0;
-            }
+            flushTx();
         }
         else if (txLen < (int)sizeof(txBuf) - 1)
         {
             txBuf[txLen++] = c;
+            txLastChar = millis();
         }
     }
+    if (txLen > 0 && millis() - txLastChar > TX_IDLE_MS)
+        flushTx();
 
-    // Receive and reassemble incoming frames
+    // Non-blocking receive — reassemble incoming frames into messages
     static char rxBuf[256];
     static int  rxLen = 0;
 
     CanMsg rx = {};
-    if (can.receive(rx) && rx.sid == CHAT_SID)
+    while (can.available())
     {
-        for (int i = 0; i < 8; i++)
+        if (can.receive(rx) && rx.sid == CHAT_SID)
         {
-            char c = (char)rx.data[i];
-            if (c == '\0')
+            for (int i = 0; i < 8; i++)
             {
-                rxBuf[rxLen] = '\0';
-                if (rxLen > 0)
-                    Serial.printf("THEM: %s\n", rxBuf);
-                rxLen = 0;
-                break;
+                char c = (char)rx.data[i];
+                if (c == '\0')
+                {
+                    rxBuf[rxLen] = '\0';
+                    if (rxLen > 0)
+                        Serial.printf("THEM: %s\n", rxBuf);
+                    rxLen = 0;
+                    break;
+                }
+                if (rxLen < (int)sizeof(rxBuf) - 1)
+                    rxBuf[rxLen++] = c;
             }
-            if (rxLen < (int)sizeof(rxBuf) - 1)
-                rxBuf[rxLen++] = c;
         }
     }
 }

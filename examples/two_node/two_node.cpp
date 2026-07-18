@@ -76,12 +76,7 @@ static bool rxAndVerify(const char* label, const CanMsg& expected)
     CanMsg rx = {};
 
     // Override driver timeout with our generous two-node timeout
-    uint32_t start = millis();
-    bool got = false;
-    while (millis() - start < RX_TIMEOUT_MS)
-    {
-        if (can.receive(rx)) { got = true; break; }
-    }
+    bool got = can.receive(rx, RX_TIMEOUT_MS);
 
     snprintf(buf, sizeof(buf), "RX %s received", label);
     CHECK(buf, got);

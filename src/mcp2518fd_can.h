@@ -112,11 +112,16 @@ public:
     // frame × 3 retransmission attempts + 2ms margin.
     bool transmit(const CanMsg& msg);
 
-    // Read one CAN FD frame from the RX FIFO.
-    // Waits up to 10 ms for a frame to arrive.
-    // Returns true and populates msg on success.
-    // Returns false if no frame arrives within the timeout.
+    // Returns true if at least one frame is waiting in the RX FIFO (non-blocking).
+    bool available();
+
+    // Read one CAN FD frame from the RX FIFO (non-blocking).
+    // Returns true immediately if a frame is waiting, false if the FIFO is empty.
+    // For a blocking version with timeout, use receive(msg, timeout_ms).
     bool receive(CanMsg& msg);
+
+    // Blocking receive with explicit timeout in milliseconds.
+    bool receive(CanMsg& msg, uint32_t timeoutMs);
 
     // Return the current operating mode (OPMOD field of CiCON).
     // Compare against MODE_* constants from mcp2518fd_registers.h.
