@@ -36,9 +36,8 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
 CanStatus MCP2518Driver::setDataRate(uint32_t dataBps)
 {
     uint8_t prevMode = mSpi.getMode();
-    mSpi.setMode(MODE_CONFIG);
 
-    // Re-derive nominal rate from stored nbtcfg so calcBitTiming gets consistent inputs
+    // Calculate before entering config mode — fail early without disturbing the chip
     uint32_t nBrp   = (mNbtcfg >> 24) & 0xFF;
     uint32_t nTseg1 = (mNbtcfg >> 16) & 0xFF;
     uint32_t nTseg2 = (mNbtcfg >>  8) & 0x7F;
@@ -46,8 +45,9 @@ CanStatus MCP2518Driver::setDataRate(uint32_t dataBps)
 
     uint32_t nbtcfg, dbtcfg, tdcfg;
     if (!calcBitTiming(mFsys, nominalBps, dataBps, nbtcfg, dbtcfg, tdcfg))
-        return CanStatus::RATE_NOT_ACHIEVABLE;
+        return CanStatus::RATE_NOT_ACHIEVABLE;  // chip state unchanged
 
+    mSpi.setMode(MODE_CONFIG);
     mSpi.write32(REG_CiDBTCFG, dbtcfg);
     mSpi.write32(REG_CiTDC,    tdcfg);
     configFilter();
