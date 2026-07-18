@@ -40,7 +40,7 @@ Verify examples one at a time in this order:
 2. `examples/two_node` — both nodes, COM4 + COM3
 3. `examples/walkie_talkie` — manual interactive test, both nodes
 4. `examples/scope_loopback` — single-board, COM4, observe on scope
-5. `examples/bus_monitor` — both nodes, COM4 + COM3
+5. `examples/bus_monitor` — both nodes, COM4 (node_a env) + COM3 (node_b env)
 
 Each example must build cleanly and produce expected output before moving to the next.
 Do not proceed to spec-driven feature work until all examples are verified.
@@ -188,7 +188,7 @@ After every verified step, end with a single plain-English sentence summarising 
 - `examples/two_node/src/main.cpp` — two-node regression test (real bus, COM4 + COM3)
 - `examples/walkie_talkie/` — interactive text chat between two nodes
 - `examples/scope_loopback/` — continuous TX in MODE_EXTERNAL_LB for scope measurements
-- `examples/bus_monitor/` — two nodes continuously transmitting counters
+- `examples/bus_monitor/` — two nodes continuously transmitting counters (node_a env → COM4, node_b env → COM3; boots autonomously, no serial input required)
 - `include/mcp2518fd_can.h` — public driver API, CanMsg, CanStatus, bit timing presets
 - `include/mcp2518fd_registers.h` — all register addresses, masks, constants
 - `include/mcp2518fd_spi.h` / `src/mcp2518fd_spi.cpp` — SPI transport + mode control

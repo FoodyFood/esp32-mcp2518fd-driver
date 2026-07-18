@@ -167,7 +167,7 @@ Each example is a self-contained PlatformIO project.
 | `examples/two_node` | Two-board bidirectional test over a real CAN bus — A→B and B→A at 2/4/5 Mbps, 8-byte and 64-byte payloads. |
 | `examples/walkie_talkie` | Text chat between two boards over CAN FD — type in one Serial monitor, read on the other. |
 | `examples/scope_loopback` | Continuous TX in `MODE_EXTERNAL_LB` for oscilloscope measurements — real bus signals, self-ACK. |
-| `examples/bus_monitor` | Two nodes continuously transmitting counters — bus load testing and integrity checking. |
+| `examples/bus_monitor` | Two nodes continuously transmitting counters — autonomous boot, no serial input required. node_a env → COM4 (SID=0x100), node_b env → COM3 (SID=0x200). Bus load testing and integrity checking. |
 
 ```bash
 # Single-board loopback

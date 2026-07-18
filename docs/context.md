@@ -45,7 +45,7 @@ Build the driver incrementally, one verified feature at a time.
 | `examples/two_node/`        | Two-node bidirectional test over real bus                    |
 | `examples/walkie_talkie/`   | Text chat between two nodes                                  |
 | `examples/scope_loopback/`  | Continuous TX in MODE_EXTERNAL_LB for scope measurements     |
-| `examples/bus_monitor/`     | Two nodes continuously talking — bus load + integrity check  |
+| `examples/bus_monitor/`     | Two nodes continuously talking — bus load + integrity check. Autonomous: node_a env → COM4 (SID=0x100), node_b env → COM3 (SID=0x200) |
 | `docs/context.md`           | This file                                                    |
 | `docs/status.md`            | Verified milestone tracker                                   |
 | `docs/registers.md`         | Register field reference                                     |

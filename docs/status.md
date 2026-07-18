@@ -89,4 +89,4 @@ Each item below has been tested on real hardware and confirmed working.
 | two_node         | ✅ Verified | Full bidirectional test, all assertions OK on both nodes              |
 | walkie_talkie    | ✅ Verified | Text chat working between two boards over real bus                    |
 | scope_loopback   | ✅ Verified | FSYS=20 MHz detected, 24 µs first dominant run @ 125 kbps scope-confirmed |
-| bus_monitor      | ✅ Built    | Not yet run on hardware                                               |
+| bus_monitor      | ✅ Verified | Autonomous boot, continuous TX/RX both nodes, RX_ERR=0 sustained. Redesigned to compile-time NODE_SID (node_a/node_b envs) — no serial input required |
