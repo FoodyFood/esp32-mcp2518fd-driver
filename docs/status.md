@@ -52,4 +52,4 @@ Each item below has been tested on real hardware and confirmed working.
 | 64-byte payload (DLC=15)        | ✅ Verified  | PLSIZE_64 on both FIFOs, dlcToLen() loop, all 64 bytes verified |
 | Data rates 4/5/8 Mbps           | ✅ Verified  | DBTCFG+TDC presets derived from datasheet, loopback passes on COM3+COM4 |
 | Physical bus output (MODE_EXTERNAL_LB) | ✅ Verified  | Clean differential waveform on scope, 125kbps/2Mbps, SID=0x123 DLC=8 |
-| Normal CAN FD mode (two-node)   | 🔲 Not started |  |
+| Normal CAN FD mode (two-node)   | ✅ Verified | A↔B bidirectional, 2/4/5/8 Mbps data, 8B+64B payloads, no coordination required |
