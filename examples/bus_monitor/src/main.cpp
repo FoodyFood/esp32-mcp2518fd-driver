@@ -5,19 +5,20 @@
 
 // Bus monitor — two nodes continuously transmitting and receiving
 //
-// Both boards run this same binary in MODE_NORMAL.
-// Each node transmits a counter frame every TX_INTERVAL_MS and prints
-// any frames it receives. Good for scope measurements of real two-node
-// bus traffic with genuine ACKs from the other node.
+// Both boards run this binary. Each node starts transmitting immediately
+// on boot — no serial input required. Good for scope measurements and
+// bus load testing with genuine two-node ACKs.
 //
-// Node A owns SID=0x100, Node B owns SID=0x200.
-// Send 'A' or 'B' over serial to assign role.
+// Node A (node_a env, COM4): TX SID=0x100
+// Node B (node_b env, COM3): TX SID=0x200
 //
-// Frame payload: 8 bytes — first 4 bytes are a uint32_t frame counter,
-// last 4 bytes are 0xDEADBEEF as a integrity marker.
-//
-// Rate: 125 kbps nominal / 2 Mbps data.
-// Press '+'/'-' to increase/decrease TX interval.
+// Frame payload: bytes 0-3 = uint32_t counter, bytes 4-7 = 0xDEADBEEF
+// Rate: 125 kbps nominal / 2 Mbps data
+// Press '+'/'-' to adjust TX interval, 's' for status
+
+#ifndef NODE_SID
+#error "NODE_SID must be defined — use env:node_a or env:node_b"
+#endif
 
 constexpr uint8_t  PIN_SCK  = 33;
 constexpr uint8_t  PIN_MISO = 35;
@@ -27,61 +28,34 @@ constexpr uint8_t  PIN_CS   = 25;
 constexpr uint32_t TX_INTERVAL_MIN_MS = 5;
 constexpr uint32_t TX_INTERVAL_MAX_MS = 1000;
 constexpr uint32_t TX_INTERVAL_STEP   = 5;
+constexpr uint32_t STATUS_INTERVAL_MS = 5000;
 
 SPIClass      spi(VSPI);
 MCP2518Driver can(spi, PIN_CS);
 
-static char     nodeId        = 0;
-static uint16_t txSid         = 0;
-static uint32_t txInterval    = 50;
-static uint32_t txCounter     = 0;
-static uint32_t rxCounter     = 0;
-static uint32_t rxErrors      = 0;
-static uint32_t lastTx        = 0;
-static uint32_t lastStatus    = 0;
+static uint32_t txInterval = 50;
+static uint32_t txCounter  = 0;
+static uint32_t rxCounter  = 0;
+static uint32_t rxErrors   = 0;
+static uint32_t lastTx     = 0;
+static uint32_t lastStatus = 0;
 
 static CanMsg makeTxFrame()
 {
     CanMsg msg;
-    msg.sid = txSid;
-    msg.fdf = true;
-    msg.brs = true;
-    msg.dlc = 8;
-    // bytes 0-3: counter (little-endian)
+    msg.sid   = NODE_SID;
+    msg.fdf   = true;
+    msg.brs   = true;
+    msg.dlc   = 8;
     msg.data[0] = (txCounter)       & 0xFF;
     msg.data[1] = (txCounter >> 8)  & 0xFF;
     msg.data[2] = (txCounter >> 16) & 0xFF;
     msg.data[3] = (txCounter >> 24) & 0xFF;
-    // bytes 4-7: integrity marker 0xDEADBEEF
     msg.data[4] = 0xEF;
     msg.data[5] = 0xBE;
     msg.data[6] = 0xAD;
     msg.data[7] = 0xDE;
     return msg;
-}
-
-static bool checkIntegrity(const CanMsg& rx)
-{
-    return rx.data[4] == 0xEF &&
-           rx.data[5] == 0xBE &&
-           rx.data[6] == 0xAD &&
-           rx.data[7] == 0xDE;
-}
-
-static void printStatus()
-{
-    Serial.printf("  Node=%c  SID=0x%03X  TX=%lu  RX=%lu  RX_ERR=%lu  interval=%lums\n",
-                  nodeId, txSid, txCounter, rxCounter, rxErrors, txInterval);
-}
-
-static void startNode(char id)
-{
-    nodeId = id;
-    txSid  = (id == 'A') ? 0x100 : 0x200;
-    txCounter = rxCounter = rxErrors = 0;
-    Serial.printf("\nNode %c started — TX SID=0x%03X  RX SID=0x%03X\n",
-                  nodeId, txSid, (id == 'A') ? 0x200 : 0x100);
-    Serial.println("  '+'/'-' to adjust TX interval, 's' for status");
 }
 
 void setup()
@@ -95,18 +69,15 @@ void setup()
     Serial.println("==========================");
     Serial.println("  CAN FD Bus Monitor");
     Serial.println("==========================");
-    Serial.printf("configure(MODE_NORMAL): %s\n", ok ? "OK" : "FAIL");
-    Serial.println("Send 'A' (COM4) or 'B' (COM3) to start.");
+    Serial.printf("SID=0x%03X  configure: %s\n", (uint16_t)NODE_SID, ok ? "OK" : "FAIL");
+    Serial.println("'+'/'-' TX interval  's' status");
 }
 
 void loop()
 {
-    // Handle serial commands
     while (Serial.available())
     {
         char c = Serial.read();
-        if ((c == 'A' || c == 'a') && nodeId == 0) startNode('A');
-        if ((c == 'B' || c == 'b') && nodeId == 0) startNode('B');
         if (c == '+' && txInterval < TX_INTERVAL_MAX_MS)
         {
             txInterval += TX_INTERVAL_STEP;
@@ -117,14 +88,13 @@ void loop()
             txInterval -= TX_INTERVAL_STEP;
             Serial.printf("  TX interval -> %lums\n", txInterval);
         }
-        if (c == 's') printStatus();
+        if (c == 's')
+            Serial.printf("  SID=0x%03X  TX=%lu  RX=%lu  RX_ERR=%lu  interval=%lums\n",
+                          (uint16_t)NODE_SID, txCounter, rxCounter, rxErrors, txInterval);
     }
-
-    if (nodeId == 0) return;
 
     uint32_t now = millis();
 
-    // Transmit on interval
     if (now - lastTx >= txInterval)
     {
         lastTx = now;
@@ -132,19 +102,20 @@ void loop()
         if (can.transmit(tx))
             txCounter++;
         else
-            Serial.printf("  [TX FAIL counter=%lu]\n", txCounter);
+            Serial.printf("  [TX FAIL count=%lu]\n", txCounter);
     }
 
-    // Receive any incoming frames
     CanMsg rx = {};
     if (can.receive(rx))
     {
-        if (checkIntegrity(rx))
+        bool ok = rx.data[4] == 0xEF && rx.data[5] == 0xBE &&
+                  rx.data[6] == 0xAD && rx.data[7] == 0xDE;
+        if (ok)
         {
             rxCounter++;
-            uint32_t theirCount = rx.data[0] | ((uint32_t)rx.data[1] << 8)
-                                | ((uint32_t)rx.data[2] << 16) | ((uint32_t)rx.data[3] << 24);
-            Serial.printf("  RX SID=0x%03X count=%lu\n", rx.sid, theirCount);
+            uint32_t cnt = rx.data[0] | ((uint32_t)rx.data[1] << 8)
+                         | ((uint32_t)rx.data[2] << 16) | ((uint32_t)rx.data[3] << 24);
+            Serial.printf("  RX SID=0x%03X count=%lu\n", rx.sid, cnt);
         }
         else
         {
@@ -153,10 +124,10 @@ void loop()
         }
     }
 
-    // Print status every 5 seconds
-    if (now - lastStatus >= 5000)
+    if (now - lastStatus >= STATUS_INTERVAL_MS)
     {
         lastStatus = now;
-        printStatus();
+        Serial.printf("  SID=0x%03X  TX=%lu  RX=%lu  RX_ERR=%lu  interval=%lums\n",
+                      (uint16_t)NODE_SID, txCounter, rxCounter, rxErrors, txInterval);
     }
 }

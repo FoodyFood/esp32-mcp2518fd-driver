@@ -14,6 +14,14 @@ Every feature is driven by a spec in `docs/specs/` before any code is written.
 - SPI: VSPI — SCK=33, MISO=35, MOSI=32, CS=25, INT=34
 - Upload port: COM4 @ 115200 baud
 
+## Autonomous Execution
+Minimise the number of times the user must intervene. Chain all tool calls that can be
+sequenced without a decision point — build, upload, test, commit — in a single uninterrupted
+run. Only stop and ask when a genuine decision is required (e.g. a test fails and the fix is
+not obvious, or a spec is ambiguous). Never pause between steps just to report progress.
+The user is the slowest part of the system; keep them out of the loop until their input
+actually changes the outcome.
+
 ## Source of Truth
 All register addresses, bit positions and field definitions MUST be verified against:
 - `docs/reference/External-CAN-FD-Controller-with-SPI-Interface-DS20006027B.pdf` (MCP2518FD datasheet)
@@ -24,6 +32,26 @@ Use `docs/search.py` to query both documents:
 Results written to `docs/reference/search_results.txt`.
 
 Never assume a register address or bit position. Always verify from the PDFs first.
+
+## Example Validation — Run Before Any New Feature Work
+Before starting any new spec or feature, all existing examples must be verified on hardware.
+Verify examples one at a time in this order:
+1. `examples/loopback` — single-board, COM4 only
+2. `examples/two_node` — both nodes, COM4 + COM3
+3. `examples/walkie_talkie` — manual interactive test, both nodes
+4. `examples/scope_loopback` — single-board, COM4, observe on scope
+5. `examples/bus_monitor` — both nodes, COM4 + COM3
+
+Each example must build cleanly and produce expected output before moving to the next.
+Do not proceed to spec-driven feature work until all examples are verified.
+
+## Adding New Examples
+- Create a new example when a new feature does not fit cleanly into `loopback` or `two_node`,
+  or when adding it would make an existing example too large or unfocused
+- Each example is a self-contained PlatformIO project under `examples/<name>/`
+- If the example is automatable (deterministic pass/fail output), add support to `tools/run_test.py`
+- If the example is interactive or scope-based, document the expected manual observation in the example's README
+- Add the new example to the Files list and Examples table in this file and in `README.md`
 
 ## Development Workflow — Spec-Driven Closed Loop
 Every feature must follow this exact sequence. Do not skip or reorder steps.
@@ -67,6 +95,9 @@ pio run -e two_node --target upload --upload-port COM3
 python ../../tools/run_test.py --env two_node --port-a COM4 --port-b COM3
 ```
 Both nodes must report all assertions OK.
+
+**After every spec, re-run loopback and two_node in full to confirm no regressions.**
+If a new feature has a dedicated example, run that example too before committing.
 
 **Additional hardware checks required by specific specs:**
 - SPEC-003 (bus errors): test with bus disconnected — one node only, MODE_NORMAL, verify NoAck and TEC increment
@@ -155,6 +186,9 @@ After every verified step, end with a single plain-English sentence summarising 
 ## Files
 - `examples/loopback/src/main.cpp` — regression test harness (single-board)
 - `examples/two_node/src/main.cpp` — two-node regression test (real bus, COM4 + COM3)
+- `examples/walkie_talkie/` — interactive text chat between two nodes
+- `examples/scope_loopback/` — continuous TX in MODE_EXTERNAL_LB for scope measurements
+- `examples/bus_monitor/` — two nodes continuously transmitting counters
 - `include/mcp2518fd_can.h` — public driver API, CanMsg, CanStatus, bit timing presets
 - `include/mcp2518fd_registers.h` — all register addresses, masks, constants
 - `include/mcp2518fd_spi.h` / `src/mcp2518fd_spi.cpp` — SPI transport + mode control
