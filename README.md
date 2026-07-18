@@ -60,8 +60,9 @@ The result is a minimal, auditable reference implementation that anyone can foll
 
 | Item | Detail |
 |---|---|
-| MCU | ESP32-D0WD-V3 (rev 3.1), 40 MHz crystal |
+| MCU | ESP32-D0WD-V3 (rev 3.1) |
 | CAN controller | MCP2518FD |
+| Oscillator | 20 MHz crystal (SCLKDIV=0, PLLEN=0 → FSYS=20 MHz) |
 | Transceiver | ATA6561 |
 | SPI bus | VSPI — SCK=33, MISO=35, MOSI=32, CS=25 |
 | INT | GPIO 34 (unused) |
@@ -86,6 +87,9 @@ The result is a minimal, auditable reference implementation that anyone can foll
 | Data rates 4/5/8 Mbps | ✅ Verified |
 | Physical bus output (MODE_EXTERNAL_LB, scope verified) | ✅ Verified |
 | Normal CAN FD mode (two-node) | ✅ Verified |
+| OSC auto-detection + rate-based API | ✅ Verified |
+| Correct timing for 20 MHz hardware (scope: 24 µs @ 125 kbps) | ✅ Verified |
+| RATE_NOT_ACHIEVABLE error path + raw API loopback | ✅ Verified |
 
 See [`docs/status.md`](docs/status.md) for detailed notes and observed values from each verified step.
 
@@ -142,7 +146,7 @@ python ../../tools/run_test.py --env loopback --port <PORT>
 
 ### two_node
 
-Two-board bidirectional test over a real CAN bus. Both boards run the same firmware — send `A` to one and `B` to the other. Tests A→B and B→A at 2/4/5/8 Mbps data rates with 8-byte and 64-byte payloads. No PC coordination required — the chip's retransmission logic handles any power-on race.
+Two-board bidirectional test over a real CAN bus. Both boards run the same firmware — send `A` to one and `B` to the other. Tests A→B and B→A at 2/4/5 Mbps data rates with 8-byte and 64-byte payloads. No PC coordination required — the chip's retransmission logic handles any power-on race.
 
 Requires: two boards wired CANH↔CANH, CANL↔CANL, 120Ω termination at each end.
 
@@ -165,7 +169,7 @@ pio run --target upload --upload-port <PORT>
 
 ### scope_loopback
 
-Single-board continuous TX in `MODE_EXTERNAL_LB` for oscilloscope measurements. Drives real differential signals on CANH/CANL via the ATA6561 transceiver while the chip ACKs its own frames — no second node required. Press any key to cycle through 2/4/5/8 Mbps data rates.
+Single-board continuous TX in `MODE_EXTERNAL_LB` for oscilloscope measurements. Drives real differential signals on CANH/CANL via the ATA6561 transceiver while the chip ACKs its own frames — no second node required. Press any key to cycle through 2/4/5 Mbps data rates. Prints detected FSYS on startup.
 
 ```bash
 cd examples/scope_loopback
@@ -189,8 +193,11 @@ pio run --target upload --upload-port <PORT>
 
 MCP2518Driver can(spi, PIN_CS);
 
-// Configure — choose nominal rate, data rate, TDC preset, and mode
-can.configure(NBTCFG_125K_40MHZ, DBTCFG_2M_40MHZ, TDC_2M_40MHZ, MODE_NORMAL);
+// Configure — just specify the rates you want.
+// The driver reads the OSC register after reset, detects FSYS automatically,
+// calculates NBTCFG/DBTCFG/TDC from first principles, and enters the requested mode.
+CanStatus s = can.configure(125000, 2000000, MODE_NORMAL);  // 125 kbps nominal, 2 Mbps data
+if (s != CanStatus::OK) { /* handle error */ }
 
 // Transmit
 CanMsg tx = { .sid=0x123, .fdf=true, .brs=true, .dlc=8 };
@@ -207,31 +214,54 @@ if (can.available()) {
 CanMsg rx;
 can.receive(rx, 500);  // wait up to 500ms
 
-// Switch data rate at runtime
-can.setDataBitTiming(DBTCFG_4M_40MHZ, TDC_4M_40MHZ);
+// Switch data rate at runtime — auto-calculated, no register values needed
+can.setDataRate(4000000);  // 4 Mbps data
+
+// Inspect detected oscillator frequency
+Serial.printf("FSYS: %lu Hz\n", can.getFsys());  // e.g. 20000000 or 40000000
 ```
 
-### Bit timing presets (40 MHz oscillator)
+### CanStatus
 
-| Constant | Rate |
+| Value | Meaning |
 |---|---|
-| `NBTCFG_125K_40MHZ` | 125 kbps nominal |
-| `NBTCFG_250K_40MHZ` | 250 kbps nominal |
-| `NBTCFG_500K_40MHZ` | 500 kbps nominal |
-| `NBTCFG_1M_40MHZ` | 1 Mbps nominal |
-| `DBTCFG_1M_40MHZ` | 1 Mbps data |
-| `DBTCFG_2M_40MHZ` | 2 Mbps data |
-| `DBTCFG_4M_40MHZ` | 4 Mbps data |
-| `DBTCFG_5M_40MHZ` | 5 Mbps data |
-| `DBTCFG_8M_40MHZ` | 8 Mbps data |
+| `CanStatus::OK` | Success |
+| `CanStatus::MODE_TIMEOUT` | Chip did not confirm the requested mode |
+| `CanStatus::RATE_NOT_ACHIEVABLE` | Target rate cannot be reached at the detected FSYS |
+| `CanStatus::CLOCK_NOT_READY` | OSC register shows clock not stable after reset |
 
-TDC presets (`TDC_1M_40MHZ` … `TDC_8M_40MHZ`) are required for data rates ≥ 1 Mbps.
+### Supported rates
+
+The driver calculates timing for any rate where `FSYS` divides evenly into an integer number of time quanta with at least 3 TQ. Common rates at 20 MHz and 40 MHz:
+
+| Nominal | Data | 20 MHz | 40 MHz |
+|---|---|---|---|
+| 125 kbps | 1–5 Mbps | ✅ | ✅ |
+| 250 kbps | 1–5 Mbps | ✅ | ✅ |
+| 500 kbps | 1–5 Mbps | ✅ | ✅ |
+| 1 Mbps | 1–5 Mbps | ✅ | ✅ |
+| any | 8 Mbps | ❌ not achievable | ✅ |
+
+### Raw / advanced API
+
+For direct register control (non-standard rates, custom oscillators):
+
+```cpp
+// Bypass auto-detection — supply pre-computed register words directly
+can.configureRaw(NBTCFG_125K_40MHZ, DBTCFG_2M_40MHZ, TDC_2M_40MHZ, MODE_NORMAL);
+can.setDataBitTimingRaw(DBTCFG_8M_40MHZ, TDC_8M_40MHZ);
+```
+
+Presets for 20 MHz and 40 MHz oscillators are defined in `mcp2518fd_can.h` (e.g. `NBTCFG_125K_20MHZ`, `DBTCFG_2M_40MHZ`). All use BRP=0, exact rates, 80% sample point.
 
 ## Key implementation decisions
 
+- **Rate-based API** — `configure(nominalBps, dataBps, mode)` auto-detects FSYS from the OSC register and calculates all timing registers from first principles; no preset knowledge required
+- **OSC auto-detection** — reads PLLEN and SCLKDIV from the OSC register after reset to determine FSYS; works correctly with 20 MHz and 40 MHz oscillators
 - **Three-layer architecture** — `mcp2518fd_spi` owns SPI transport, `mcp2518fd_can` owns all chip logic, examples are pure consumers with no register names or RAM addresses
 - **Calculated TX timeout** — derived from configured bit timing at runtime; worst-case 64-byte frame × 3 retransmission attempts + 2ms margin
 - **RTXAT + TXAT=3** — chip retries up to 3 times on no-ACK then clears TXREQ cleanly; `transmit()` checks TXABT/TXERR to distinguish success from failure
+- **setDataRate() fails before touching the chip** — timing is calculated before entering config mode; a `RATE_NOT_ACHIEVABLE` result leaves the chip in its current mode untouched
 - **No 32-bit RMW of CiCON** — REQOP is written via `write8()` to byte 3 only
 - **No TXQ, no TEF** — FIFO1=TX, FIFO2=RX only
 - **No interrupts** — polling only
