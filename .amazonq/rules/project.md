@@ -2,7 +2,9 @@
 
 ## Project Goal
 Clean-room direct register-level CAN FD driver for MCP2518FD on ESP32.
-No third-party CAN library. Target: two-node CAN FD communication via ATA6561 transceiver.
+No third-party CAN library. Target: full real-world CAN FD coverage across EV battery,
+inverter, logger and diagnostic use cases — tracked in `docs/use_case_coverage.md`.
+Every feature is driven by a spec in `docs/specs/` before any code is written.
 
 ## Hardware
 - MCU: ESP32-D0WD-V3 (rev 3.1)
@@ -23,25 +25,77 @@ Results written to `docs/reference/search_results.txt`.
 
 Never assume a register address or bit position. Always verify from the PDFs first.
 
-## Development Workflow — Closed Loop
-Every change must follow this exact sequence. Do not skip steps.
+## Development Workflow — Spec-Driven Closed Loop
+Every feature must follow this exact sequence. Do not skip or reorder steps.
 
-1. Make the code change
-2. Build + Upload + Test: `cd examples/loopback && pio run -e loopback --target upload --upload-port COM4 && python ../../tools/run_test.py --env loopback --port COM4`
-3. Verify all assertions print OK — no FAILs
-4. If verification passes, commit: `git add . && git commit -m "step N: description"`
-5. If verification fails, diagnose before proceeding
+### 1. Read the spec
+- Open the relevant spec from `docs/specs/` (e.g. `SPEC-001-extended-id.md`)
+- Confirm all acceptance criteria are understood before writing any code
+- If the spec is ambiguous, resolve it by querying the datasheets first — never assume
+- Verify every register address, bit position and field definition cited in the spec
+  against the PDFs before touching any code
 
-Never commit unverified code.
+### 2. Design the solution
+- Write out the planned changes to API, registers and RAM layout as comments or notes
+- Identify all call sites that will be affected (examples, tests, existing API users)
+- Confirm the design satisfies every acceptance criterion in the spec
+- Do not write implementation code until the design is complete
+
+### 3. Implement the solution
+- Make the minimum code change that satisfies the spec — nothing more
+- Update `include/mcp2518fd_can.h`, `src/mcp2518fd_can.cpp`, `include/mcp2518fd_registers.h`
+  as needed; keep each layer in its correct file
+- Update all affected call sites in examples and tests in the same commit
+- Build must pass before proceeding to testing
+
+### 4. Test on real hardware — both nodes
+Two ESP32 boards are available (COM4 and COM3). Use both for every spec.
+
+**Single-board (loopback) — always run first:**
+```
+cd examples/loopback
+pio run -e loopback --target upload --upload-port COM4
+python ../../tools/run_test.py --env loopback --port COM4
+```
+All assertions must print OK before proceeding to two-node.
+
+**Two-node (real bus) — run for every spec that touches TX, RX, filters, errors or timing:**
+```
+cd examples/two_node
+pio run -e two_node --target upload --upload-port COM4
+pio run -e two_node --target upload --upload-port COM3
+python ../../tools/run_test.py --env two_node --port-a COM4 --port-b COM3
+```
+Both nodes must report all assertions OK.
+
+**Additional hardware checks required by specific specs:**
+- SPEC-003 (bus errors): test with bus disconnected — one node only, MODE_NORMAL, verify NoAck and TEC increment
+- SPEC-004 (interrupt RX): verify INT pin (GPIO 34) triggers correctly under burst traffic from second node
+- SPEC-005 (listen-only): Node A in MODE_LISTEN, Node B transmitting — verify Node B sees no errors
+- SPEC-006 (stop/restart): verify stop() halts TX keepalives observed on second node's serial output
+
+### 5. Commit
+```
+git add . && git commit -m "SPEC-NNN step N: short description"
+```
+- Only after all hardware assertions pass — no exceptions
+- Update `docs/specs/README.md` spec Status from Pending → In Progress → Done
+- Update `docs/status.md` with observed hardware values
+- Docs and code in the same commit
+
+Never commit unverified code. Never mark a spec Done without two-node hardware evidence.
 
 ## Verification Standard
-A step is only considered verified when ALL of the following are true:
-- The code was built and uploaded to real hardware
-- The serial output was read back via monitor.py
-- Every assertion in runTest() printed "OK" — no FAILs, no skipped checks
-- The observed values match the expected values derived from the datasheet
+A spec is only considered verified when ALL of the following are true:
+- The code was built and uploaded to real hardware on both nodes
+- Every assertion in the loopback test printed "OK" — no FAILs, no skipped checks
+- Every assertion in the two-node test printed "OK" on both COM4 and COM3
+- Any spec-specific hardware check (bus disconnect, interrupt pin, listen-only) was performed
+  and the observed output matches the acceptance criteria in the spec
+- The observed register values match the expected values derived from the datasheet
 
 Assumptions, reasoning, or "it should work" are NOT verification. Only hardware output counts.
+A spec that passes loopback but has not been tested two-node is NOT verified.
 
 ## Regression Testing
 Every runTest() must include ALL previously verified checks, not just the new ones.
@@ -71,14 +125,14 @@ If any previously passing check fails, stop and fix the regression before contin
 
 ## Code Style
 - No third-party CAN libraries
-- No interrupts (polling only for now)
-- No TEF, no filters, no TXQ (use FIFO1=TX, FIFO2=RX only)
-- Minimal code — only what is needed for the current milestone
+- Minimal code — only what is needed to satisfy the current spec
 - All register constants in `include/mcp2518fd_registers.h`
 - All SPI transport in `include/mcp2518fd_spi.h` / `src/mcp2518fd_spi.cpp`
 - Public driver API in `include/mcp2518fd_can.h` / `src/mcp2518fd_can.cpp`
 - Examples use only the public API — no register names, no raw addresses
 - Test harness in `examples/loopback/src/main.cpp` — key-triggered via Serial
+- ISR functions must be marked `IRAM_ATTR` on ESP32
+- No TEF, no TXQ — FIFO1=TX, FIFO2=RX only (filters route to FIFO2)
 
 ## Documentation
 After every successful verified step:
@@ -99,7 +153,8 @@ After every verified step, end with a single plain-English sentence summarising 
 - Docs and code go in the same commit
 
 ## Files
-- `examples/loopback/src/main.cpp` — regression test harness
+- `examples/loopback/src/main.cpp` — regression test harness (single-board)
+- `examples/two_node/src/main.cpp` — two-node regression test (real bus, COM4 + COM3)
 - `include/mcp2518fd_can.h` — public driver API, CanMsg, CanStatus, bit timing presets
 - `include/mcp2518fd_registers.h` — all register addresses, masks, constants
 - `include/mcp2518fd_spi.h` / `src/mcp2518fd_spi.cpp` — SPI transport + mode control
@@ -109,4 +164,7 @@ After every verified step, end with a single plain-English sentence summarising 
 - `docs/status.md` — milestone tracker
 - `docs/context.md` — hardware and architecture context
 - `docs/registers.md` — register field reference
+- `docs/use_case_coverage.md` — real-world use case coverage and gap analysis
+- `docs/specs/README.md` — spec index and implementation status
+- `docs/specs/SPEC-NNN-*.md` — individual feature specs
 - `docs/search.py` — PDF search tool
