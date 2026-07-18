@@ -34,20 +34,25 @@ Build the driver incrementally, one verified feature at a time.
 
 ## Architecture
 
-| File                      | Purpose                                                    |
-|---------------------------|------------------------------------------------------------||
-| src/main.cpp              | Regression test harness — pure driver consumer             |
-| src/mcp2518fd_can.h       | MCP2518Driver public API declaration                       |
-| src/mcp2518fd_can.cpp     | CAN driver — configure, transmit, receive, bitrate switch  |
-| src/mcp2518fd_spi.h       | MCP2518SPI class declaration                               |
-| src/mcp2518fd_spi.cpp     | SPI transport + mode control implementation                |
-| src/mcp2518fd_registers.h | Register addresses, masks, constants                       |
-| docs/context.md       | This file                                    |
-| docs/status.md        | Verified milestone tracker                   |
-| docs/registers.md     | Register field reference                     |
-
-| tools/run_test.py     | Test runner — loopback and (future) two-node, coordinates serial reset + trigger |
-| docs/search.py        | PDF search tool — queries both reference PDFs                |
+| File                        | Purpose                                                      |
+|-----------------------------|--------------------------------------------------------------|
+| `include/mcp2518fd_can.h`   | MCP2518Driver public API, CanMsg struct, bit timing presets  |
+| `include/mcp2518fd_spi.h`   | MCP2518SPI class declaration                                 |
+| `include/mcp2518fd_registers.h` | Register addresses, masks, constants                     |
+| `src/mcp2518fd_can.cpp`     | CAN driver — configure, transmit, receive, bitrate switch    |
+| `src/mcp2518fd_spi.cpp`     | SPI transport + mode control implementation                  |
+| `examples/loopback/`        | Regression test — single-board internal loopback             |
+| `examples/two_node/`        | Two-node bidirectional test over real bus                    |
+| `examples/walkie_talkie/`   | Text chat between two nodes                                  |
+| `examples/scope_loopback/`  | Continuous TX in MODE_EXTERNAL_LB for scope measurements     |
+| `examples/bus_monitor/`     | Two nodes continuously talking — bus load + integrity check  |
+| `docs/context.md`           | This file                                                    |
+| `docs/status.md`            | Verified milestone tracker                                   |
+| `docs/registers.md`         | Register field reference                                     |
+| `tools/run_test.py`         | Automated test runner — loopback and two-node                |
+| `tools/check_timing.py`     | Verify bit timing preset values against datasheet formula    |
+| `tools/find_timing.py`      | Calculate NBTCFG/DBTCFG values for a target rate             |
+| `docs/search.py`            | PDF search tool — queries both reference PDFs                |
 
 ## Key Decisions
 
@@ -94,6 +99,7 @@ All corrected presets use BRP=0, ~80% sample point, verified passing loopback on
 Note: the scope verification in step 15 was therefore at ~1 Mbps nominal (not 125 kbps) —
 the waveform was correct for the configured timing, just not the timing we thought it was.
 This will be re-verified on the scope with the corrected presets.
+### TDC required at >= 1 Mbps data rate
 At data bit rates of 1 Mbps and above the chip cannot reliably sample the loopback signal without
 Transmitter Delay Compensation. Symptoms: TX completes (TXREQ clears, no errors) but FIFO2
 remains empty. Fix: set TDCMOD=2 (auto) and TDCO=(BRP+1)*(TSEG1+1) in CiTDC before
