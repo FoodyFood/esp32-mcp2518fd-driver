@@ -14,11 +14,11 @@
 //
 // Nominal bit rate (arbitration phase):
 // Formula: NBR = FSYS / ((BRP+1) * (1 + TSEG1 + TSEG2))  [ref manual Eq 3-1/3-3]
-// All presets use BRP=0 (TQ=25ns @ 40MHz), ~80% sample point.
-constexpr uint32_t NBTCFG_125K_40MHZ = 0x00FF4010;  // 125 kbps  @ 40 MHz  BRP=0 TSEG1=255 TSEG2=64  SJW=16
-constexpr uint32_t NBTCFG_250K_40MHZ = 0x007F2010;  // 250 kbps  @ 40 MHz  BRP=0 TSEG1=127 TSEG2=32  SJW=16
-constexpr uint32_t NBTCFG_500K_40MHZ = 0x003F1010;  // 500 kbps  @ 40 MHz  BRP=0 TSEG1=63  TSEG2=16  SJW=16
-constexpr uint32_t NBTCFG_1M_40MHZ   = 0x001F0808;  // 1 Mbps    @ 40 MHz  BRP=0 TSEG1=31  TSEG2=8   SJW=8
+// All presets use ~80% sample point, verified against tools/check_timing.py.
+constexpr uint32_t NBTCFG_125K_40MHZ = 0x071F0808;  // 125 kbps  @ 40 MHz  BRP=7 TSEG1=31 TSEG2=8  SJW=8
+constexpr uint32_t NBTCFG_250K_40MHZ = 0x031F0808;  // 250 kbps  @ 40 MHz  BRP=3 TSEG1=31 TSEG2=8  SJW=8
+constexpr uint32_t NBTCFG_500K_40MHZ = 0x011F0808;  // 500 kbps  @ 40 MHz  BRP=1 TSEG1=31 TSEG2=8  SJW=8
+constexpr uint32_t NBTCFG_1M_40MHZ   = 0x001F0808;  // 1 Mbps    @ 40 MHz  BRP=0 TSEG1=31 TSEG2=8  SJW=8
 
 // Data bit rate (BRS phase — requires TDC at >= 1 Mbps):
 // Formula: DBR = FSYS / ((BRP+1) * (1 + TSEG1 + TSEG2))  [ref manual Eq 3-2/3-4]

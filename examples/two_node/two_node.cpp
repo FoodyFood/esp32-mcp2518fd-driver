@@ -215,20 +215,22 @@ void setup()
         NBTCFG_125K_40MHZ,
         DBTCFG_2M_40MHZ,
         TDC_2M_40MHZ,
-        MODE_NORMAL);
+        MODE_EXTERNAL_LB);
 
     Serial.println();
     Serial.println("==========================");
-    Serial.printf("configure(MODE_NORMAL): %s\n", ok ? "OK" : "FAIL");
-    Serial.printf("mode confirmed: %d (expected %d)\n", can.getMode(), MODE_NORMAL);
-    Serial.println("Send 'A' (node A / COM4) or 'B' (node B / COM3) to run test...");
+    Serial.printf("configure(MODE_EXTERNAL_LB): %s\n", ok ? "OK" : "FAIL");
+    Serial.printf("mode confirmed: %d (expected %d)\n", can.getMode(), MODE_EXTERNAL_LB);
+    Serial.println("Transmitting continuously for scope verification...");
+    Serial.println("125 kbps nominal / 2 Mbps data — measure arbitration bit time (should be 8us)");
 }
 
 void loop()
 {
-    if (!Serial.available()) return;
-
-    char c = Serial.read();
-    if (c == 'A' || c == 'a') { nodeId = 'A'; runNodeA(); }
-    if (c == 'B' || c == 'b') { nodeId = 'B'; runNodeB(); }
+    // Continuous TX for scope verification — SID=0x123 DLC=8 data=0x01..0x08
+    CanMsg tx;
+    tx.sid = 0x123; tx.fdf = true; tx.brs = true; tx.dlc = 8;
+    for (int i = 0; i < 8; i++) tx.data[i] = 0x01 + i;
+    can.transmit(tx);
+    delay(10);
 }
