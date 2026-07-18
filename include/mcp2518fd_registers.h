@@ -71,11 +71,12 @@ constexpr uint16_t RAM_BASE = 0x400;
 
 // CiFIFOCONm bit positions (Register 3-29, DS20006027B page 54)
 // bits 31-29: PLSIZE[2:0]  bits 28-24: FSIZE[4:0]
+// bits 22-21: TXAT[1:0]  bits 20-16: TXPRI[4:0]
 // bit 10: FRESET  bit 9: TXREQ  bit 8: UINC
 // bit 7: TXEN  bit 6: RTREN  bit 5: RXTSEN
-// bit 4: TXATIE  bit 3: RXOVIE  bit 2: TFERFFIE  bit 1: TFHRFHIE  bit 0: TFNRFNIE
 constexpr uint32_t FIFOCON_PLSIZE_SHIFT = 29;
 constexpr uint32_t FIFOCON_FSIZE_SHIFT  = 24;
+constexpr uint32_t FIFOCON_TXAT_3       = (1u << 21);  // TXAT=01: 3 retransmission attempts
 constexpr uint32_t FIFOCON_FRESET       = (1u << 10);
 constexpr uint32_t FIFOCON_TXREQ        = (1u << 9);
 constexpr uint32_t FIFOCON_UINC         = (1u << 8);
@@ -107,7 +108,8 @@ constexpr uint32_t FIFOSTA_TFERFFIF = (1u << 2);
 constexpr uint32_t FIFOSTA_TFHRFHIF = (1u << 1);
 constexpr uint32_t FIFOSTA_TFNRFNIF = (1u << 0);
 
-// CiCON mode bits
+// CiCON byte 2 bits (bits 23:16)
+constexpr uint8_t  CON2_RTXAT           = (1u << 0);  // bit 16 — restrict retransmission attempts
 constexpr uint32_t CON_REQOP_SHIFT = 24;
 constexpr uint32_t CON_OPMOD_SHIFT = 21;
 

@@ -20,8 +20,10 @@ bool MCP2518Driver::configure(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, 
     mSpi.write32(REG_CiTDC,    tdcfg);
 
     // Disable TXQ and TEF — not used
+    // Enable RTXAT so TXAT field in FIFO CON is respected (DS20006027B page 27)
     uint8_t con2 = mSpi.read8(REG_CiCON + 2);
-    con2 &= ~((1u << 4) | (1u << 3));
+    con2 &= ~((1u << 4) | (1u << 3));  // clear TXQEN, STEF
+    con2 |= CON2_RTXAT;                // set RTXAT — limit retransmissions via TXAT
     mSpi.write8(REG_CiCON + 2, con2);
 
     configFifos();
@@ -72,22 +74,38 @@ bool MCP2518Driver::transmit(const CanMsg& msg)
 
     mSpi.write32(FIFO_CON(1), FIFOCON_TXEN | FIFOCON_UINC | FIFOCON_TXREQ);
 
+    // Wait for TXREQ to clear — either success or 3 attempts exhausted
     uint32_t start = millis();
     while (millis() - start < mTxTimeoutMs)
     {
         if (!(mSpi.read32(FIFO_CON(1)) & FIFOCON_TXREQ))
-            return true;
+        {
+            // TXREQ cleared — check if it was aborted (no ACK) or successful
+            uint32_t sta = mSpi.read32(FIFO_STA(1));
+            return !(sta & (FIFOSTA_TXABT | FIFOSTA_TXERR));
+        }
     }
     return false;
 }
 
+bool MCP2518Driver::available()
+{
+    return !!(mSpi.read32(FIFO_STA(2)) & FIFOSTA_TFNRFNIF);
+}
+
 bool MCP2518Driver::receive(CanMsg& msg)
 {
-    uint32_t tw = millis();
-    while (millis() - tw < 500 && !(mSpi.read32(FIFO_STA(2)) & FIFOSTA_TFNRFNIF)) {}
+    if (!available()) return false;
+    return receive(msg, 0);
+}
 
-    if (!(mSpi.read32(FIFO_STA(2)) & FIFOSTA_TFNRFNIF))
-        return false;
+bool MCP2518Driver::receive(CanMsg& msg, uint32_t timeoutMs)
+{
+    uint32_t tw = millis();
+    while (!available())
+    {
+        if (millis() - tw >= timeoutMs) return false;
+    }
 
     uint16_t addr = rxRamAddr();
 
@@ -151,8 +169,11 @@ void MCP2518Driver::calcTxTimeout(uint32_t nbtcfg, uint32_t dbtcfg)
 void MCP2518Driver::configFifos()
 {
     uint32_t plsize = (uint32_t)PLSIZE_64 << FIFOCON_PLSIZE_SHIFT;
-    mSpi.write32(FIFO_CON(1), plsize | FIFOCON_TXEN);  // FIFO1 = TX, 64-byte payload
-    mSpi.write32(FIFO_CON(2), plsize);                 // FIFO2 = RX, 64-byte payload
+    uint32_t fsize  = (4u << FIFOCON_FSIZE_SHIFT);  // 5 messages deep (FSIZE=4)
+    // FIFO1 = TX: PLSIZE_64, FSIZE=4, TXAT=3 attempts, TXEN
+    mSpi.write32(FIFO_CON(1), plsize | fsize | FIFOCON_TXAT_3 | FIFOCON_TXEN);
+    // FIFO2 = RX: PLSIZE_64, FSIZE=4
+    mSpi.write32(FIFO_CON(2), plsize | fsize);
 }
 
 void MCP2518Driver::configFilter()

@@ -108,12 +108,12 @@ def run_two_node(port_a, port_b, baud):
     results = {}
     output_lock = threading.Lock()
 
-    # B is triggered immediately so it enters receive loops first.
-    # A is delayed 1s to ensure B is already waiting before A transmits.
+    # Reset both boards simultaneously, no delays, no coordination.
+    # Each node operates independently — the firmware handles timing.
     ta = threading.Thread(
         target=_node_worker,
         args=(port_a, baud, "A", "A", results, output_lock),
-        kwargs={"start_delay": 1.0},
+        kwargs={"start_delay": 0},
         daemon=True)
     tb = threading.Thread(
         target=_node_worker,
