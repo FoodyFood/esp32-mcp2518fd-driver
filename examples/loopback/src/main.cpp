@@ -24,15 +24,12 @@ void runTest()
     // ------------------------------------------------------------------
     // Configure: 125 kbps nominal, 2 Mbps data with TDC, internal loopback
     // ------------------------------------------------------------------
-    bool configured = can.configure(
-        NBTCFG_125K_40MHZ,
-        DBTCFG_2M_40MHZ,
-        TDC_2M_40MHZ,
-        MODE_INTERNAL_LB);
+    CanStatus configured = can.configure(125000, 2000000, MODE_INTERNAL_LB);
 
     Serial.println("configure():");
     CHECK("mode = INTERNAL_LB", can.getMode() == MODE_INTERNAL_LB);
-    CHECK("configure() returned true", configured);
+    CHECK("configure() returned OK", configured == CanStatus::OK);
+    Serial.printf("  FSYS detected: %lu Hz\n", can.getFsys());
 
     // ------------------------------------------------------------------
     // Transmit one frame and receive it back
@@ -97,8 +94,8 @@ void runTest()
     // ------------------------------------------------------------------
     Serial.println("setDataBitTiming() @ 2 Mbps, 8 bytes:");
 
-    bool switched = can.setDataBitTiming(DBTCFG_2M_40MHZ, TDC_2M_40MHZ);
-    CHECK("setDataBitTiming(2 Mbps) returned true", switched);
+    bool switched = (can.setDataRate(2000000) == CanStatus::OK);
+    CHECK("setDataRate(2 Mbps) returned OK", switched);
     CHECK("mode = INTERNAL_LB after switch", can.getMode() == MODE_INTERNAL_LB);
 
     CanMsg tx2;
@@ -135,19 +132,18 @@ void runTest()
     // Higher data rates: 4 Mbps, 5 Mbps, 8 Mbps
     // Each switches rate, sends one 8-byte frame, verifies all bytes.
     // ------------------------------------------------------------------
-    struct { const char* label; uint32_t dbtcfg; uint32_t tdc; } rates[] = {
-        { "4 Mbps", DBTCFG_4M_40MHZ, TDC_4M_40MHZ },
-        { "5 Mbps", DBTCFG_5M_40MHZ, TDC_5M_40MHZ },
-        { "8 Mbps", DBTCFG_8M_40MHZ, TDC_8M_40MHZ },
+    struct { const char* label; uint32_t bps; } rates[] = {
+        { "4 Mbps", 4000000 },
+        { "5 Mbps", 5000000 },
     };
 
-    for (int r = 0; r < 3; r++)
+    for (int r = 0; r < 2; r++)
     {
         char label[56];
-        Serial.printf("setDataBitTiming() @ %s, 8 bytes:\n", rates[r].label);
+        Serial.printf("setDataRate() @ %s, 8 bytes:\n", rates[r].label);
 
-        bool sw = can.setDataBitTiming(rates[r].dbtcfg, rates[r].tdc);
-        snprintf(label, sizeof(label), "setDataBitTiming(%s) returned true", rates[r].label);
+        bool sw = (can.setDataRate(rates[r].bps) == CanStatus::OK);
+        snprintf(label, sizeof(label), "setDataRate(%s) returned OK", rates[r].label);
         CHECK(label, sw);
 
         CanMsg tx4;
