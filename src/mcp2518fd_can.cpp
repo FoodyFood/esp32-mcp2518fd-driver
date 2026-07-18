@@ -2,7 +2,7 @@
 #include "mcp2518fd_registers.h"
 
 MCP2518Driver::MCP2518Driver(SPIClass& spi, uint8_t csPin)
-    : mSpi(spi, csPin)
+    : mSpi(spi, csPin), mTxTimeoutMs(10), mNbtcfg(0)
 {
 }
 
@@ -26,17 +26,20 @@ bool MCP2518Driver::configure(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, 
 
     configFifos();
     configFilter();
-
+    calcTxTimeout(nbtcfg, dbtcfg);
+    mNbtcfg = nbtcfg;
     return mSpi.setMode(mode);
 }
 
 bool MCP2518Driver::setDataBitTiming(uint32_t dbtcfg, uint32_t tdcfg)
 {
+    uint8_t prevMode = mSpi.getMode();  // remember active mode before entering config
     mSpi.setMode(MODE_CONFIG);
     mSpi.write32(REG_CiDBTCFG, dbtcfg);
     mSpi.write32(REG_CiTDC,    tdcfg);
     configFilter();  // re-enable filter after config mode entry resets FIFOs
-    return mSpi.setMode(MODE_INTERNAL_LB);
+    calcTxTimeout(mNbtcfg, dbtcfg);
+    return mSpi.setMode(prevMode);
 }
 
 bool MCP2518Driver::transmit(const CanMsg& msg)
@@ -70,7 +73,7 @@ bool MCP2518Driver::transmit(const CanMsg& msg)
     mSpi.write32(FIFO_CON(1), FIFOCON_TXEN | FIFOCON_UINC | FIFOCON_TXREQ);
 
     uint32_t start = millis();
-    while (millis() - start < 10)
+    while (millis() - start < mTxTimeoutMs)
     {
         if (!(mSpi.read32(FIFO_CON(1)) & FIFOCON_TXREQ))
             return true;
@@ -81,7 +84,7 @@ bool MCP2518Driver::transmit(const CanMsg& msg)
 bool MCP2518Driver::receive(CanMsg& msg)
 {
     uint32_t tw = millis();
-    while (millis() - tw < 10 && !(mSpi.read32(FIFO_STA(2)) & FIFOSTA_TFNRFNIF)) {}
+    while (millis() - tw < 500 && !(mSpi.read32(FIFO_STA(2)) & FIFOSTA_TFNRFNIF)) {}
 
     if (!(mSpi.read32(FIFO_STA(2)) & FIFOSTA_TFNRFNIF))
         return false;
@@ -117,6 +120,33 @@ uint8_t MCP2518Driver::getMode()
 }
 
 // --- private ---
+
+void MCP2518Driver::calcTxTimeout(uint32_t nbtcfg, uint32_t dbtcfg)
+{
+    // Extract fields from register words (DS20006027B Register 3-8/3-9)
+    // NBTCFG: BRP[31:24] TSEG1[23:16] TSEG2[14:8]
+    // DBTCFG: BRP[31:24] TSEG1[20:16] TSEG2[11:8]
+    uint32_t nBrp   = (nbtcfg >> 24) & 0xFF;
+    uint32_t nTseg1 = (nbtcfg >> 16) & 0xFF;
+    uint32_t nTseg2 = (nbtcfg >>  8) & 0x7F;
+
+    uint32_t dBrp   = (dbtcfg >> 24) & 0xFF;
+    uint32_t dTseg1 = (dbtcfg >> 16) & 0x1F;
+    uint32_t dTseg2 = (dbtcfg >>  8) & 0x0F;
+
+    // Bit time in ns at 40 MHz (TQ = (BRP+1) * 25 ns)
+    uint32_t nbt_ns = (nBrp + 1) * (1 + nTseg1 + nTseg2) * 25;
+    uint32_t dbt_ns = (dBrp + 1) * (1 + dTseg1 + dTseg2) * 25;
+
+    // Worst-case 64-byte CAN FD frame (BRS=true, standard ID)
+    // Nominal bits: ~36, Data bits: ~562  (see header comment for breakdown)
+    uint32_t frame_ns = 36 * nbt_ns + 562 * dbt_ns;
+
+    // 3 retransmission attempts + 2ms margin, rounded up to ms
+    uint32_t total_ns = frame_ns * 3;
+    mTxTimeoutMs = (total_ns / 1000000) + 2;
+    if (mTxTimeoutMs < 2) mTxTimeoutMs = 2;  // floor
+}
 
 void MCP2518Driver::configFifos()
 {

@@ -76,7 +76,24 @@ FRESET (bit 10 of CiFIFOCONm) is set automatically when entering Configuration m
 and cleared automatically when leaving it. Do not poll or set it manually while in config mode.
 Observed: FRESET=0 when read in loopback mode (after config mode exit). Expected.
 
-### TDC required at >= 1 Mbps data rate
+### Physical bus output confirmed (MODE_EXTERNAL_LB)
+With `MODE_EXTERNAL_LB`, the MCP2518FD drives real differential signals on CANH/CANL via the ATA6561
+transceiver while ACKing its own frames internally. Clean waveforms observed on oscilloscope at
+125 kbps nominal / 2 Mbps data, SID=0x123 DLC=8, 10ms frame interval.
+This confirms the transceiver wiring is correct and the physical bus layer is ready for two-node.
+
+### NBTCFG preset values were incorrect (discovered during timeout calculation)
+The original NBTCFG presets (e.g. `0x001E0707` for 125 kbps) were producing rates ~8x too high
+(~1 Mbps instead of 125 kbps). The loopback tests passed because both TX and RX used the same
+incorrect timing. Discovered when implementing the calculated TX timeout — the formula produced
+unexpected results, leading to a systematic check of all presets.
+
+Corrected values derived from: `NBR = FSYS / ((BRP+1) * (1 + TSEG1 + TSEG2))`
+All corrected presets use BRP=0, ~80% sample point, verified passing loopback on hardware.
+
+Note: the scope verification in step 15 was therefore at ~1 Mbps nominal (not 125 kbps) —
+the waveform was correct for the configured timing, just not the timing we thought it was.
+This will be re-verified on the scope with the corrected presets.
 At data bit rates of 1 Mbps and above the chip cannot reliably sample the loopback signal without
 Transmitter Delay Compensation. Symptoms: TX completes (TXREQ clears, no errors) but FIFO2
 remains empty. Fix: set TDCMOD=2 (auto) and TDCO=(BRP+1)*(TSEG1+1) in CiTDC before
