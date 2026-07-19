@@ -202,12 +202,12 @@ before shipping. Covered by the existing `loopback` example.
 
 ---
 
-## UC-8 — CAN FD Battery Emulator
+## UC-8 — CAN FD Battery Simulator
 
 **Description**  
 An ESP32 impersonates a real EV battery pack on a CAN FD bus, transmitting the periodic BMS
 frames that a vehicle, inverter or charger expects to see. The receiving device cannot tell the
-difference between the emulator and a real battery. This is useful for bench-testing inverters,
+difference between the simulator and a real battery. This is useful for bench-testing inverters,
 chargers and BMS gateways without a real (expensive, heavy, dangerous) battery pack present.
 
 Two batteries are targeted, drawn directly from the

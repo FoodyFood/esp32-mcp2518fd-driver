@@ -1,4 +1,4 @@
-# SPEC-007 — CAN FD Battery Emulator Example (Kia 64 FD + VW MEB)
+# SPEC-007 — CAN FD Battery Simulator Example (Kia 64 FD + VW MEB)
 
 ## Status
 Pending
@@ -9,10 +9,10 @@ Pending
 - SPEC-003 (bus error detection + TX error detail) — required for robust TX feedback
 
 ## Use case
-UC-8 — CAN FD Battery Emulator
+UC-8 — CAN FD Battery Simulator
 
 ## Goal
-Create `examples/battery_emulator/` — a self-contained PlatformIO example that impersonates
+Create `examples/battery_simulator/` — a self-contained PlatformIO example that impersonates
 a real EV battery on a CAN FD bus. A second node (running `two_node` or `bus_monitor`) or a
 real inverter/charger can be connected and will see valid battery frames.
 

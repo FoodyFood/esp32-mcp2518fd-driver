@@ -70,7 +70,7 @@ Each spec in this group depends on the feature specs listed against it being Don
 
 | Spec | Title | Depends on | Status |
 |---|---|---|---|
-| [SPEC-007](SPEC-007-battery-emulator-example.md) | CAN FD Battery Emulator Example (Kia 64 FD + VW MEB) | SPEC-001, SPEC-002, SPEC-003 | Pending |
+| [SPEC-007](SPEC-007-battery-simulator-example.md) | CAN FD Battery Simulator Example (Kia 64 FD + VW MEB) | SPEC-001, SPEC-002, SPEC-003 | Pending |
 
 ## Coverage map
 
