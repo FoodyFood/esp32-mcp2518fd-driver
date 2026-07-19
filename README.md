@@ -309,7 +309,7 @@ PDFs are not committed to this repo. Download them and place in `docs/reference/
 
 ## CI
 
-Every PR runs unit tests and builds all examples on `ubuntu-24.04`. Auto-merges on pass.
+Every PR runs unit tests and builds all examples on `ubuntu-24.04`. Auto-merges on pass. All examples use `lib_deps = file://../..` — works locally and in CI without any patching.
 
 [![CI](https://github.com/FoodyFood/esp32-mcp2518fd-driver/actions/workflows/ci.yml/badge.svg)](https://github.com/FoodyFood/esp32-mcp2518fd-driver/actions/workflows/ci.yml)
 

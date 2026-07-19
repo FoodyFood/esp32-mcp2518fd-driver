@@ -118,8 +118,7 @@ Every PR runs `.github/workflows/ci.yml` which:
 - Builds every example for ESP32 without uploading (catches compile errors on all examples)
 - Auto-merges the PR via squash if all jobs pass
 
-The workflow patches `lib_deps = symlink://../..` → `lib_extra_dirs = ../..` at build time
-so examples build correctly in CI without symlink support. Local development is unaffected.
+All examples use `lib_deps = file://../..` which works identically on Windows locally and on Linux in CI. No patching or symlinks required.
 
 To add a new example to CI: add its directory name to the `matrix.example` list in `ci.yml`.
 
