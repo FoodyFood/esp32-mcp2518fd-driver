@@ -202,6 +202,49 @@ before shipping. Covered by the existing `loopback` example.
 
 ---
 
+## UC-8 — CAN FD Battery Emulator
+
+**Description**  
+An ESP32 impersonates a real EV battery pack on a CAN FD bus, transmitting the periodic BMS
+frames that a vehicle, inverter or charger expects to see. The receiving device cannot tell the
+difference between the emulator and a real battery. This is useful for bench-testing inverters,
+chargers and BMS gateways without a real (expensive, heavy, dangerous) battery pack present.
+
+Two batteries are targeted, drawn directly from the
+[Battery-Emulator](https://github.com/dalathegreat/Battery-Emulator) source:
+
+- **Kia 64 kWh FD** — 11-bit SIDs, CAN FD frames up to 32 bytes, a timed startup sequence of
+  63 pre-built frames followed by periodic PID polling on SID 0x7E4 / response on 0x7EC.
+  No CRC. Simpler — no 29-bit IDs required.
+
+- **VW MEB** — 29-bit extended IDs throughout (e.g. `BMS_20=0xCF`, `BMS_21=0x12DD54D0`).
+  VAG 0x2F-polynomial CRC on several frames. Multiple TX intervals: 10 / 20 / 40 / 50 / 100 /
+  200 / 500 ms / 1 s. Requires the receiving device to see `HVK_01`, `ESC_51_Auth`,
+  `Airbag_01`, `EM1_01` etc. before it will close contactors.
+
+**Evidence from Battery-Emulator**  
+- `KIA-64FD-BATTERY.cpp` — 63-frame startup sequence, then 200 ms PID poll loop  
+- `MEB-BATTERY.cpp` — full multi-interval TX schedule, VAG CRC, 29-bit IDs, ISO-TP UDS  
+- Both use `CAN_frame` with `bool FD`, `bool ext_ID`, `uint32_t ID`, `uint8_t DLC`, `uint8_t data[64]`
+
+**Typical bus parameters**  
+- Nominal: 500 kbps  
+- Data: 2 Mbps CAN FD  
+- Kia: 11-bit SIDs only  
+- MEB: mix of 11-bit and 29-bit extended IDs
+
+| Feature required | Status | Evidence |
+|---|---|---|
+| Configure 500 kbps / 2 Mbps, MODE_NORMAL | ✅ | `configure(500000, 2000000, MODE_NORMAL)` |
+| Transmit CAN FD frames up to 32 bytes | ✅ | `transmit(msg)`, DLC up to 15 |
+| Timed TX schedule (10–1000 ms intervals) | ✅ | `millis()` interval pattern, no driver change needed |
+| 11-bit SID TX and RX (Kia) | ✅ | Current `CanMsg.sid` field |
+| 29-bit extended ID TX and RX (MEB) | ❌ | `CanMsg` has no EID field — blocks MEB entirely |
+| Acceptance filter for response SIDs | ❌ | No filter API — all frames arrive in FIFO2 |
+| TX error feedback | ⚠️ | `transmit()` returns bool only; no distinction between no-ACK and bus error |
+
+---
+
 ## Gap Summary
 
 Consolidated list of every ❌ gap across all use cases, ordered by impact.

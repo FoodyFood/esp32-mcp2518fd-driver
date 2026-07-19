@@ -63,6 +63,15 @@ Stop/restart and sleep/wake. Self-contained, no dependencies.
 |---|---|---|---|
 | [SPEC-006](SPEC-006-stop-restart-sleep.md) | Stop, Restart and Sleep/Wake Lifecycle | G7 | Pending |
 
+## Group F — Real-World Examples (consumes previous specs)
+
+End-to-end examples that exercise the full driver API against real-world protocols.
+Each spec in this group depends on the feature specs listed against it being Done first.
+
+| Spec | Title | Depends on | Status |
+|---|---|---|---|
+| [SPEC-007](SPEC-007-battery-emulator-example.md) | CAN FD Battery Emulator Example (Kia 64 FD + VW MEB) | SPEC-001, SPEC-002, SPEC-003 | Pending |
+
 ## Coverage map
 
 | Gap | Description | Spec |
