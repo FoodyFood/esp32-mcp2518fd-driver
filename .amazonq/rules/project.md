@@ -111,6 +111,18 @@ wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit && ~/.lo
   or modifies testable logic. Run them as part of the pre-commit check alongside the integration suite.
 - Never remove or weaken an existing unit test assertion.
 
+## CI (GitHub Actions)
+
+Every PR runs `.github/workflows/ci.yml` which:
+- Runs all 50 unit tests on `ubuntu-24.04` (native PlatformIO env, no hardware)
+- Builds every example for ESP32 without uploading (catches compile errors on all examples)
+- Auto-merges the PR via squash if all jobs pass
+
+The workflow patches `lib_deps = symlink://../..` → `lib_extra_dirs = ../..` at build time
+so examples build correctly in CI without symlink support. Local development is unaffected.
+
+To add a new example to CI: add its directory name to the `matrix.example` list in `ci.yml`.
+
 ## Regression Testing
 Run the full suite after every spec before marking it Done:
 ```
@@ -199,6 +211,7 @@ The public API is the primary product. Every design decision must be evaluated a
   and how it moves closer to the goal
 
 ## Files
+- `.github/workflows/ci.yml` — CI workflow: unit tests + build all examples on every PR, auto-merge on pass
 - `examples/single_node/src/main.cpp` — single-board config and bitrate regression tests
 - `examples/id_filter/src/main.cpp` — acceptance filter demonstration (SID/EID filtering)
 - `examples/two_node/src/main.cpp` — two-node regression test (real bus, COM4 + COM3)
