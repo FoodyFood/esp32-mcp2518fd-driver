@@ -196,7 +196,7 @@ Each example is a self-contained PlatformIO project you can open, build and flas
 |---|---|
 | `examples/walkie_talkie` | Text chat between two boards over CAN FD — type in one Serial monitor, read on the other. |
 | `examples/scope_loopback` | Continuous TX in `MODE_EXTERNAL_LB` for oscilloscope measurements — real bus signals, self-ACK. Press any key to cycle through data rates. |
-| `examples/bus_monitor` | Two nodes continuously transmitting counters — autonomous boot, no serial input required. node_a env → COM4 (ID=0x100), node_b env → COM3 (ID=0x200). |
+| `examples/bus_monitor` | Two nodes continuously transmitting counters — both start on boot, no serial input required. Flash `node_a` to one board and `node_b` to the other. |
 | `examples/int_pin` | Interrupt-driven RX — main loop does other work while frames arrive via GPIO 34. Shows the non-blocking pattern to copy into your own project. |
 
 ---
@@ -268,7 +268,7 @@ src/
 examples/
   walkie_talkie/            # Text chat between two nodes over CAN FD
   scope_loopback/           # Continuous TX in MODE_EXTERNAL_LB for scope measurements
-  bus_monitor/              # Two nodes continuously talking — bus load + integrity check
+  bus_monitor/              # Two nodes continuously talking — good starting point for any two-node project
   int_pin/                  # Interrupt-driven RX via GPIO 34 INT pin
 
 tests/

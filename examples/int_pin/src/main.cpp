@@ -3,24 +3,19 @@
 
 #include "mcp2518fd_can.h"
 
-// Interrupt-driven RX — INT pin (GPIO 34)
+// Learning objective: use the INT pin so your main loop stays free while
+// CAN FD frames arrive — no polling, no missed frames, no wasted SPI reads.
 //
-// Demonstrates the key benefit of interrupt-driven RX: the main loop does
-// other work continuously and is never blocked waiting for CAN frames.
-// Frames are captured immediately when they arrive, not on the next poll.
+// Without the INT pin, available() reads a register over SPI on every call.
+// You either poll constantly (burning CPU) or add delays (missing frames).
 //
-// Without INT pin (polling):
-//   available() reads a register over SPI on every call — you either poll
-//   constantly (wasting CPU and SPI bandwidth) or add delays (missing frames).
+// With the INT pin, the MCP2518FD pulls INT low the moment a frame lands in
+// the RX FIFO. The driver ISR sets a flag. available() returns true immediately
+// with no SPI transaction — the loop is free to do real work in between.
 //
-// With INT pin:
-//   The MCP2518FD asserts INT low the moment a frame lands in the RX FIFO.
-//   The ISR sets a flag. available() returns true immediately — no SPI read
-//   needed until you actually call receive(). The loop is free to do real work.
-//
-// This example runs in internal loopback — no second node required.
-// It transmits a frame every 100 ms and counts how many times the main loop
-// runs between each TX. A high loop count confirms the loop is not blocked.
+// This example runs in internal loopback so no second board is needed.
+// It transmits a frame every 100 ms and counts main-loop iterations between
+// each receive. A high loop count confirms the loop is never blocked waiting.
 
 constexpr uint8_t PIN_SCK  = 33;
 constexpr uint8_t PIN_MISO = 35;
@@ -29,57 +24,55 @@ constexpr uint8_t PIN_CS   = 25;
 constexpr uint8_t PIN_INT  = 34;
 
 SPIClass      spi(VSPI);
-MCP2518Driver can(spi, PIN_CS, PIN_INT);
+MCP2518Driver can(spi, PIN_CS, PIN_INT);  // pass PIN_INT to enable interrupt-driven RX
 
-static uint32_t gLoopCount    = 0;  // iterations of the main loop
-static uint32_t gFramesRx     = 0;  // frames received via ISR-driven path
-static uint32_t gLastTxMs     = 0;
-static uint32_t gLastReportMs = 0;
+static uint32_t loopCount    = 0;
+static uint32_t framesRx     = 0;
+static uint32_t lastTxMs     = 0;
+static uint32_t lastReportMs = 0;
 
 void setup()
 {
     Serial.begin(115200);
     spi.begin(PIN_SCK, PIN_MISO, PIN_MOSI, PIN_CS);
 
-    // Pass PIN_INT to enable interrupt-driven RX
     CanStatus s = can.configure(500000, 2000000, MODE_INTERNAL_LB);
     Serial.printf("configure: %s  FSYS: %lu Hz\n",
                   s == CanStatus::OK ? "OK" : "FAIL", can.getFsys());
-    Serial.println("Running — loop count and RX rate printed every 2 s");
-    Serial.println();
+    Serial.println("Running — loop count and RX rate printed every 2 s\n");
 }
 
 void loop()
 {
-    gLoopCount++;
+    loopCount++;
 
     uint32_t now = millis();
 
     // Transmit one frame every 100 ms
-    if (now - gLastTxMs >= 100)
+    if (now - lastTxMs >= 100)
     {
-        gLastTxMs = now;
+        lastTxMs = now;
         CanMsg tx;
         tx.id = 0x100; tx.fdf = true; tx.brs = true; tx.dlc = 8;
-        for (int i = 0; i < 8; i++) tx.data[i] = (uint8_t)(gFramesRx + i);
+        for (int i = 0; i < 8; i++) tx.data[i] = (uint8_t)(framesRx + i);
         can.transmit(tx);
     }
 
-    // Receive immediately when the ISR flag fires — no polling delay
+    // The ISR flag fires the moment a frame arrives — no polling delay
     if (can.available())
     {
         CanMsg rx;
         can.receive(rx);
-        gFramesRx++;
+        framesRx++;
     }
 
-    // Print stats every 2 s
-    if (now - gLastReportMs >= 2000)
+    // Print stats every 2 s — a high loops/frame value means the loop is free
+    if (now - lastReportMs >= 2000)
     {
-        gLastReportMs = now;
+        lastReportMs = now;
         Serial.printf("frames rx: %4lu   loop iterations: %6lu   loops/frame: ~%lu\n",
-                      gFramesRx,
-                      gLoopCount,
-                      gFramesRx > 0 ? gLoopCount / gFramesRx : 0);
+                      framesRx,
+                      loopCount,
+                      framesRx > 0 ? loopCount / framesRx : 0);
     }
 }

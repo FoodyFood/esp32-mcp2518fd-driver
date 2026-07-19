@@ -172,11 +172,17 @@ These are two different things and must be kept separate.
 **`examples/`** — pure user-facing code. A library user reads these to learn how to use the
 driver in their own project. Rules:
 - No CHECK() macros, no pass/fail output, no assertion loops
-- No SPEC-NNN references or internal development terminology
-- No register names, bit positions, or datasheet section numbers in comments
-- Every file has a clear one-sentence learning objective at the top
-- Code flows in reading order: includes → pin constants → driver construction → setup → logic
-- Comments explain *why*, not *what* — restating the code adds no value
+- No SPEC-NNN references or internal development terminology — the user does not care how the
+  driver was built, only how to use it
+- No register names, bit positions, datasheet section numbers, or internal field names in comments
+- No internal test patterns (e.g. magic payload sentinels, integrity checks) — those belong in
+  `tests/integration/` harnesses
+- The very first comment in the file must be a single "Learning objective:" line stating what
+  the user will know how to do after reading the example
+- Code flows in reading order: includes → pin constants → driver construction → setup → loop logic
+- Comments explain *why*, not *what* — restating the code in prose adds no value
+- Any example that requires two boards must have a `README.md` explaining the wiring, which
+  binary goes to which board, and what the expected Serial output looks like
 - A user should be able to copy this code directly into their own project
 
 **`tests/integration/<harness>/`** — test harnesses that verify the driver on real hardware.
