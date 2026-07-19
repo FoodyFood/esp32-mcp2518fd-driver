@@ -1,7 +1,7 @@
 {
   "name": "esp32-mcp2518fd-driver",
-  "version": "0.2.0",
-  "description": "Register-level CAN FD driver for MCP2518FD breakout boards on ESP32, built directly from the Microchip datasheet.",
+  "version": "0.3.0",
+  "description": "ESP32 CAN FD driver for MCP2518FD. EV gateways, inverter interfaces, UDS diagnostics. Spec-driven, hardware-verified, production-grade.",
   "keywords": ["can-fd", "mcp2518fd", "esp32", "spi", "canbus"],
   "repository": {
     "type": "git",
