@@ -62,6 +62,10 @@ Every feature must follow this exact sequence. Do not skip or reorder steps.
 - If the spec is ambiguous, resolve it by querying the datasheets first — never assume
 - Verify every register address, bit position and field definition cited in the spec
   against the PDFs before touching any code
+- **Record all findings** — any register layout detail, constraint, gotcha or non-obvious
+  datasheet fact discovered during verification must be written into the spec under a
+  `## Datasheet findings` section before implementation begins. This is the paper trail.
+  Future work must not have to re-derive what was already discovered.
 
 ### 2. Design the solution
 - Write out the planned changes to API, registers and RAM layout as comments or notes

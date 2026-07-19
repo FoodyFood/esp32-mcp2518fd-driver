@@ -40,3 +40,39 @@ Without EID support these batteries cannot be communicated with at all.
 - Verify exact TX/RX object word layout against DS20006027B Table 3-1 and 3-2 before writing any code
 - `configFilter()` catch-all mask must also be updated to pass EID frames through (MIDE=0 in CiMASK0)
 - `CanMsg.sid` field name should be retired — rename to `id`, add `ext` bool
+
+## Datasheet findings
+
+### TX/RX object word layout (DS20006027B Table 3-5 / Table 3-6, pages 66–67)
+The spec referenced Table 3-1 and 3-2 — these do not exist. The correct tables are:
+- **Table 3-5** — Transmit Message Object (TXQ and TX FIFO)
+- **Table 3-6** — Receive Message Object
+
+Both share the same word 0 (T0/R0) identifier layout:
+- bits [31:30] — unimplemented
+- bit  [29]    — SID11 (12-bit FD base format extension, not used for 29-bit EID)
+- bits [28:11] — EID[17:0]
+- bits [10:0]  — SID[10:0]
+
+For a 29-bit extended ID the mapping is:
+- `SID[10:0]` = `id >> 18`  (top 11 bits of the 29-bit ID)
+- `EID[17:0]` = `id & 0x3FFFF`  (bottom 18 bits)
+
+Word 1 (T1/R1) control bits:
+- bit [7] = FDF, bit [6] = BRS, bit [5] = RTR, bit [4] = IDE, bits [3:0] = DLC
+- IDE=1 signals an extended frame to the controller
+
+### RX data offset
+R2 (timestamp word) is only present when `CiFIFOCONm.RXTSEN=1`, which we do not set.
+Data therefore starts at `addr + 8` for both SID and EID frames — same offset as before.
+
+### Catch-all filter and EID frames
+`CiMASK0 = 0x00000000` means MIDE=0, which causes the filter to match both standard
+and extended frames regardless of IDE. No change was needed to `configFilter()` for EID
+frames to pass through — the existing catch-all already accepted them.
+
+### API design decision
+`CanMsg.sid` (uint16_t) was replaced by `CanMsg.id` (uint32_t) + `CanMsg.ext` (bool).
+Keeping `sid` alongside `id` was rejected: two fields expressing the same thing when
+`ext=false` violates SRP on the struct and creates ambiguity at every call site.
+All fields default to zero so existing callers compile and behave correctly without modification.

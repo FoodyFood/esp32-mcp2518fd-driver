@@ -46,3 +46,45 @@ each routable to any FIFO.
 - Verify CiFLTCON byte layout (FLTEN bit, F0BP routing field) against DS20006027B before writing
 - Filter changes in normal mode: check whether FLTEN can be toggled outside config mode per datasheet
 - MIDE bit in CiMASK controls whether IDE bit is included in the match — must be set correctly for ext=true filters
+
+## Datasheet findings
+
+### Filter changes do not require Configuration mode (DS20005678E Section 6.1, page 36)
+> "The filter must be disabled by clearing the FLTEN bit before changing the Filter or Mask Object.
+> The module **does not have to be in Configuration mode**."
+
+Sequence for any filter update (safe in normal mode):
+1. Write `0x00` to the filter's byte in CiFLTCONm — disables it
+2. Write CiFLTOBJn and CiMASKn
+3. Write `(1<<7) | fifo_pointer` to re-enable
+
+### CiFLTCONm register layout (DS20006027B Register 3-32, pages 60–61)
+Each CiFLTCONm register covers 4 filters, one byte per filter:
+- bit [7]   = FLTENn (enable)
+- bits [6:5] = unimplemented
+- bits [4:0] = FnBP (FIFO pointer, 0x02 = FIFO2)
+
+Address of the byte for filter n: `0x1D0 + (n/4)*4 + (n%4)`
+
+**Critical:** FnBP can only be modified while FLTENn=0 (DS20006027B Register 3-32 Note 1).
+Always disable the filter before writing the routing pointer.
+
+### CiFLTOBJn / CiMASKn address stride (DS20006027B page 13 register summary)
+- CiFLTOBJn = `0x1F0 + n*8`
+- CiMASKn   = `0x1F4 + n*8`
+- Stride is 8 bytes per filter (OBJ then MASK, 4 bytes each)
+
+### CiFLTOBJn bit layout (DS20006027B Register 3-33, page 62)
+Identical to T0/R0 message object word:
+- bits [28:11] = EID[17:0]
+- bits [10:0]  = SID[10:0]
+- bit  [30]    = EXIDE (1 = match extended frames only, when MIDE=1)
+
+### CiMASKn bit layout (DS20006027B Register 3-34, page 63)
+- bits [28:11] = MEID[17:0]
+- bits [10:0]  = MSID[10:0]
+- bit  [30]    = MIDE (1 = enforce IDE match via EXIDE; 0 = accept both SID and EID)
+
+### MIDE=0 catch-all behaviour
+With MIDE=0 and all mask bits zero, the filter accepts every frame regardless of IDE.
+This is how `configFilter()` installs the default catch-all — no special handling needed.
