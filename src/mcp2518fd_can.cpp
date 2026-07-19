@@ -1,5 +1,6 @@
 #include "mcp2518fd_can.h"
 #include "mcp2518fd_registers.h"
+#include "mcp2518fd_timing.h"
 
 MCP2518Driver::MCP2518Driver(SPIClass& spi, uint8_t csPin)
     : mSpi(spi, csPin), mFsys(0), mTxTimeoutMs(10), mNbtcfg(0)
@@ -26,7 +27,7 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
     applyTiming(nbtcfg, dbtcfg, tdcfg);
     configFifos();
     configFilter();
-    calcTxTimeout(nbtcfg, dbtcfg);
+    mTxTimeoutMs = calcTxTimeout(mFsys, nbtcfg, dbtcfg);
     mNbtcfg = nbtcfg;
 
     if (!mSpi.setMode(mode)) return CanStatus::MODE_TIMEOUT;
@@ -51,7 +52,7 @@ CanStatus MCP2518Driver::setDataRate(uint32_t dataBps)
     mSpi.write32(REG_CiDBTCFG, dbtcfg);
     mSpi.write32(REG_CiTDC,    tdcfg);
     configFilter();
-    calcTxTimeout(mNbtcfg, dbtcfg);
+    mTxTimeoutMs = calcTxTimeout(mFsys, mNbtcfg, dbtcfg);
 
     if (!mSpi.setMode(prevMode)) return CanStatus::MODE_TIMEOUT;
     return CanStatus::OK;
@@ -67,7 +68,7 @@ CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t
     applyTiming(nbtcfg, dbtcfg, tdcfg);
     configFifos();
     configFilter();
-    calcTxTimeout(nbtcfg, dbtcfg);
+    mTxTimeoutMs = calcTxTimeout(0, nbtcfg, dbtcfg);  // fsys unknown in raw path
     mNbtcfg = nbtcfg;
 
     if (!mSpi.setMode(mode)) return CanStatus::MODE_TIMEOUT;
@@ -81,7 +82,7 @@ CanStatus MCP2518Driver::setDataBitTimingRaw(uint32_t dbtcfg, uint32_t tdcfg)
     mSpi.write32(REG_CiDBTCFG, dbtcfg);
     mSpi.write32(REG_CiTDC,    tdcfg);
     configFilter();
-    calcTxTimeout(mNbtcfg, dbtcfg);
+    mTxTimeoutMs = calcTxTimeout(mFsys, mNbtcfg, dbtcfg);
     if (!mSpi.setMode(prevMode)) return CanStatus::MODE_TIMEOUT;
     return CanStatus::OK;
 }
@@ -98,9 +99,7 @@ bool MCP2518Driver::transmit(const CanMsg& msg)
     {
         // 29-bit EID: T0[10:0]=SID[10:0]=id>>18, T0[28:11]=EID[17:0]=id&0x3FFFF
         // T1 bit4=IDE=1  (DS20006027B Table 3-5)
-        uint32_t sid = (msg.id >> 18) & 0x7FFu;
-        uint32_t eid = msg.id & 0x3FFFFu;
-        t0 = sid | (eid << 11);
+        t0 = encodeEidT0(msg.id);
         t1 = (1u << 4)  // IDE
            | ((msg.fdf ? 1u : 0u) << 7)
            | ((msg.brs ? 1u : 0u) << 6)
@@ -169,9 +168,7 @@ bool MCP2518Driver::receive(CanMsg& msg, uint32_t timeoutMs)
     if (msg.ext)
     {
         // R0[10:0]=SID[10:0], R0[28:11]=EID[17:0]  (DS20006027B Table 3-6)
-        uint32_t sid = r0 & 0x7FFu;
-        uint32_t eid = (r0 >> 11) & 0x3FFFFu;
-        msg.id = (sid << 18) | eid;
+        msg.id = decodeEidT0(r0);
     }
     else
     {
@@ -206,7 +203,7 @@ uint32_t MCP2518Driver::readOsc()
 }
 
 // ----------------------------------------------------------------------------
-// Private
+// Private — timing helpers are free functions in mcp2518fd_timing.h
 
 uint32_t MCP2518Driver::detectFsys()
 {
@@ -233,62 +230,6 @@ uint32_t MCP2518Driver::detectFsys()
     return 0;  // clock not ready
 }
 
-bool MCP2518Driver::calcBitTiming(uint32_t fsys, uint32_t nominalBps, uint32_t dataBps,
-                                   uint32_t& nbtcfg, uint32_t& dbtcfg, uint32_t& tdcfg)
-{
-    // Nominal: BRP=0, maximise TSEG1 at 80% SP
-    // rate = fsys / ((BRP+1) * (1 + TSEG1 + TSEG2))
-    // With BRP=0, SP=80%: TSEG2 = totalTQ / 5, TSEG1 = totalTQ - 1 - TSEG2
-    // TSEG1 field: 8-bit (max 255), TSEG2 field: 7-bit (max 127)
-    {
-        uint32_t totalTQ = fsys / nominalBps;
-        if (totalTQ < 3 || (fsys % nominalBps) != 0) return false;
-
-        uint32_t tseg2 = totalTQ / 5;          // 20% for phase seg 2
-        if (tseg2 < 1) tseg2 = 1;
-        if (tseg2 > 127) tseg2 = 127;
-        uint32_t tseg1 = totalTQ - 1 - tseg2;  // remaining TQs
-        if (tseg1 > 255) return false;
-        if (tseg1 < 1)   return false;
-
-        uint32_t sjw = tseg2;  // SJW = TSEG2 is standard practice
-        nbtcfg = (0u << 24) | (tseg1 << 16) | (tseg2 << 8) | sjw;
-    }
-
-    // Data: BRP=0, maximise TSEG1 at 80% SP
-    // TSEG1 field: 5-bit (max 31), TSEG2 field: 4-bit (max 15)
-    {
-        uint32_t totalTQ = fsys / dataBps;
-        if (totalTQ < 3 || (fsys % dataBps) != 0) return false;
-
-        uint32_t tseg2 = totalTQ / 5;
-        if (tseg2 < 1) tseg2 = 1;
-        if (tseg2 > 15) tseg2 = 15;
-        uint32_t tseg1 = totalTQ - 1 - tseg2;
-        if (tseg1 > 31) tseg1 = 31;  // cap to field width, recheck rate below
-        if (tseg1 < 1)  return false;
-
-        // Verify the capped values still produce the exact target rate
-        if (fsys / (1 + tseg1 + tseg2) != dataBps) return false;
-
-        uint32_t sjw = tseg2;
-        dbtcfg = (0u << 24) | (tseg1 << 16) | (tseg2 << 8) | sjw;
-
-        // TDC: required at >= 1 Mbps. TDCO = (BRP+1)*(TSEG1+1) [ref manual Table 3-5]
-        if (dataBps >= 1000000)
-        {
-            uint32_t tdco = (tseg1 + 1);  // BRP=0 so (BRP+1)=1
-            tdcfg = (2u << 16) | (tdco << 8);  // TDCMOD=auto(2), TDCO
-        }
-        else
-        {
-            tdcfg = 0;  // TDC disabled
-        }
-    }
-
-    return true;
-}
-
 void MCP2518Driver::applyTiming(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg)
 {
     mSpi.write32(REG_CiNBTCFG, nbtcfg);
@@ -300,28 +241,6 @@ void MCP2518Driver::applyTiming(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg
     con2 &= ~((1u << 4) | (1u << 3));
     con2 |= CON2_RTXAT;
     mSpi.write8(REG_CiCON + 2, con2);
-}
-
-void MCP2518Driver::calcTxTimeout(uint32_t nbtcfg, uint32_t dbtcfg)
-{
-    uint32_t nBrp   = (nbtcfg >> 24) & 0xFF;
-    uint32_t nTseg1 = (nbtcfg >> 16) & 0xFF;
-    uint32_t nTseg2 = (nbtcfg >>  8) & 0x7F;
-    uint32_t dBrp   = (dbtcfg >> 24) & 0xFF;
-    uint32_t dTseg1 = (dbtcfg >> 16) & 0x1F;
-    uint32_t dTseg2 = (dbtcfg >>  8) & 0x0F;
-
-    // TQ in ns = (BRP+1) * (1e9 / FSYS). Use mFsys if available, else assume 20 MHz.
-    uint32_t fsys = mFsys ? mFsys : 20000000u;
-    uint32_t tq_ns = 1000000000u / fsys;
-
-    uint32_t nbt_ns = (nBrp + 1) * (1 + nTseg1 + nTseg2) * tq_ns;
-    uint32_t dbt_ns = (dBrp + 1) * (1 + dTseg1 + dTseg2) * tq_ns;
-
-    // Worst-case 64-byte CAN FD frame: ~36 nominal bits + ~562 data bits
-    uint32_t frame_ns = 36 * nbt_ns + 562 * dbt_ns;
-    mTxTimeoutMs = (frame_ns * 3 / 1000000) + 2;
-    if (mTxTimeoutMs < 2) mTxTimeoutMs = 2;
 }
 
 void MCP2518Driver::configFifos()
@@ -349,31 +268,8 @@ void MCP2518Driver::setFilter(uint8_t index, uint32_t id, uint32_t mask, bool ex
 
     // Encode OBJ: SID[10:0] at bits[10:0], EID[17:0] at bits[28:11], EXIDE at bit[30]
     // Same bit layout as T0/R0 message object (DS20006027B Register 3-33)
-    uint32_t obj = 0;
-    if (ext)
-    {
-        uint32_t sid = (id >> 18) & 0x7FFu;
-        uint32_t eid = id & 0x3FFFFu;
-        obj = sid | (eid << 11) | (1u << 30);  // EXIDE=1
-    }
-    else
-    {
-        obj = id & 0x7FFu;
-    }
-
-    // Encode MASK: same layout, MIDE at bit[30]
-    uint32_t msk = 0;
-    if (ext)
-    {
-        uint32_t msid = (mask >> 18) & 0x7FFu;
-        uint32_t meid = mask & 0x3FFFFu;
-        msk = msid | (meid << 11) | (1u << 30);  // MIDE=1
-    }
-    else
-    {
-        msk = mask & 0x7FFu;
-        // MIDE=0: match both standard and extended if mask=0, or SID-only if mask set
-    }
+    uint32_t obj = ext ? encodeFilterObjEid(id)   : (id   & 0x7FFu);
+    uint32_t msk = ext ? encodeFilterMskEid(mask) : (mask & 0x7FFu);
 
     mSpi.write32(FLTOBJ(index), obj);
     mSpi.write32(FLTMSK(index), msk);
