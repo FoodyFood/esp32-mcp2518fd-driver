@@ -21,7 +21,7 @@ constexpr uint8_t  PIN_MISO = 35;
 constexpr uint8_t  PIN_MOSI = 32;
 constexpr uint8_t  PIN_CS   = 25;
 
-constexpr uint16_t CHAT_SID = 0x7E0;
+constexpr uint32_t CHAT_SID = 0x7E0;
 
 SPIClass      spi(VSPI);
 MCP2518Driver can(spi, PIN_CS);
@@ -38,7 +38,7 @@ static void sendText(const char* text)
     for (int offset = 0; offset < len; offset += 8)
     {
         CanMsg msg;
-        msg.sid = CHAT_SID;
+        msg.id  = CHAT_SID;
         msg.fdf = true;
         msg.brs = true;
         msg.dlc = 8;
@@ -102,7 +102,7 @@ void loop()
     CanMsg rx = {};
     while (can.available())
     {
-        if (can.receive(rx) && rx.sid == CHAT_SID)
+        if (can.receive(rx) && rx.id == CHAT_SID)
         {
             for (int i = 0; i < 8; i++)
             {

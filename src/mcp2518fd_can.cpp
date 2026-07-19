@@ -93,7 +93,7 @@ bool MCP2518Driver::transmit(const CanMsg& msg)
 
     uint16_t addr = txRamAddr();
 
-    uint32_t t0 = msg.sid & 0x7FFu;
+    uint32_t t0 = msg.id & 0x7FFu;
     uint32_t t1 = ((msg.fdf ? 1u : 0u) << 7)
                 | ((msg.brs ? 1u : 0u) << 6)
                 | (msg.dlc & 0xFu);
@@ -149,7 +149,7 @@ bool MCP2518Driver::receive(CanMsg& msg, uint32_t timeoutMs)
     uint32_t r0 = mSpi.read32(addr);
     uint32_t r1 = mSpi.read32(addr + 4);
 
-    msg.sid = r0 & 0x7FFu;
+    msg.id  = r0 & 0x7FFu;
     msg.fdf = (r1 >> 7) & 1;
     msg.brs = (r1 >> 6) & 1;
     msg.dlc = r1 & 0xFu;

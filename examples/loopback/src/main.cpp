@@ -35,7 +35,7 @@ void runTest()
     // Transmit one frame and receive it back
     // ------------------------------------------------------------------
     CanMsg tx;
-    tx.sid    = 0x123;
+    tx.id     = 0x123;
     tx.fdf    = true;
     tx.brs    = true;
     tx.dlc    = 8;
@@ -47,7 +47,7 @@ void runTest()
 
     CanMsg rx = {};
     CHECK("receive() returned true", can.receive(rx));
-    CHECK("SID matches",  rx.sid == tx.sid);
+    CHECK("ID matches",   rx.id == tx.id);
     CHECK("FDF matches",  rx.fdf == tx.fdf);
     CHECK("BRS matches",  rx.brs == tx.brs);
     CHECK("DLC=8 (8 bytes)", rx.dlc == tx.dlc);
@@ -60,7 +60,7 @@ void runTest()
     // ------------------------------------------------------------------
     Serial.println("multi-frame @ 2 Mbps, 3x 8 bytes:");
 
-    struct { uint16_t sid; uint8_t d0; uint8_t d7; } cases[3] = {
+    struct { uint32_t id; uint8_t d0; uint8_t d7; } cases[3] = {
         { 0x001, 0xAA, 0x11 },
         { 0x7FF, 0x12, 0xF0 },
         { 0x456, 0xDE, 0xBE },
@@ -69,7 +69,7 @@ void runTest()
     for (int i = 0; i < 3; i++)
     {
         CanMsg t;
-        t.sid = cases[i].sid;
+        t.id = cases[i].id;
         t.fdf = true; t.brs = true; t.dlc = 8;
         for (int j = 0; j < 8; j++) t.data[j] = cases[i].d0 + j;
 
@@ -78,13 +78,13 @@ void runTest()
         bool rxOk = can.receive(r);
 
         bool match = rxOk
-                  && r.sid == t.sid
+                  && r.id == t.id
                   && r.fdf && r.brs
                   && r.dlc == 8;
         for (int j = 0; j < 8 && match; j++) match &= (r.data[j] == t.data[j]);
 
         char label[48];
-        snprintf(label, sizeof(label), "frame %d SID=0x%03X 8 bytes", i, cases[i].sid);
+        snprintf(label, sizeof(label), "frame %d ID=0x%03lX 8 bytes", i, (unsigned long)cases[i].id);
         CHECK(label, txOk && match);
     }
 
@@ -99,13 +99,13 @@ void runTest()
     CHECK("mode = INTERNAL_LB after switch", can.getMode() == MODE_INTERNAL_LB);
 
     CanMsg tx2;
-    tx2.sid = 0x321; tx2.fdf = true; tx2.brs = true; tx2.dlc = 8;
+    tx2.id = 0x321; tx2.fdf = true; tx2.brs = true; tx2.dlc = 8;
     for (int i = 0; i < 8; i++) tx2.data[i] = 0x10 + i;
 
     CHECK("transmit() 8 bytes @ 2 Mbps", can.transmit(tx2));
     CanMsg rx2 = {};
     CHECK("receive() 8 bytes @ 2 Mbps", can.receive(rx2));
-    CHECK("SID matches", rx2.sid == tx2.sid);
+    CHECK("ID matches", rx2.id == tx2.id);
     bool data2Ok = true;
     for (int i = 0; i < 8; i++) data2Ok &= (rx2.data[i] == tx2.data[i]);
     CHECK("all 8 bytes match", data2Ok);
@@ -116,13 +116,13 @@ void runTest()
     Serial.println("single frame @ 2 Mbps, DLC=15 (64 bytes):");
 
     CanMsg tx3;
-    tx3.sid = 0x555; tx3.fdf = true; tx3.brs = true; tx3.dlc = 15;
+    tx3.id = 0x555; tx3.fdf = true; tx3.brs = true; tx3.dlc = 15;
     for (int i = 0; i < 64; i++) tx3.data[i] = (uint8_t)(i ^ 0xA5);
 
     CHECK("transmit() 64 bytes @ 2 Mbps", can.transmit(tx3));
     CanMsg rx3 = {};
     CHECK("receive() 64 bytes @ 2 Mbps", can.receive(rx3));
-    CHECK("SID matches",  rx3.sid == tx3.sid);
+    CHECK("ID matches",   rx3.id == tx3.id);
     CHECK("DLC=15 (64 bytes)", rx3.dlc == 15);
     bool data3Ok = true;
     for (int i = 0; i < 64; i++) data3Ok &= (rx3.data[i] == tx3.data[i]);
@@ -147,13 +147,13 @@ void runTest()
         CHECK(label, sw);
 
         CanMsg tx4;
-        tx4.sid = 0x100 + r; tx4.fdf = true; tx4.brs = true; tx4.dlc = 8;
+        tx4.id = 0x100 + r; tx4.fdf = true; tx4.brs = true; tx4.dlc = 8;
         for (int i = 0; i < 8; i++) tx4.data[i] = (uint8_t)(0x30 + r * 8 + i);
 
         bool txOk = can.transmit(tx4);
         CanMsg rx4 = {};
         bool rxOk = can.receive(rx4);
-        bool dataOk = rxOk && rx4.sid == tx4.sid && rx4.dlc == 8;
+        bool dataOk = rxOk && rx4.id == tx4.id && rx4.dlc == 8;
         for (int i = 0; i < 8 && dataOk; i++) dataOk &= (rx4.data[i] == tx4.data[i]);
 
         snprintf(label, sizeof(label), "transmit() + receive() 8 bytes @ %s", rates[r].label);
@@ -199,13 +199,13 @@ void runTest()
         CHECK(label, sw);
 
         CanMsg t;
-        t.sid = 0x200 + r; t.fdf = true; t.brs = true; t.dlc = 8;
+        t.id = 0x200 + r; t.fdf = true; t.brs = true; t.dlc = 8;
         for (int i = 0; i < 8; i++) t.data[i] = (uint8_t)(0x50 + r * 8 + i);
 
         bool txOk = can.transmit(t);
         CanMsg rx5 = {};
         bool rxOk = can.receive(rx5);
-        bool dataOk = rxOk && rx5.sid == t.sid && rx5.dlc == 8;
+        bool dataOk = rxOk && rx5.id == t.id && rx5.dlc == 8;
         for (int i = 0; i < 8 && dataOk; i++) dataOk &= (rx5.data[i] == t.data[i]);
 
         snprintf(label, sizeof(label), "loopback 8 bytes (%s)", rawRates[r].label);

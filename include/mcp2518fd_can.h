@@ -38,11 +38,12 @@ inline constexpr uint8_t dlcToLen(uint8_t dlc)
 
 struct CanMsg
 {
-    uint16_t sid;       // Standard identifier, 11-bit (0x000–0x7FF)
-    bool     fdf;       // true = CAN FD frame, false = Classic CAN
-    bool     brs;       // true = switch to data bit rate in payload phase
-    uint8_t  dlc;       // Data Length Code (0–15)
-    uint8_t  data[64];  // Payload bytes (up to 64 for CAN FD)
+    uint32_t id   = 0;     // Frame identifier: 11-bit SID (ext=false) or 29-bit EID (ext=true)
+    bool     ext  = false; // false = standard 11-bit frame, true = extended 29-bit frame
+    bool     fdf  = false; // true = CAN FD frame, false = Classic CAN
+    bool     brs  = false; // true = switch to data bit rate in payload phase
+    uint8_t  dlc  = 0;     // Data Length Code (0–15)
+    uint8_t  data[64] = {}; // Payload bytes (up to 64 for CAN FD)
 };
 
 // ----------------------------------------------------------------------------
@@ -53,7 +54,7 @@ struct CanMsg
 //   MCP2518Driver can(spi, PIN_CS);
 //   can.configure(125000, 2000000, MODE_NORMAL);   // 125 kbps nominal, 2 Mbps data
 //
-//   CanMsg tx = { .sid=0x123, .fdf=true, .brs=true, .dlc=8 };
+//   CanMsg tx = { .id=0x123, .fdf=true, .brs=true, .dlc=8 };
 //   for (int i = 0; i < 8; i++) tx.data[i] = i;
 //   can.transmit(tx);
 //
