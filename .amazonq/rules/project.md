@@ -165,6 +165,52 @@ Before starting a new spec, verify all existing examples in this order:
 - If interactive or scope-based, document expected manual observation in the example's README
 - Add the new example to the Files list below and the Examples table in `README.md`
 
+## Examples vs Test Harnesses
+
+These are two different things and must be kept separate.
+
+**`examples/`** — pure user-facing code. A library user reads these to learn how to use the
+driver in their own project. Rules:
+- No CHECK() macros, no pass/fail output, no assertion loops
+- No SPEC-NNN references or internal development terminology — the user does not care how the
+  driver was built, only how to use it
+- No register names, bit positions, datasheet section numbers, or internal field names in comments
+- No internal test patterns (e.g. magic payload sentinels, integrity checks) — those belong in
+  `tests/integration/` harnesses
+- The very first comment in the file must be a single "Learning objective:" line stating what
+  the user will know how to do after reading the example
+- Code flows in reading order: includes → pin constants → driver construction → setup → loop logic
+- Comments explain *why*, not *what* — restating the code in prose adds no value
+- Any example that requires two boards must have a `README.md` explaining the wiring, which
+  binary goes to which board, and what the expected Serial output looks like
+- A user should be able to copy this code directly into their own project
+
+**`tests/integration/<harness>/`** — test harnesses that verify the driver on real hardware.
+These are not for library users. There is no limit on how many harnesses exist — create as
+many as needed to verify features cleanly without polluting examples. Rules:
+- CHECK() macros and pass/fail output are expected and correct here
+- SPEC-NNN references are allowed and encouraged — this is the paper trail
+- Each harness is a self-contained PlatformIO project with `lib_deps = symlink://../../..`
+- Register it in `tests/integration/mcp_test/runner.py` SUITES list
+- Add a `build-harnesses` matrix entry in `.github/workflows/ci-checks.yml`
+- CI builds every harness via `verify.py --suite <name> --build-only` (no hardware required)
+- Hardware runs use `verify.py --suite <name> --port COM4` as normal
+
+**When adding a new feature:**
+- Assertions go in the appropriate test harness in `tests/integration/` — create a new
+  harness if the feature is large enough to warrant its own focused test program
+- If the feature has a meaningful usage pattern worth showing to a user, create a new
+  example in `examples/` — but only if it teaches something a user would actually copy
+- Never add CHECK() to a user-facing example
+
+**Compatibility check on every new feature:**
+When implementing a new feature, two locations must be checked for call sites that may
+need updating:
+1. `examples/` — all user-facing examples that use the public API
+2. `tests/integration/` — all test harnesses
+Both must compile and pass before a spec step is committed. A change that breaks an
+example or a harness is not done.
+
 ## Key Implementation Rules
 - NEVER do a 32-bit read-modify-write of CiCON — use byte-level write8() to CiCON+3 for REQOP
 - NEVER read CiFIFOUAm while in Configuration mode — UA is only valid outside config mode
@@ -201,6 +247,31 @@ The public API is the primary product. Every design decision must be evaluated a
 - ISR functions must be marked `IRAM_ATTR` on ESP32
 - No TEF, no TXQ — FIFO1=TX, FIFO2=RX only (filters route to FIFO2)
 
+## Version Bumping
+
+The library version is tracked in two files that must always be in sync:
+- `library.json` — `"version"` field
+- `library.properties` — `version=` field
+
+**Rule:** Bump the minor version (`0.X.0 → 0.X+1.0`) as the first commit when starting a new spec.
+The commit message must be: `SPEC-NNN step 0: bump version to 0.X.0`
+
+Version → spec alignment:
+
+| Version | Spec |
+|---|---|
+| 0.1.0 | Initial release |
+| 0.2.0 | SPEC-002 (Filters) |
+| 0.3.0 | SPEC-003 (Bus errors) |
+| 0.4.0 | SPEC-004 (Interrupt RX + FIFO depth) |
+| 0.5.0 | SPEC-005 (RX timestamp + listen-only) |
+| 0.6.0 | SPEC-006 (Stop/restart/sleep) |
+| 0.7.0 | SPEC-007 (Battery simulator example) |
+
+Update this table when a new spec is added.
+
+---
+
 ## Commit and Documentation
 - Commit after every verified step — no exceptions
 - Commit message format: `SPEC-NNN step N: short description`
@@ -214,13 +285,14 @@ The public API is the primary product. Every design decision must be evaluated a
   and how it moves closer to the goal
 
 ## Files
-- `.github/workflows/ci.yml` — CI workflow: unit tests + build all examples on every PR, auto-merge on pass
-- `examples/single_node/src/main.cpp` — single-board config and bitrate regression tests
-- `examples/id_filter/src/main.cpp` — acceptance filter demonstration (SID/EID filtering)
-- `examples/two_node/src/main.cpp` — two-node regression test (real bus, COM4 + COM3)
+- `.github/workflows/ci.yml` — CI workflow: unit tests + build all examples and harnesses on every PR, auto-merge on pass
 - `examples/walkie_talkie/` — interactive text chat between two nodes
 - `examples/scope_loopback/` — continuous TX in MODE_EXTERNAL_LB for scope measurements
 - `examples/bus_monitor/` — two nodes continuously transmitting counters (node_a → COM4, node_b → COM3)
+- `examples/int_pin/` — interrupt-driven RX demonstration
+- `tests/integration/single_node/src/main.cpp` — single-board regression harness: config, bitrates, raw API, error detection, FIFO depth, INT pin
+- `tests/integration/id_filter/src/main.cpp` — filter regression harness: SID/EID exact, range, multi-filter, catch-all
+- `tests/integration/two_node/src/main.cpp` — two-node regression harness: real bus, COM4 + COM3
 - `include/mcp2518fd_can.h` — public driver API, CanMsg, CanStatus
 - `include/mcp2518fd_presets.h` — bit timing preset constants (Arduino-free, used by unit tests)
 - `include/mcp2518fd_timing.h` — pure-logic timing functions: calcBitTiming, calcTxTimeout, EID/filter encode (Arduino-free, used by unit tests)

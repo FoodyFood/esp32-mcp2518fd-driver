@@ -3,42 +3,36 @@
 
 #include "mcp2518fd_can.h"
 
-// Walkie-talkie — text chat between two nodes over CAN FD
+// Learning objective: send and receive text messages between two ESP32 boards over CAN FD.
 //
-// Both boards run this same binary.
-// Type text in the Serial monitor and press Enter — it is sent as one or
-// more CAN FD frames to the other node, which prints it to its Serial monitor.
-//
-// Encoding: each frame carries up to 8 bytes of ASCII text (DLC=8).
-//           A null terminator in the payload signals end of message.
-//           SID=0x7E0 for all chat frames.
-//
-// Rate: 125 kbps nominal / 2 Mbps data.
-// No role assignment — both nodes transmit and receive simultaneously.
+// Flash this same binary to both boards. Open a Serial monitor on each.
+// Type a message on one board and press Enter — it appears on the other.
+// Both boards can transmit and receive at the same time.
 
 constexpr uint8_t  PIN_SCK  = 33;
 constexpr uint8_t  PIN_MISO = 35;
 constexpr uint8_t  PIN_MOSI = 32;
 constexpr uint8_t  PIN_CS   = 25;
 
-constexpr uint32_t CHAT_SID = 0x7E0;
+constexpr uint32_t CHAT_ID      = 0x7E0;
+constexpr uint32_t SEND_IDLE_MS = 300;  // send after this many ms of no new typing
 
 SPIClass      spi(VSPI);
 MCP2518Driver can(spi, PIN_CS);
 
 static char     txBuf[64];
-static int      txLen    = 0;
-static uint32_t txLastChar = 0;  // millis() of last received serial char
-constexpr uint32_t TX_IDLE_MS = 300;  // send after 300ms of no new chars
+static int      txLen       = 0;
+static uint32_t txLastCharMs = 0;
 
-// Send a null-terminated string as a sequence of 8-byte CAN FD frames.
+// Break a string into 8-byte CAN FD frames and transmit them in order.
+// A null byte in the last frame signals end-of-message to the receiver.
 static void sendText(const char* text)
 {
-    int len = strlen(text) + 1;  // include null terminator
+    int len = strlen(text) + 1;
     for (int offset = 0; offset < len; offset += 8)
     {
         CanMsg msg;
-        msg.id  = CHAT_SID;
+        msg.id  = CHAT_ID;
         msg.fdf = true;
         msg.brs = true;
         msg.dlc = 8;
@@ -65,20 +59,18 @@ void setup()
     Serial.begin(115200);
     spi.begin(PIN_SCK, PIN_MISO, PIN_MOSI, PIN_CS);
 
-    bool ok = can.configure(125000, 2000000, MODE_NORMAL) == CanStatus::OK;
+    CanStatus s = can.configure(125000, 2000000, MODE_NORMAL);
 
-    Serial.println();
-    Serial.println("==========================");
+    Serial.println("\n==========================");
     Serial.println("  CAN FD Walkie-Talkie");
     Serial.println("==========================");
-    Serial.printf("configure(MODE_NORMAL): %s\n", ok ? "OK" : "FAIL");
-    Serial.println("Type a message and press Enter to send.");
-    Serial.println();
+    Serial.printf("configure: %s\n", s == CanStatus::OK ? "OK" : "FAIL");
+    Serial.println("Type a message and press Enter to send.\n");
 }
 
 void loop()
 {
-    // Accumulate serial input — send on newline or after 300ms idle
+    // Accumulate typed characters; send on newline or after a short idle pause
     while (Serial.available())
     {
         char c = Serial.read();
@@ -89,20 +81,20 @@ void loop()
         else if (txLen < (int)sizeof(txBuf) - 1)
         {
             txBuf[txLen++] = c;
-            txLastChar = millis();
+            txLastCharMs = millis();
         }
     }
-    if (txLen > 0 && millis() - txLastChar > TX_IDLE_MS)
+    if (txLen > 0 && millis() - txLastCharMs > SEND_IDLE_MS)
         flushTx();
 
-    // Non-blocking receive — reassemble incoming frames into messages
+    // Reassemble incoming frames back into a string and print when complete
     static char rxBuf[256];
     static int  rxLen = 0;
 
     CanMsg rx = {};
     while (can.available())
     {
-        if (can.receive(rx) && rx.id == CHAT_SID)
+        if (can.receive(rx) && rx.id == CHAT_ID)
         {
             for (int i = 0; i < 8; i++)
             {

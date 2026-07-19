@@ -51,12 +51,12 @@ See [`docs/use_case_coverage.md`](docs/use_case_coverage.md) for the full featur
 | Raw / advanced API for non-standard rates and custom oscillators | ✅ |
 | 29-bit extended ID (EID) — 11-bit and 29-bit on the same bus | ✅ |
 | Acceptance filter API — per-SID, per-range, per-mask | ✅ |
-| Bus error detection — TEC/REC counters, bus-off flag | 🔜 [SPEC-003](docs/specs/SPEC-003-bus-error-and-tx-result.md) |
-| TX error detail — distinguish no-ACK, bus error, FIFO full | 🔜 [SPEC-003](docs/specs/SPEC-003-bus-error-and-tx-result.md) |
-| Interrupt-driven RX via INT pin (GPIO 34) | 🔜 [SPEC-004](docs/specs/SPEC-004-interrupt-rx-and-fifo-depth.md) |
-| Configurable RX FIFO depth (1–32 slots) | 🔜 [SPEC-004](docs/specs/SPEC-004-interrupt-rx-and-fifo-depth.md) |
-| Per-frame RX timestamp from hardware time base counter | 🔜 [SPEC-005](docs/specs/SPEC-005-rx-timestamp-and-listen-only.md) |
-| stop() / restart() / sleep() lifecycle control | 🔜 [SPEC-006](docs/specs/SPEC-006-stop-restart-sleep.md) |
+| Bus error detection — TEC/REC counters, bus-off flag | ✅ |
+| TX error detail — distinguish no-ACK, bus error, FIFO full | ✅ |
+| Interrupt-driven RX via INT pin — frame arrival wakes ISR, no polling | ✅ |
+| Configurable RX FIFO depth (1–24 slots at 64-byte payload) | ✅ |
+| Per-frame RX timestamp from hardware time base counter | 🔜 |
+| stop() / restart() / sleep() lifecycle control | 🔜 |
 
 ---
 
@@ -105,7 +105,7 @@ Other ESP32 boards and MCP2518FD breakout variants should work provided the SPI 
 | Oscillator | 20 MHz crystal (SCLKDIV=0, PLLEN=0 → FSYS=20 MHz) |
 | Transceiver | ATA6561 |
 | SPI bus | VSPI — SCK=33, MISO=35, MOSI=32, CS=25 |
-| INT | GPIO 34 (interrupt input — used by SPEC-004) |
+| INT | GPIO 34 |
 
 ---
 
@@ -190,29 +190,14 @@ Presets for 20 MHz and 40 MHz are defined in `mcp2518fd_presets.h`. All use BRP=
 
 ## Examples
 
-Each example is a self-contained PlatformIO project.
+Each example is a self-contained PlatformIO project you can open, build and flash directly.
 
 | Example | Description |
 |---|---|
-| `examples/single_node` | Single-board regression test — configure(), bitrates, raw API. No bus required. |
-| `examples/id_filter` | Acceptance filter demonstration — SID exact, range, EID, multi-filter, catch-all. |
-| `examples/two_node` | Two-board bidirectional test over a real CAN bus — A→B and B→A at 2/4/5 Mbps, 8-byte and 64-byte payloads. |
 | `examples/walkie_talkie` | Text chat between two boards over CAN FD — type in one Serial monitor, read on the other. |
-| `examples/scope_loopback` | Continuous TX in `MODE_EXTERNAL_LB` for oscilloscope measurements — real bus signals, self-ACK. |
-| `examples/bus_monitor` | Two nodes continuously transmitting counters — autonomous boot, no serial input required. node_a env → COM4 (ID=0x100), node_b env → COM3 (ID=0x200). Bus load testing and integrity checking. |
-
-```bash
-# Full regression suite (upload + verify all three automatable examples):
-python tests/integration/verify.py --suite all --port COM4 --port-b COM3
-
-# Single suite:
-python tests/integration/verify.py --suite single_node --port COM4
-python tests/integration/verify.py --suite id_filter   --port COM4
-python tests/integration/verify.py --suite two_node    --port COM4 --port-b COM3
-
-# Unit tests (no hardware required):
-wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit && ~/.local/bin/pio test -e native"
-```
+| `examples/scope_loopback` | Continuous TX in `MODE_EXTERNAL_LB` for oscilloscope measurements — real bus signals, self-ACK. Press any key to cycle through data rates. |
+| `examples/bus_monitor` | Two nodes continuously transmitting counters — both start on boot, no serial input required. Flash `node_a` to one board and `node_b` to the other. |
+| `examples/int_pin` | Interrupt-driven RX — main loop does other work while frames arrive via GPIO 34. Shows the non-blocking pattern to copy into your own project. |
 
 ---
 
@@ -281,16 +266,17 @@ src/
   mcp2518fd_spi.cpp         # SPI transport implementation
 
 examples/
-  single_node/              # Single-board config and bitrate regression tests
-  id_filter/                # Acceptance filter demonstration (SID/EID filtering)
-  two_node/                 # Two-node CAN FD test — bidirectional over real bus
   walkie_talkie/            # Text chat between two nodes over CAN FD
   scope_loopback/           # Continuous TX in MODE_EXTERNAL_LB for scope measurements
-  bus_monitor/              # Two nodes continuously talking — bus load + integrity check
+  bus_monitor/              # Two nodes continuously talking — good starting point for any two-node project
+  int_pin/                  # Interrupt-driven RX via GPIO 34 INT pin
 
 tests/
   integration/
-    verify.py               # Entry point — upload + verify, single suite or all
+    verify.py               # Entry point — build, upload and verify on real hardware
+    single_node/            # Harness: single-board config, bitrates, raw API, error detection, FIFO, INT pin
+    id_filter/              # Harness: SID/EID exact, range, multi-filter, catch-all
+    two_node/               # Harness: bidirectional real-bus test, COM4 + COM3
     mcp_test/               # runner, suites, upload, serial I/O modules
   unit/
     platformio.ini          # Native PlatformIO env — runs on host, no hardware required
@@ -312,7 +298,7 @@ docs/
 
 .github/
   workflows/
-    ci-checks.yml           # CI: unit tests + build all examples on every PR
+    ci-checks.yml           # CI: unit tests + build all examples and harnesses on every PR
 
 library.json                # PlatformIO library manifest
 library.properties          # Arduino IDE library manifest
@@ -335,7 +321,7 @@ PDFs are not committed to this repo. Download them and place in `docs/reference/
 
 ## CI
 
-Every PR runs unit tests and builds all examples on `ubuntu-24.04`. All examples use `lib_deps = file://../..` — works locally and in CI without any patching.
+Every PR runs unit tests and builds all examples and test harnesses on `ubuntu-24.04`.
 
 [![CI Checks](https://github.com/FoodyFood/esp32-mcp2518fd-driver/actions/workflows/ci-checks.yml/badge.svg)](https://github.com/FoodyFood/esp32-mcp2518fd-driver/actions/workflows/ci-checks.yml)
 [![Publish to PlatformIO Registry](https://github.com/FoodyFood/esp32-mcp2518fd-driver/actions/workflows/publish.yml/badge.svg)](https://github.com/FoodyFood/esp32-mcp2518fd-driver/actions/workflows/publish.yml)

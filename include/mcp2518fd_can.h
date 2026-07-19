@@ -87,19 +87,24 @@ struct CanError
 class MCP2518Driver
 {
 public:
-    MCP2518Driver(SPIClass& spi, uint8_t csPin);
+    // intPin — GPIO pin connected to MCP2518FD INT (active-low). Pass -1 (default)
+    //          to use polling-only mode. When >= 0, an ISR is attached in configure()
+    //          and available() returns true immediately on frame arrival.
+    MCP2518Driver(SPIClass& spi, uint8_t csPin, int8_t intPin = -1);
 
     // Reset the chip, auto-detect oscillator frequency, calculate and apply
     // bit timing for the requested nominal and data rates, configure
     // FIFO1=TX / FIFO2=RX, enable a catch-all acceptance filter, then enter
     // the requested mode.
     //
-    // nominalBps — arbitration phase rate in bps (e.g. 125000, 250000, 500000, 1000000)
-    // dataBps    — data phase rate in bps       (e.g. 1000000, 2000000, 4000000, 5000000)
-    // mode       — MODE_NORMAL, MODE_INTERNAL_LB, MODE_EXTERNAL_LB, etc.
+    // nominalBps  — arbitration phase rate in bps (e.g. 125000, 250000, 500000, 1000000)
+    // dataBps     — data phase rate in bps       (e.g. 1000000, 2000000, 4000000, 5000000)
+    // mode        — MODE_NORMAL, MODE_INTERNAL_LB, MODE_EXTERNAL_LB, etc.
+    // rxFifoDepth — RX FIFO slot count (1–24 at PLSIZE_64; clamped to 24). Default 16.
+    //               RAM budget: FIFO1 (TX, depth=4) = 288 bytes; FIFO2 max = 24 × 72 = 1728 bytes.
     //
     // Returns CanStatus::OK when the chip confirms the requested mode.
-    CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode);
+    CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode, uint8_t rxFifoDepth = 16);
 
     // Change the data bit rate at runtime without disturbing the nominal rate.
     // Performs a config-mode round-trip and returns to the previous mode.
@@ -163,7 +168,7 @@ public:
     //
     // configureRaw() and setDataBitTimingRaw() bypass auto-detection and
     // accept pre-computed register words directly.
-    CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode);
+    CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode, uint8_t rxFifoDepth = 16);
     CanStatus setDataBitTimingRaw(uint32_t dbtcfg, uint32_t tdcfg);
 
 private:
@@ -171,12 +176,17 @@ private:
     uint32_t   mFsys        = 0;
     uint32_t   mTxTimeoutMs = 10;
     uint32_t   mNbtcfg      = 0;
+    int8_t     mIntPin      = -1;
+    volatile bool mRxPending = false;
+
+    static MCP2518Driver* sIsrInstance;  // single-instance ISR trampoline
+    static void IRAM_ATTR sIsrHandler();
 
     // Detect FSYS from the OSC register after reset.
     // Returns frequency in Hz, or 0 if the clock is not ready.
     uint32_t detectFsys();
 
-    void configFifos();
+    void configFifos(uint8_t rxFifoDepth);
     void configFilter();  // installs catch-all filter 0 → FIFO2
     void applyTiming(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg);
     uint16_t txRamAddr();

@@ -28,18 +28,16 @@ jobs:
         run: cd tests/unit && pio test -e native
 
   build-examples:
-    name: Build ${{ matrix.example }}
+    name: Build example/${{ matrix.example }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         example:
-          - single_node
-          - id_filter
-          - two_node
           - walkie_talkie
           - scope_loopback
           - bus_monitor
+          - int_pin
 
     steps:
       - uses: actions/checkout@v4
@@ -54,9 +52,6 @@ jobs:
         run: pip install platformio
 
       - name: Patch lib_deps for CI
-        # symlink:// works locally on Windows but causes PlatformIO to copy the
-        # entire repo into libdeps on Linux, hitting path length limits.
-        # Replace with lib_deps pointing to the checked-out repo root directly.
         run: |
           python3 - examples/${{ matrix.example }}/platformio.ini <<'EOF'
           import re, sys
@@ -69,3 +64,40 @@ jobs:
 
       - name: Build ${{ matrix.example }}
         run: cd examples/${{ matrix.example }} && pio run
+
+  build-harnesses:
+    name: Build harness/${{ matrix.suite }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - single_node
+          - id_filter
+          - two_node
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-esp32-${{ matrix.suite }}-${{ hashFiles(format('tests/integration/{0}/platformio.ini', matrix.suite)) }}
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Patch lib_deps for CI
+        run: |
+          python3 - tests/integration/${{ matrix.suite }}/platformio.ini <<'EOF'
+          import re, sys
+          path = sys.argv[1]
+          txt = open(path).read()
+          txt = re.sub(r'lib_deps\s*=\s*symlink://[^\n]+', 'lib_deps = file://../../..', txt)
+          open(path, 'w').write(txt)
+          print(open(path).read())
+          EOF
+
+      - name: Build ${{ matrix.suite }}
+        run: python tests/integration/verify.py --suite ${{ matrix.suite }} --build-only

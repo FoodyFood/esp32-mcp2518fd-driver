@@ -154,6 +154,16 @@ static void runNodeA()
         }
     }
 
+    // RX FIFO overflow test — A uses a shallow FIFO, B bursts more frames
+    // than it can hold. A verifies the overflow flag is set.
+    Serial.println("RX overflow (depth=4, B sends 5):");
+    can.configure(125000, 2000000, MODE_NORMAL, 4);
+    { CanMsg rf = {}; while (can.receive(rf, 5)) {} }
+    delay(500);
+    CHECK("rxOverflow after 5 frames into depth-4 FIFO",
+          can.getErrors().rxOverflow);
+    { CanMsg rf = {}; while (can.receive(rf, 5)) {} }
+
     Serial.println();
 }
 
@@ -202,6 +212,12 @@ static void runNodeB()
             rxAndVerify(label, makeFrame(0x105 + r, 8, rates[r].seed));
         }
     }
+
+    // B bursts 5 frames while A has a shallow FIFO and is not draining.
+    Serial.println("B bursts 5 frames for A overflow test:");
+    can.configure(125000, 2000000, MODE_NORMAL);
+    for (int i = 0; i < 5; i++)
+        txWithRetry("overflow burst", makeFrame(0x20F, 8, (uint8_t)i));
 
     Serial.println();
 }

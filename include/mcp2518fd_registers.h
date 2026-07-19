@@ -85,7 +85,7 @@ constexpr uint16_t RAM_BASE = 0x400;
 // bits 31-29: PLSIZE[2:0]  bits 28-24: FSIZE[4:0]
 // bits 22-21: TXAT[1:0]  bits 20-16: TXPRI[4:0]
 // bit 10: FRESET  bit 9: TXREQ  bit 8: UINC
-// bit 7: TXEN  bit 6: RTREN  bit 5: RXTSEN
+// bit 7: TXEN  bit 6: RTREN  bit 5: RXTSEN  bit 0: TFNRFNIE
 constexpr uint32_t FIFOCON_PLSIZE_SHIFT = 29;
 constexpr uint32_t FIFOCON_FSIZE_SHIFT  = 24;
 constexpr uint32_t FIFOCON_TXAT_3       = (1u << 21);  // TXAT=01: 3 retransmission attempts
@@ -95,6 +95,7 @@ constexpr uint32_t FIFOCON_UINC         = (1u << 8);
 constexpr uint32_t FIFOCON_TXEN         = (1u << 7);
 constexpr uint32_t FIFOCON_RTREN        = (1u << 6);
 constexpr uint32_t FIFOCON_RXTSEN       = (1u << 5);
+constexpr uint32_t FIFOCON_TFNRFNIE     = (1u << 0);  // TX/RX not-full/not-empty interrupt enable
 
 // PLSIZE values (DS20006027B page 54)
 constexpr uint8_t PLSIZE_8  = 0;
@@ -143,6 +144,10 @@ constexpr uint32_t CON_OPMOD_SHIFT = 21;
 
 constexpr uint32_t CON_REQOP_MASK = 0x7u << CON_REQOP_SHIFT;
 constexpr uint32_t CON_OPMOD_MASK = 0x7u << CON_OPMOD_SHIFT;
+
+// CiINT byte 2 bits (bits 23:16 of CiINT at 0x01C)
+// bit 17 of CiINT = byte 2 bit 1 = RXIE: RX FIFO interrupt enable
+constexpr uint8_t  CINT2_RXIE = (1u << 1);  // DS20006027B Register 3-14 bit 17
 
 // Operating modes
 constexpr uint8_t MODE_NORMAL      = 0;

@@ -213,11 +213,9 @@ void runTest()
     }
 
     // ------------------------------------------------------------------
-    // SPEC-003: getErrors() and hasErrors() — verified in loopback
-    // Error counter registers are readable and return sane values after
-    // successful loopback TX. No-second-node behaviour verified manually.
+    // Error counters and bus health
     // ------------------------------------------------------------------
-    Serial.println("SPEC-003: getErrors() / hasErrors() in loopback:");
+    Serial.println("getErrors() / hasErrors() in loopback:");
     can.configure(125000, 2000000, MODE_INTERNAL_LB);
 
     CanMsg txE;
@@ -229,6 +227,81 @@ void runTest()
     CanError e = can.getErrors();
     CHECK("getErrors() tec=0 after clean loopback", e.tec == 0);
     CHECK("getErrors() busOff=false after clean loopback", !e.busOff);
+
+    // ------------------------------------------------------------------
+    // Configurable RX FIFO depth
+    // ------------------------------------------------------------------
+    Serial.println("configurable FIFO depth (depth=16):");
+    can.configure(125000, 2000000, MODE_INTERNAL_LB, 16);
+
+    {
+        CanMsg tf;
+        tf.fdf = true; tf.brs = true; tf.dlc = 8;
+        bool allTx = true;
+        for (int i = 0; i < 16; i++)
+        {
+            tf.id = 0x300 + i;
+            for (int j = 0; j < 8; j++) tf.data[j] = (uint8_t)(i * 8 + j);
+            if (can.transmit(tf) != CanTxResult::OK) { allTx = false; break; }
+        }
+        CHECK("16 frames transmitted into depth-16 FIFO", allTx);
+
+        int rxCount = 0;
+        for (int i = 0; i < 16; i++)
+        {
+            CanMsg rf = {};
+            if (can.receive(rf, 50)) rxCount++;
+        }
+        CHECK("all 16 frames received without overflow", rxCount == 16);
+        CHECK("no overflow after 16 frames", !can.getErrors().rxOverflow);
+    }
+
+    // Overflow: use depth=4, send 5 frames without draining, verify rxOverflow,
+    // then drain and verify recovery (rxOverflow clears after getErrors())
+    Serial.println("RX FIFO overflow + recovery (depth=4):");
+    can.configure(125000, 2000000, MODE_INTERNAL_LB, 4);
+    {
+        CanMsg tf;
+        tf.fdf = true; tf.brs = true; tf.dlc = 8;
+        for (int i = 0; i < 5; i++)
+        {
+            tf.id = 0x400 + i;
+            can.transmit(tf);  // blocking — each frame lands in RX FIFO before next TX
+        }
+        // FIFO holds 4; 5th frame is discarded and the overflow flag is set
+        CHECK("rxOverflow set after 5th frame", can.getErrors().rxOverflow);
+        // getErrors() clears the flag — verify recovery
+        CHECK("rxOverflow cleared after getErrors()", !can.getErrors().rxOverflow);
+        // Drain remaining frames
+        CanMsg rf = {};
+        while (can.receive(rf, 5)) {}
+    }
+
+    // ------------------------------------------------------------------
+    // Interrupt-driven RX via INT pin (GPIO 34)
+    // ------------------------------------------------------------------
+    Serial.println("INT pin interrupt-driven RX:");
+    {
+        MCP2518Driver canInt(spi, PIN_CS, 34);
+        canInt.configure(125000, 2000000, MODE_INTERNAL_LB);
+
+        CanMsg tf;
+        tf.id = 0x600; tf.fdf = true; tf.brs = true; tf.dlc = 8;
+        canInt.transmit(tf);
+
+        uint32_t t0 = millis();
+        bool flagSet = false;
+        while (millis() - t0 < 1)
+        {
+            if (canInt.available()) { flagSet = true; break; }
+        }
+        CHECK("available() true within 1 ms via INT pin", flagSet);
+
+        CanMsg rf = {};
+        canInt.receive(rf, 5);
+        CHECK("available() false after drain", !canInt.available());
+    }
+
 
     Serial.println();
 }

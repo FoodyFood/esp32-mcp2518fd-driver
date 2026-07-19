@@ -1,7 +1,7 @@
 """Orchestrates upload + test for one suite or all three in sequence."""
 
 import logging
-from .upload import upload
+from .upload import build, upload
 from .suites import run_single_board, run_two_node
 
 log = logging.getLogger("mcp_test")
@@ -10,8 +10,11 @@ log = logging.getLogger("mcp_test")
 SUITES = ["single_node", "id_filter", "two_node"]
 
 
-def run_suite(env, port, port_b, baud, skip_upload):
-    """Upload (unless skip_upload) and test one suite. Returns True on pass."""
+def run_suite(env, port, port_b, baud, skip_upload, build_only=False):
+    """Build (and optionally upload + test) one suite. Returns True on pass."""
+    if build_only:
+        return build(env)
+
     if env == "two_node":
         if not skip_upload:
             if not upload("two_node", port):
@@ -27,7 +30,7 @@ def run_suite(env, port, port_b, baud, skip_upload):
         return passed
 
 
-def run_all(port, port_b, baud, skip_upload):
+def run_all(port, port_b, baud, skip_upload, build_only=False):
     """Run all suites in sequence. Returns True only if all pass."""
     results = {}
     for env in SUITES:
@@ -35,7 +38,7 @@ def run_all(port, port_b, baud, skip_upload):
         log.info("=" * 50)
         log.info("SUITE: %s", env)
         log.info("=" * 50)
-        results[env] = run_suite(env, port, port_b, baud, skip_upload)
+        results[env] = run_suite(env, port, port_b, baud, skip_upload, build_only)
 
     log.info("")
     log.info("=" * 50)
