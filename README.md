@@ -21,6 +21,7 @@ can.receive(rx, 500);  // blocking, 500 ms timeout
 
 | Use case | Description |
 |---|---|
+| **Battery simulator** | Impersonate a real EV battery pack on a CAN FD bus — transmit the periodic BMS frames a vehicle, inverter or charger expects, without a real battery present |
 | **EV battery gateway** | Read cell voltages, SOC and temperatures from a CAN FD BMS (Kia 64 FD, VW MEB) and re-publish over a second bus or WiFi |
 | **UDS diagnostics** | Send ISO 14229 requests to a vehicle ECU over CAN FD and receive multi-frame ISO-TP responses |
 | **Inverter interface** | Send torque/speed setpoints to a CAN FD motor controller and read back telemetry at 10 ms intervals |
@@ -28,7 +29,6 @@ can.receive(rx, 500);  // blocking, 500 ms timeout
 | **Peer-to-peer telemetry** | Two ESP32 boards talking directly over CAN FD — sensor nodes, drone ESCs, data concentrators |
 | **Scope / analyser stimulus** | Drive known CAN FD frames onto the bus for oscilloscope or protocol analyser capture |
 | **Production self-test** | Verify chip and transceiver wiring at factory or field bring-up — no second node required |
-| **Battery simulator** | Impersonate a real EV battery pack on a CAN FD bus — transmit the periodic BMS frames a vehicle, inverter or charger expects, without a real battery present |
 
 See [`docs/use_case_coverage.md`](docs/use_case_coverage.md) for the full feature-by-use-case coverage matrix and gap tracking.
 
