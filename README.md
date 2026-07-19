@@ -49,8 +49,8 @@ See [`docs/use_case_coverage.md`](docs/use_case_coverage.md) for the full featur
 | Listen-only mode (passive, no ACK) | ✅ |
 | Two-node normal mode — verified on real hardware | ✅ |
 | Raw / advanced API for non-standard rates and custom oscillators | ✅ |
-| 29-bit extended ID (EID) — 11-bit and 29-bit on the same bus | 🔜 [SPEC-001](docs/specs/SPEC-001-extended-id.md) |
-| Acceptance filter API — per-SID, per-range, per-mask | 🔜 [SPEC-002](docs/specs/SPEC-002-acceptance-filters.md) |
+| 29-bit extended ID (EID) — 11-bit and 29-bit on the same bus | ✅ |
+| Acceptance filter API — per-SID, per-range, per-mask | ✅ |
 | Bus error detection — TEC/REC counters, bus-off flag | 🔜 [SPEC-003](docs/specs/SPEC-003-bus-error-and-tx-result.md) |
 | TX error detail — distinguish no-ACK, bus error, FIFO full | 🔜 [SPEC-003](docs/specs/SPEC-003-bus-error-and-tx-result.md) |
 | Interrupt-driven RX via INT pin (GPIO 34) | 🔜 [SPEC-004](docs/specs/SPEC-004-interrupt-rx-and-fifo-depth.md) |
@@ -168,23 +168,21 @@ Each example is a self-contained PlatformIO project.
 
 | Example | Description |
 |---|---|
-| `examples/loopback` | Single-board regression test — internal loopback, no bus required. Every assertion prints OK or FAIL. |
+| `examples/single_node` | Single-board regression test — configure(), bitrates, raw API. No bus required. |
+| `examples/id_filter` | Acceptance filter demonstration — SID exact, range, EID, multi-filter, catch-all. |
 | `examples/two_node` | Two-board bidirectional test over a real CAN bus — A→B and B→A at 2/4/5 Mbps, 8-byte and 64-byte payloads. |
 | `examples/walkie_talkie` | Text chat between two boards over CAN FD — type in one Serial monitor, read on the other. |
 | `examples/scope_loopback` | Continuous TX in `MODE_EXTERNAL_LB` for oscilloscope measurements — real bus signals, self-ACK. |
-| `examples/bus_monitor` | Two nodes continuously transmitting counters — autonomous boot, no serial input required. node_a env → COM4 (SID=0x100), node_b env → COM3 (SID=0x200). Bus load testing and integrity checking. |
+| `examples/bus_monitor` | Two nodes continuously transmitting counters — autonomous boot, no serial input required. node_a env → COM4 (ID=0x100), node_b env → COM3 (ID=0x200). Bus load testing and integrity checking. |
 
 ```bash
-# Single-board loopback
-cd examples/loopback
-pio run --target upload --upload-port <PORT>
-python ../../tools/run_test.py --env loopback --port <PORT>
+# Full regression suite (upload + verify all three automatable examples):
+python tests/integration/verify.py --suite all --port COM4 --port-b COM3
 
-# Two-node real bus
-cd examples/two_node
-pio run --target upload --upload-port <PORT_A>
-pio run --target upload --upload-port <PORT_B>
-python ../../tools/run_test.py --env two_node --port-a <PORT_A> --port-b <PORT_B>
+# Single suite:
+python tests/integration/verify.py --suite single_node --port COM4
+python tests/integration/verify.py --suite id_filter   --port COM4
+python tests/integration/verify.py --suite two_node    --port COM4 --port-b COM3
 ```
 
 ---
@@ -252,11 +250,21 @@ src/
   mcp2518fd_spi.cpp         # SPI transport implementation
 
 examples/
-  loopback/                 # Regression test — single-board internal loopback
+  single_node/              # Single-board config and bitrate regression tests
+  id_filter/                # Acceptance filter demonstration (SID/EID filtering)
   two_node/                 # Two-node CAN FD test — bidirectional over real bus
   walkie_talkie/            # Text chat between two nodes over CAN FD
   scope_loopback/           # Continuous TX in MODE_EXTERNAL_LB for scope measurements
   bus_monitor/              # Two nodes continuously talking — bus load + integrity check
+
+tests/
+  integration/
+    verify.py               # Entry point — upload + verify, single suite or all
+    mcp_test/               # runner, suites, upload, serial I/O modules
+  unit/                     # Placeholder for future unit tests (no hardware required)
+
+tools/
+  search.py                 # PDF search tool — queries both datasheets
 
 docs/
   status.md                 # Verified milestone tracker
@@ -266,13 +274,7 @@ docs/
   specs/                    # One spec per feature — read before implementing
     README.md               # Spec index and implementation order
     SPEC-NNN-*.md           # Individual feature specs
-  search.py                 # PDF search tool — queries both datasheets
   reference/                # Place downloaded PDFs here (see reference/README.md)
-
-tools/
-  run_test.py               # Automated test runner for loopback and two-node
-  check_timing.py           # Verify bit timing preset values against datasheet formula
-  find_timing.py            # Calculate correct NBTCFG/DBTCFG values for a target rate
 
 library.json                # PlatformIO library manifest
 library.properties          # Arduino IDE library manifest
@@ -298,7 +300,7 @@ PDFs are not committed to this repo. Download them and place in `docs/reference/
 - [PlatformIO Core](https://docs.platformio.org/en/latest/core/installation/index.html) 6.x
 - Espressif32 platform 7.0.1
 
-Optional (test runner and PDF search tool):
+Optional (integration test runner and PDF search tool):
 ```bash
 pip install -r requirements.txt
 ```

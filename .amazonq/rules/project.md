@@ -27,8 +27,8 @@ All register addresses, bit positions and field definitions MUST be verified aga
 - `docs/reference/External-CAN-FD-Controller-with-SPI-Interface-DS20006027B.pdf` (MCP2518FD datasheet)
 - `docs/reference/MCP25XXFD-CAN-FD-Controller-Module-Family-Reference-Manual-DS20005678E.pdf` (family reference manual)
 
-Use `docs/search.py` to query both documents:
-  python docs/search.py <keyword1> <keyword2> ...
+Use `tools/search.py` to query both documents:
+  python tools/search.py <keyword1> <keyword2> ...
 Results written to `docs/reference/search_results.txt`.
 
 Never assume a register address or bit position. Always verify from the PDFs first.
@@ -63,24 +63,17 @@ Two ESP32 boards are available (COM4 and COM3).
 
 **single_node — always run first:**
 ```
-cd examples/single_node
-pio run -e single_node --target upload --upload-port COM4
-python ../../tools/run_test.py --env single_node --port COM4
+python tests/integration/verify.py --suite single_node --port COM4
 ```
 
 **id_filter — run for any spec touching filters or EID:**
 ```
-cd examples/id_filter
-pio run -e id_filter --target upload --upload-port COM4
-python ../../tools/run_test.py --env id_filter --port COM4
+python tests/integration/verify.py --suite id_filter --port COM4
 ```
 
 **two_node — run for every spec touching TX, RX, filters, errors or timing:**
 ```
-cd examples/two_node
-pio run -e two_node --target upload --upload-port COM4
-pio run -e two_node --target upload --upload-port COM3
-python ../../tools/run_test.py --env two_node --port-a COM4 --port-b COM3
+python tests/integration/verify.py --suite two_node --port COM4 --port-b COM3
 ```
 
 **Additional hardware checks required by specific specs:**
@@ -101,18 +94,7 @@ git add . && git commit -m "SPEC-NNN step N: short description"
 ## Regression Testing
 Run the full suite after every spec before marking it Done:
 ```
-cd examples/single_node
-pio run -e single_node --target upload --upload-port COM4
-python ../../tools/run_test.py --env single_node --port COM4
-
-cd examples/id_filter
-pio run -e id_filter --target upload --upload-port COM4
-python ../../tools/run_test.py --env id_filter --port COM4
-
-cd examples/two_node
-pio run -e two_node --target upload --upload-port COM4
-pio run -e two_node --target upload --upload-port COM3
-python ../../tools/run_test.py --env two_node --port-a COM4 --port-b COM3
+python tests/integration/verify.py --suite all --port COM4 --port-b COM3
 ```
 All three suites must report PASS. A spec that passes single_node but not two_node is NOT verified.
 
@@ -132,18 +114,17 @@ Only hardware output counts. Assumptions and reasoning are not verification.
 
 ## Example Validation — Run Before Any New Feature Work
 Before starting a new spec, verify all existing examples in this order:
-1. `examples/single_node` — single-board, COM4
-2. `examples/id_filter` — single-board, COM4
-3. `examples/two_node` — both nodes, COM4 + COM3
-4. `examples/walkie_talkie` — manual interactive test, both nodes
-5. `examples/scope_loopback` — single-board, COM4, observe on scope
-6. `examples/bus_monitor` — both nodes, COM4 (node_a) + COM3 (node_b)
+1. Automatable suites — `python tests/integration/verify.py --suite all --port COM4 --port-b COM3`
+2. `examples/walkie_talkie` — manual interactive test, both nodes
+3. `examples/scope_loopback` — single-board, COM4, observe on scope
+4. `examples/bus_monitor` — both nodes, COM4 (node_a) + COM3 (node_b)
 
 ## Adding New Examples
 - Create a new example when a feature does not fit cleanly into an existing one, or would
   make it too large or unfocused
 - Each example is a self-contained PlatformIO project under `examples/<name>/`
-- If automatable (deterministic pass/fail), add support to `tools/run_test.py`
+- If automatable (deterministic pass/fail), add a suite to `tests/integration/mcp_test/suites.py`
+  and register it in `tests/integration/mcp_test/runner.py`
 - If interactive or scope-based, document expected manual observation in the example's README
 - Add the new example to the Files list below and the Examples table in `README.md`
 
@@ -206,12 +187,13 @@ The public API is the primary product. Every design decision must be evaluated a
 - `include/mcp2518fd_registers.h` — all register addresses, masks, constants
 - `include/mcp2518fd_spi.h` / `src/mcp2518fd_spi.cpp` — SPI transport + mode control
 - `src/mcp2518fd_can.cpp` — driver implementation
-- `tools/run_test.py` — test runner (single_node, id_filter, two_node)
-- `tools/check_timing.py` — verify bit timing presets for both 20 MHz and 40 MHz
+- `tests/integration/verify.py` — integration test entry point (upload + verify, single suite or all)
+- `tests/integration/mcp_test/` — runner, suites, upload, serial I/O modules
+- `tests/unit/` — placeholder for future unit tests (no hardware required)
+- `tools/search.py` — PDF search tool for datasheet verification
 - `docs/status.md` — milestone tracker
 - `docs/context.md` — hardware and architecture context
 - `docs/registers.md` — register field reference
 - `docs/use_case_coverage.md` — real-world use case coverage and gap analysis
 - `docs/specs/README.md` — spec index and implementation status
 - `docs/specs/SPEC-NNN-*.md` — individual feature specs
-- `docs/search.py` — PDF search tool
