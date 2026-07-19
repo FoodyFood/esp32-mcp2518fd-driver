@@ -212,6 +212,50 @@ void runTest()
         CHECK(label, txOk && dataOk);
     }
 
+    // ------------------------------------------------------------------
+    // 29-bit Extended ID (EID) loopback
+    // ------------------------------------------------------------------
+    Serial.println("29-bit EID loopback @ 2 Mbps:");
+    can.configure(125000, 2000000, MODE_INTERNAL_LB);
+
+    CanMsg txE;
+    txE.id  = 0x1C420017UL;
+    txE.ext = true;
+    txE.fdf = true;
+    txE.brs = true;
+    txE.dlc = 8;
+    for (int i = 0; i < 8; i++) txE.data[i] = (uint8_t)(0xE0 + i);
+
+    CHECK("EID transmit() returned true", can.transmit(txE));
+    CanMsg rxE = {};
+    CHECK("EID receive() returned true", can.receive(rxE));
+    CHECK("EID ext=true",               rxE.ext == true);
+    CHECK("EID id=0x1C420017",          rxE.id  == 0x1C420017UL);
+    CHECK("EID FDF matches",            rxE.fdf == txE.fdf);
+    CHECK("EID BRS matches",            rxE.brs == txE.brs);
+    CHECK("EID DLC=8",                  rxE.dlc == 8);
+    bool eidDataOk = true;
+    for (int i = 0; i < 8; i++) eidDataOk &= (rxE.data[i] == txE.data[i]);
+    CHECK("EID all 8 bytes match",      eidDataOk);
+
+    // SID frame immediately after — confirm ext=false and id preserved
+    CanMsg txS;
+    txS.id  = 0x123;
+    txS.ext = false;
+    txS.fdf = true;
+    txS.brs = true;
+    txS.dlc = 8;
+    for (int i = 0; i < 8; i++) txS.data[i] = (uint8_t)(0xA0 + i);
+
+    CHECK("SID after EID transmit() true", can.transmit(txS));
+    CanMsg rxS = {};
+    CHECK("SID after EID receive() true",  can.receive(rxS));
+    CHECK("SID ext=false",                 rxS.ext == false);
+    CHECK("SID id=0x123",                  rxS.id  == 0x123UL);
+    bool sidDataOk = true;
+    for (int i = 0; i < 8; i++) sidDataOk &= (rxS.data[i] == txS.data[i]);
+    CHECK("SID all 8 bytes match",         sidDataOk);
+
     Serial.println();
 }
 

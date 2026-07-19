@@ -93,10 +93,26 @@ bool MCP2518Driver::transmit(const CanMsg& msg)
 
     uint16_t addr = txRamAddr();
 
-    uint32_t t0 = msg.id & 0x7FFu;
-    uint32_t t1 = ((msg.fdf ? 1u : 0u) << 7)
-                | ((msg.brs ? 1u : 0u) << 6)
-                | (msg.dlc & 0xFu);
+    uint32_t t0, t1;
+    if (msg.ext)
+    {
+        // 29-bit EID: T0[10:0]=SID[10:0]=id>>18, T0[28:11]=EID[17:0]=id&0x3FFFF
+        // T1 bit4=IDE=1  (DS20006027B Table 3-5)
+        uint32_t sid = (msg.id >> 18) & 0x7FFu;
+        uint32_t eid = msg.id & 0x3FFFFu;
+        t0 = sid | (eid << 11);
+        t1 = (1u << 4)  // IDE
+           | ((msg.fdf ? 1u : 0u) << 7)
+           | ((msg.brs ? 1u : 0u) << 6)
+           | (msg.dlc & 0xFu);
+    }
+    else
+    {
+        t0 = msg.id & 0x7FFu;
+        t1 = ((msg.fdf ? 1u : 0u) << 7)
+           | ((msg.brs ? 1u : 0u) << 6)
+           | (msg.dlc & 0xFu);
+    }
 
     mSpi.write32(addr,     t0);
     mSpi.write32(addr + 4, t1);
@@ -149,7 +165,18 @@ bool MCP2518Driver::receive(CanMsg& msg, uint32_t timeoutMs)
     uint32_t r0 = mSpi.read32(addr);
     uint32_t r1 = mSpi.read32(addr + 4);
 
-    msg.id  = r0 & 0x7FFu;
+    msg.ext = (r1 >> 4) & 1;
+    if (msg.ext)
+    {
+        // R0[10:0]=SID[10:0], R0[28:11]=EID[17:0]  (DS20006027B Table 3-6)
+        uint32_t sid = r0 & 0x7FFu;
+        uint32_t eid = (r0 >> 11) & 0x3FFFFu;
+        msg.id = (sid << 18) | eid;
+    }
+    else
+    {
+        msg.id = r0 & 0x7FFu;
+    }
     msg.fdf = (r1 >> 7) & 1;
     msg.brs = (r1 >> 6) & 1;
     msg.dlc = r1 & 0xFu;
