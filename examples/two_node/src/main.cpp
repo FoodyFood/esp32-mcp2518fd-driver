@@ -56,7 +56,7 @@ static bool txWithRetry(const char* label, const CanMsg& msg)
     char buf[64];
     for (uint8_t attempt = 0; attempt < TX_MAX_RETRIES; attempt++)
     {
-        if (can.transmit(msg))
+        if (can.transmit(msg) == CanTxResult::OK)
         {
             snprintf(buf, sizeof(buf), "TX %s", label);
             CHECK(buf, true);

@@ -48,8 +48,30 @@ struct CanMsg
 };
 
 // ----------------------------------------------------------------------------
-// MCP2518FD driver
-//
+// CanTxResult — returned by transmit()
+enum class CanTxResult : uint8_t
+{
+    OK,       // frame transmitted and ACKed
+    NoAck,    // chip retried 3x, no ACK received (other node absent or bus disconnected)
+    BusError, // TXERR set — bit error, stuff error, etc.
+    FifoFull, // TX FIFO had no space (TFNRFNIF was clear)
+};
+
+// ----------------------------------------------------------------------------
+// CanError — returned by getErrors()
+struct CanError
+{
+    uint8_t tec;        // transmit error counter (CiTREC bits 15:8)
+    uint8_t rec;        // receive error counter  (CiTREC bits 7:0)
+    bool    txWarning;  // TEC >= 96
+    bool    rxWarning;  // REC >= 96
+    bool    txPassive;  // TEC >= 128
+    bool    rxPassive;  // REC >= 128
+    bool    busOff;     // TEC > 255 — node is bus-off
+    bool    rxOverflow; // at least one RX FIFO overflowed since last call
+};
+
+
 // Typical usage — just specify the rates you want, the driver handles the rest:
 //
 //   MCP2518Driver can(spi, PIN_CS);
@@ -84,8 +106,19 @@ public:
     CanStatus setDataRate(uint32_t dataBps);
 
     // Write one CAN FD frame into the TX FIFO and request transmission.
-    // Returns true when the frame is accepted by the controller.
-    bool transmit(const CanMsg& msg);
+    // Returns CanTxResult::OK when the frame is transmitted and ACKed.
+    // Returns NoAck if all retransmission attempts exhausted with no ACK.
+    // Returns BusError if a bus error was detected during transmission.
+    // Returns FifoFull if the TX FIFO had no space.
+    CanTxResult transmit(const CanMsg& msg);
+
+    // Read TEC/REC counters and error flags from CiTREC and CiRXOVIF.
+    // Clears the rxOverflow flag after reading.
+    CanError getErrors();
+
+    // Returns true if TEC or REC >= 96, or busOff, or rxOverflow.
+    // Cheaper than getErrors() — suitable for polling in a loop.
+    bool hasErrors();
 
     // Returns true if at least one frame is waiting in the RX FIFO (non-blocking).
     bool available();

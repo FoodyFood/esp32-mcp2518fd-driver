@@ -120,6 +120,22 @@ constexpr uint32_t FIFOSTA_TFERFFIF = (1u << 2);
 constexpr uint32_t FIFOSTA_TFHRFHIF = (1u << 1);
 constexpr uint32_t FIFOSTA_TFNRFNIF = (1u << 0);
 
+// CiTREC bit masks (Register 3-20, DS20006027B page 43)
+// bits 7:0  = REC[7:0], bits 15:8 = TEC[7:0], bits 23:16 = flags
+constexpr uint32_t TREC_EWARN  = (1u << 16);  // TEC or REC >= 96
+constexpr uint32_t TREC_RXWARN = (1u << 17);  // REC >= 96
+constexpr uint32_t TREC_TXWARN = (1u << 18);  // TEC >= 96
+constexpr uint32_t TREC_RXBP   = (1u << 19);  // REC >= 128 (error passive)
+constexpr uint32_t TREC_TXBP   = (1u << 20);  // TEC >= 128 (error passive)
+constexpr uint32_t TREC_TXBO   = (1u << 21);  // TEC > 255 (bus-off)
+
+// CiBDIAG1 bit masks (Register 3-22, DS20006027B page 45)
+constexpr uint32_t BDIAG1_NACKERR = (1u << 18);  // transmitted message not acknowledged
+constexpr uint32_t BDIAG1_TXBOERR = (1u << 23);  // device went to bus-off
+
+// CiRXOVIF: bit N = FIFO N overflowed; FIFO2 = bit 2
+constexpr uint32_t RXOVIF_FIFO2 = (1u << 2);
+
 // CiCON byte 2 bits (bits 23:16)
 constexpr uint8_t  CON2_RTXAT           = (1u << 0);  // bit 16 — restrict retransmission attempts
 constexpr uint32_t CON_REQOP_SHIFT = 24;

@@ -44,7 +44,7 @@ static void sendText(const char* text)
         msg.dlc = 8;
         memset(msg.data, 0, 8);
         memcpy(msg.data, text + offset, min(8, len - offset));
-        if (!can.transmit(msg))
+        if (can.transmit(msg) != CanTxResult::OK)
             Serial.println("[TX failed]");
     }
 }

@@ -34,7 +34,7 @@ No dependencies on Group A — can be implemented in parallel.
 
 | Spec | Title | Gaps closed | Status |
 |---|---|---|---|
-| [SPEC-003](SPEC-003-bus-error-and-tx-result.md) | Bus Error Detection and TX Error Detail | G3, G9 | Pending |
+| [SPEC-003](SPEC-003-bus-error-and-tx-result.md) | Bus Error Detection and TX Error Detail | G3, G9 | Done |
 
 ## Group C — Frame Reliability (inverter + logger)
 

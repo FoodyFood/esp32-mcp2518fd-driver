@@ -78,7 +78,7 @@ void loop()
     tx.id = 0x123; tx.fdf = true; tx.brs = true; tx.dlc = 8;
     for (int i = 0; i < 8; i++) tx.data[i] = 0x01 + i;
 
-    if (!can.transmit(tx))
+    if (can.transmit(tx) != CanTxResult::OK)
         Serial.println("[TX failed]");
     else
         frameCount++;
