@@ -56,7 +56,8 @@ See [`docs/use_case_coverage.md`](docs/use_case_coverage.md) for the full featur
 | TX error detail — distinguish no-ACK, bus error, FIFO full | ✅ |
 | Interrupt-driven RX via INT pin — frame arrival wakes ISR, no polling | ✅ |
 | Configurable RX FIFO depth (1–24 slots at 64-byte payload) | ✅ |
-| Per-frame RX timestamp from hardware time base counter | 🔜 |
+| Per-frame RX timestamp from hardware time base counter | ✅ |
+| Listen-only mode (passive, no ACK) — validated on real bus | ✅ |
 | stop() / restart() / sleep() lifecycle control | 🔜 |
 
 ---
@@ -155,6 +156,19 @@ void loop() {
     // Detected oscillator frequency
     Serial.printf("FSYS: %lu Hz\n", can.getFsys());
 }
+```
+
+### Hardware timestamps
+
+Pass `enableTimestamp=true` to get a 32-bit hardware counter value on every received frame.
+Resolution is 1 FSYS clock — 50 ns at 20 MHz.
+
+```cpp
+can.configure(500000, 2000000, MODE_NORMAL, 16, true);  // enable timestamps
+
+CanMsg rx;
+can.receive(rx, 500);
+Serial.printf("ts=%lu\n", rx.timestamp);  // TBC counts since configure()
 ```
 
 ### CanStatus
