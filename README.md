@@ -301,7 +301,7 @@ docs/
 
 .github/
   workflows/
-    ci.yml                  # CI: unit tests + build all examples on every PR, auto-merge on pass
+    ci-checks.yml           # CI: unit tests + build all examples on every PR
 
 library.json                # PlatformIO library manifest
 library.properties          # Arduino IDE library manifest
@@ -324,9 +324,10 @@ PDFs are not committed to this repo. Download them and place in `docs/reference/
 
 ## CI
 
-Every PR runs unit tests and builds all examples on `ubuntu-24.04`. Auto-merges on pass. All examples use `lib_deps = file://../..` — works locally and in CI without any patching.
+Every PR runs unit tests and builds all examples on `ubuntu-24.04`. All examples use `lib_deps = file://../..` — works locally and in CI without any patching.
 
-[![CI](https://github.com/FoodyFood/esp32-mcp2518fd-driver/actions/workflows/ci.yml/badge.svg)](https://github.com/FoodyFood/esp32-mcp2518fd-driver/actions/workflows/ci.yml)
+[![CI Checks](https://github.com/FoodyFood/esp32-mcp2518fd-driver/actions/workflows/ci-checks.yml/badge.svg)](https://github.com/FoodyFood/esp32-mcp2518fd-driver/actions/workflows/ci-checks.yml)
+[![Publish to PlatformIO Registry](https://github.com/FoodyFood/esp32-mcp2518fd-driver/actions/workflows/publish.yml/badge.svg)](https://github.com/FoodyFood/esp32-mcp2518fd-driver/actions/workflows/publish.yml)
 
 ## Prerequisites
 
