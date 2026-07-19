@@ -89,7 +89,8 @@ Each item below has been tested on real hardware and confirmed working.
 
 | Example          | Status      | Notes                                                                 |
 |------------------|-------------|-----------------------------------------------------------------------|
-| loopback         | ✅ Verified | 55 assertions, all OK on COM4; includes EID round-trip and acceptance filter tests |
+| single_node      | ✅ Verified | 42 assertions, all OK on COM4; config, bitrates, raw API              |
+| id_filter        | ✅ Verified | 15 assertions, all OK on COM4; SID/EID exact, range, multi, catch-all |
 | two_node         | ✅ Verified | Full bidirectional test, all assertions OK on both nodes              |
 | walkie_talkie    | ✅ Verified | Text chat working between two boards over real bus                    |
 | scope_loopback   | ✅ Verified | FSYS=20 MHz detected, 24 µs first dominant run @ 125 kbps scope-confirmed |

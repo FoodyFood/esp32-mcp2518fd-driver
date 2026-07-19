@@ -2,14 +2,17 @@
 run_test.py — reset ESP32(s), trigger test, collect output, exit non-zero on FAIL.
 
 Usage:
-  loopback (single board):
-    python tools/run_test.py --env loopback --port COM4
+  single_node (single board):
+    python tools/run_test.py --env single_node --port COM4
+
+  id_filter (single board):
+    python tools/run_test.py --env id_filter --port COM4
 
   two_node (two boards):
     python tools/run_test.py --env two_node --port-a COM4 --port-b COM3
 
 Options:
-  --env       PlatformIO environment name (loopback | two_node)
+  --env       PlatformIO environment name (single_node | id_filter | two_node)
   --port      Serial port for single-board tests
   --port-a    Serial port for node A
   --port-b    Serial port for node B
@@ -152,14 +155,14 @@ def run_two_node(port_a, port_b, baud):
 
 def main():
     parser = argparse.ArgumentParser(description="MCP2518FD test runner")
-    parser.add_argument("--env",    required=True, choices=["loopback", "two_node"])
+    parser.add_argument("--env",    required=True, choices=["single_node", "id_filter", "two_node"])
     parser.add_argument("--port",   default="COM4")
     parser.add_argument("--port-a", default="COM4")
     parser.add_argument("--port-b", default="COM3")
     parser.add_argument("--baud",   type=int, default=115200)
     args = parser.parse_args()
 
-    if args.env == "loopback":
+    if args.env in ("single_node", "id_filter"):
         ok = run_loopback(args.port, args.baud)
     else:
         ok = run_two_node(args.port_a, args.port_b, args.baud)

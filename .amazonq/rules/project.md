@@ -36,11 +36,12 @@ Never assume a register address or bit position. Always verify from the PDFs fir
 ## Example Validation — Run Before Any New Feature Work
 Before starting any new spec or feature, all existing examples must be verified on hardware.
 Verify examples one at a time in this order:
-1. `examples/loopback` — single-board, COM4 only
-2. `examples/two_node` — both nodes, COM4 + COM3
-3. `examples/walkie_talkie` — manual interactive test, both nodes
-4. `examples/scope_loopback` — single-board, COM4, observe on scope
-5. `examples/bus_monitor` — both nodes, COM4 (node_a env) + COM3 (node_b env)
+1. `examples/single_node` — single-board, COM4 only
+2. `examples/id_filter` — single-board, COM4 only
+3. `examples/two_node` — both nodes, COM4 + COM3
+4. `examples/walkie_talkie` — manual interactive test, both nodes
+5. `examples/scope_loopback` — single-board, COM4, observe on scope
+6. `examples/bus_monitor` — both nodes, COM4 (node_a env) + COM3 (node_b env)
 
 Each example must build cleanly and produce expected output before moving to the next.
 Do not proceed to spec-driven feature work until all examples are verified.
@@ -83,13 +84,20 @@ Every feature must follow this exact sequence. Do not skip or reorder steps.
 ### 4. Test on real hardware — both nodes
 Two ESP32 boards are available (COM4 and COM3). Use both for every spec.
 
-**Single-board (loopback) — always run first:**
+**Single-board — always run first:**
 ```
-cd examples/loopback
-pio run -e loopback --target upload --upload-port COM4
-python ../../tools/run_test.py --env loopback --port COM4
+cd examples/single_node
+pio run -e single_node --target upload --upload-port COM4
+python ../../tools/run_test.py --env single_node --port COM4
 ```
 All assertions must print OK before proceeding to two-node.
+
+**id_filter — run after single_node for any spec touching filters:**
+```
+cd examples/id_filter
+pio run -e id_filter --target upload --upload-port COM4
+python ../../tools/run_test.py --env id_filter --port COM4
+```
 
 **Two-node (real bus) — run for every spec that touches TX, RX, filters, errors or timing:**
 ```
@@ -204,7 +212,8 @@ After every verified step, end with a single plain-English sentence summarising 
 - Docs and code go in the same commit
 
 ## Files
-- `examples/loopback/src/main.cpp` — regression test harness (single-board)
+- `examples/single_node/src/main.cpp` — regression test harness (single-board, config and bitrate tests)
+- `examples/id_filter/src/main.cpp` — acceptance filter demonstration (single-board, SID/EID filtering)
 - `examples/two_node/src/main.cpp` — two-node regression test (real bus, COM4 + COM3)
 - `examples/walkie_talkie/` — interactive text chat between two nodes
 - `examples/scope_loopback/` — continuous TX in MODE_EXTERNAL_LB for scope measurements
