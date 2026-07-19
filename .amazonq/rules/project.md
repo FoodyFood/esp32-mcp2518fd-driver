@@ -33,101 +33,59 @@ Results written to `docs/reference/search_results.txt`.
 
 Never assume a register address or bit position. Always verify from the PDFs first.
 
-## Example Validation — Run Before Any New Feature Work
-Before starting any new spec or feature, all existing examples must be verified on hardware.
-Verify examples one at a time in this order:
-1. `examples/single_node` — single-board, COM4 only
-2. `examples/id_filter` — single-board, COM4 only
-3. `examples/two_node` — both nodes, COM4 + COM3
-4. `examples/walkie_talkie` — manual interactive test, both nodes
-5. `examples/scope_loopback` — single-board, COM4, observe on scope
-6. `examples/bus_monitor` — both nodes, COM4 (node_a env) + COM3 (node_b env)
-
-Each example must build cleanly and produce expected output before moving to the next.
-Do not proceed to spec-driven feature work until all examples are verified.
-
-## Adding New Examples
-- Create a new example when a new feature does not fit cleanly into `loopback` or `two_node`,
-  or when adding it would make an existing example too large or unfocused
-- Each example is a self-contained PlatformIO project under `examples/<name>/`
-- If the example is automatable (deterministic pass/fail output), add support to `tools/run_test.py`
-- If the example is interactive or scope-based, document the expected manual observation in the example's README
-- Add the new example to the Files list and Examples table in this file and in `README.md`
-
 ## Development Workflow — Spec-Driven Closed Loop
 Every feature must follow this exact sequence. Do not skip or reorder steps.
+One feature per step. Do not combine multiple unverified features in one step.
 
 ### 1. Read the spec
-- Open the relevant spec from `docs/specs/` (e.g. `SPEC-001-extended-id.md`)
+- Open the relevant spec from `docs/specs/`
 - Confirm all acceptance criteria are understood before writing any code
-- If the spec is ambiguous, resolve it by querying the datasheets first — never assume
-- Verify every register address, bit position and field definition cited in the spec
-  against the PDFs before touching any code
+- Verify every register address, bit position and field definition against the PDFs
 - **Record all findings** — any register layout detail, constraint, gotcha or non-obvious
-  datasheet fact discovered during verification must be written into the spec under a
-  `## Datasheet findings` section before implementation begins. This is the paper trail.
-  Future work must not have to re-derive what was already discovered.
+  datasheet fact must be written into the spec under a `## Datasheet findings` section
+  before implementation begins. This is the paper trail. Future work must not have to
+  re-derive what was already discovered.
 
 ### 2. Design the solution
-- Write out the planned changes to API, registers and RAM layout as comments or notes
+- Write out the planned changes to API, registers and RAM layout
 - Identify all call sites that will be affected (examples, tests, existing API users)
 - Confirm the design satisfies every acceptance criterion in the spec
 - Do not write implementation code until the design is complete
 
 ### 3. Implement the solution
 - Make the minimum code change that satisfies the spec — nothing more
-- Update `include/mcp2518fd_can.h`, `src/mcp2518fd_can.cpp`, `include/mcp2518fd_registers.h`
-  as needed; keep each layer in its correct file
-- Update all affected call sites in examples and tests in the same commit
+- Keep each layer in its correct file (`registers.h`, `mcp2518fd_can.*`, `mcp2518fd_spi.*`)
+- Update all affected call sites in examples and tests in the same change
 - Build must pass before proceeding to testing
 
-### 4. Test on real hardware — both nodes
-Two ESP32 boards are available (COM4 and COM3). Use both for every spec.
+### 4. Test on real hardware
+Two ESP32 boards are available (COM4 and COM3).
 
-**Single-board — always run first:**
+**single_node — always run first:**
 ```
 cd examples/single_node
 pio run -e single_node --target upload --upload-port COM4
 python ../../tools/run_test.py --env single_node --port COM4
 ```
-All assertions must print OK before proceeding to two-node.
 
-**id_filter — run after single_node for any spec touching filters:**
+**id_filter — run for any spec touching filters or EID:**
 ```
 cd examples/id_filter
 pio run -e id_filter --target upload --upload-port COM4
 python ../../tools/run_test.py --env id_filter --port COM4
 ```
 
-**Two-node (real bus) — run for every spec that touches TX, RX, filters, errors or timing:**
+**two_node — run for every spec touching TX, RX, filters, errors or timing:**
 ```
 cd examples/two_node
 pio run -e two_node --target upload --upload-port COM4
 pio run -e two_node --target upload --upload-port COM3
 python ../../tools/run_test.py --env two_node --port-a COM4 --port-b COM3
 ```
-Both nodes must report all assertions OK.
-
-**After every spec, re-run the full regression suite to confirm no regressions:**
-```
-cd examples/single_node
-pio run -e single_node --target upload --upload-port COM4
-python ../../tools/run_test.py --env single_node --port COM4
-
-cd examples/id_filter
-pio run -e id_filter --target upload --upload-port COM4
-python ../../tools/run_test.py --env id_filter --port COM4
-
-cd examples/two_node
-pio run -e two_node --target upload --upload-port COM4
-pio run -e two_node --target upload --upload-port COM3
-python ../../tools/run_test.py --env two_node --port-a COM4 --port-b COM3
-```
-All three suites (single_node, id_filter, two_node) must report PASS.
 
 **Additional hardware checks required by specific specs:**
-- SPEC-003 (bus errors): test with bus disconnected — one node only, MODE_NORMAL, verify NoAck and TEC increment
-- SPEC-004 (interrupt RX): verify INT pin (GPIO 34) triggers correctly under burst traffic from second node
+- SPEC-003 (bus errors): bus disconnected, one node, MODE_NORMAL — verify NoAck and TEC increment
+- SPEC-004 (interrupt RX): verify INT pin (GPIO 34) triggers under burst traffic from second node
 - SPEC-005 (listen-only): Node A in MODE_LISTEN, Node B transmitting — verify Node B sees no errors
 - SPEC-006 (stop/restart): verify stop() halts TX keepalives observed on second node's serial output
 
@@ -136,39 +94,58 @@ All three suites (single_node, id_filter, two_node) must report PASS.
 git add . && git commit -m "SPEC-NNN step N: short description"
 ```
 - Only after all hardware assertions pass — no exceptions
-- Update `docs/specs/README.md` spec Status from Pending → In Progress → Done
+- Update `docs/specs/README.md` status: Pending → In Progress → Done
 - Update `docs/status.md` with observed hardware values
-- Docs and code in the same commit
-
-Never commit unverified code. Never mark a spec Done without two-node hardware evidence.
-
-## Verification Standard
-A spec is only considered verified when ALL of the following are true:
-- The code was built and uploaded to real hardware on both nodes
-- Every assertion in the loopback test printed "OK" — no FAILs, no skipped checks
-- Every assertion in the two-node test printed "OK" on both COM4 and COM3
-- Any spec-specific hardware check (bus disconnect, interrupt pin, listen-only) was performed
-  and the observed output matches the acceptance criteria in the spec
-- The observed register values match the expected values derived from the datasheet
-
-Assumptions, reasoning, or "it should work" are NOT verification. Only hardware output counts.
-A spec that passes loopback but has not been tested two-node is NOT verified.
+- Code and docs in the same commit. Never commit unverified code.
 
 ## Regression Testing
-Every runTest() must include ALL previously verified checks, not just the new ones.
-Before adding a new test, confirm all existing assertions still pass.
-If any previously passing check fails, stop and fix the regression before continuing.
+Run the full suite after every spec before marking it Done:
+```
+cd examples/single_node
+pio run -e single_node --target upload --upload-port COM4
+python ../../tools/run_test.py --env single_node --port COM4
 
-- Tests are ADDITIVE — never remove or replace an existing assertion
-- If a new feature requires a configuration change that would break an existing test, add a NEW separate test block after all existing ones rather than modifying the existing ones
-- Existing test blocks must remain byte-for-byte identical to their last verified state
-- If an existing spot-check is found to be incomplete (e.g. only checking first/last byte), expand it in-place — this is a fix, not a replacement
+cd examples/id_filter
+pio run -e id_filter --target upload --upload-port COM4
+python ../../tools/run_test.py --env id_filter --port COM4
 
-## Step-by-Step Discipline
-- One feature per step
-- Each step has a clear expected output defined before writing code
-- Steps are numbered and tracked in `docs/status.md`
-- Do not combine multiple unverified features in one step
+cd examples/two_node
+pio run -e two_node --target upload --upload-port COM4
+pio run -e two_node --target upload --upload-port COM3
+python ../../tools/run_test.py --env two_node --port-a COM4 --port-b COM3
+```
+All three suites must report PASS. A spec that passes single_node but not two_node is NOT verified.
+
+**Tests are additive — never remove or weaken an existing assertion.** If a new feature
+requires a configuration change that would break an existing test, add a new test block
+after all existing ones rather than modifying them.
+
+## Verification Standard
+A spec is Done only when ALL of the following are true:
+- Built and uploaded to real hardware on both nodes
+- Every assertion in single_node and id_filter printed OK
+- Every assertion in two_node printed OK on both COM4 and COM3
+- Any spec-specific hardware check was performed and output matches acceptance criteria
+- Observed register values match expected values derived from the datasheet
+
+Only hardware output counts. Assumptions and reasoning are not verification.
+
+## Example Validation — Run Before Any New Feature Work
+Before starting a new spec, verify all existing examples in this order:
+1. `examples/single_node` — single-board, COM4
+2. `examples/id_filter` — single-board, COM4
+3. `examples/two_node` — both nodes, COM4 + COM3
+4. `examples/walkie_talkie` — manual interactive test, both nodes
+5. `examples/scope_loopback` — single-board, COM4, observe on scope
+6. `examples/bus_monitor` — both nodes, COM4 (node_a) + COM3 (node_b)
+
+## Adding New Examples
+- Create a new example when a feature does not fit cleanly into an existing one, or would
+  make it too large or unfocused
+- Each example is a self-contained PlatformIO project under `examples/<name>/`
+- If automatable (deterministic pass/fail), add support to `tools/run_test.py`
+- If interactive or scope-based, document expected manual observation in the example's README
+- Add the new example to the Files list below and the Examples table in `README.md`
 
 ## Key Implementation Rules
 - NEVER do a 32-bit read-modify-write of CiCON — use byte-level write8() to CiCON+3 for REQOP
@@ -176,7 +153,7 @@ If any previously passing check fails, stop and fix the regression before contin
 - NEVER enter config mode before validating that the requested rate is achievable — calcBitTiming() first, chip access second
 - Always check TFNRFNIF before writing a TX message to RAM
 - Always set UINC and TXREQ in the same write32() call when appending to a transmitting FIFO
-- FRESET is set automatically in config mode and cleared automatically on mode exit — do not poll it in config mode
+- FRESET is set automatically in config mode and cleared on mode exit — do not poll it in config mode
 - All registers are little-endian (LSB at lower address)
 - FSYS = 20 MHz on this hardware — 8 Mbps data rate is not achievable (non-integer TQ count)
 
@@ -203,40 +180,33 @@ The public API is the primary product. Every design decision must be evaluated a
 - All SPI transport in `include/mcp2518fd_spi.h` / `src/mcp2518fd_spi.cpp`
 - Public driver API in `include/mcp2518fd_can.h` / `src/mcp2518fd_can.cpp`
 - Examples use only the public API — no register names, no raw addresses
-- Test harness in `examples/loopback/src/main.cpp` — key-triggered via Serial
 - ISR functions must be marked `IRAM_ATTR` on ESP32
 - No TEF, no TXQ — FIFO1=TX, FIFO2=RX only (filters route to FIFO2)
 
-## Documentation
-After every successful verified step:
-- Update `docs/status.md` to mark the step complete with notes on actual observed values
-- Update `docs/registers.md` if any new register fields were used or clarified
-- Update `docs/context.md` if any new decisions, discoveries or gotchas were made
-- Commit everything together: code + docs in the same commit
-
-If something unexpected is discovered during testing (e.g. a register behaves differently than the datasheet suggests), document it immediately in `docs/context.md` under a "Discoveries" section before moving on.
-
-After every verified step, end with a single plain-English sentence summarising what was achieved and specifically how it moves closer to the goal of loopback/CAN FD communication.
-
-## Commit Rules
-- Commit after every successful verified iteration — no exceptions
-- Commit message format: `step N: short description`
-- Never commit code that has not been verified on hardware
-- Never commit with failing or skipped checks
-- Docs and code go in the same commit
+## Commit and Documentation
+- Commit after every verified step — no exceptions
+- Commit message format: `SPEC-NNN step N: short description`
+- Code and docs always in the same commit
+- After every verified step update:
+  - `docs/status.md` — mark step complete with observed hardware values
+  - `docs/registers.md` — if any new register fields were used or clarified
+  - `docs/context.md` — if any new decisions, discoveries or gotchas were made
+- If a register behaves unexpectedly, document it in `docs/context.md` immediately
+- End every verified step with one plain-English sentence summarising what was achieved
+  and how it moves closer to the goal
 
 ## Files
-- `examples/single_node/src/main.cpp` — regression test harness (single-board, config and bitrate tests)
-- `examples/id_filter/src/main.cpp` — acceptance filter demonstration (single-board, SID/EID filtering)
+- `examples/single_node/src/main.cpp` — single-board config and bitrate regression tests
+- `examples/id_filter/src/main.cpp` — acceptance filter demonstration (SID/EID filtering)
 - `examples/two_node/src/main.cpp` — two-node regression test (real bus, COM4 + COM3)
 - `examples/walkie_talkie/` — interactive text chat between two nodes
 - `examples/scope_loopback/` — continuous TX in MODE_EXTERNAL_LB for scope measurements
-- `examples/bus_monitor/` — two nodes continuously transmitting counters (node_a env → COM4, node_b env → COM3; boots autonomously, no serial input required)
+- `examples/bus_monitor/` — two nodes continuously transmitting counters (node_a → COM4, node_b → COM3)
 - `include/mcp2518fd_can.h` — public driver API, CanMsg, CanStatus, bit timing presets
 - `include/mcp2518fd_registers.h` — all register addresses, masks, constants
 - `include/mcp2518fd_spi.h` / `src/mcp2518fd_spi.cpp` — SPI transport + mode control
 - `src/mcp2518fd_can.cpp` — driver implementation
-- `tools/run_test.py` — test runner (loopback and two-node)
+- `tools/run_test.py` — test runner (single_node, id_filter, two_node)
 - `tools/check_timing.py` — verify bit timing presets for both 20 MHz and 40 MHz
 - `docs/status.md` — milestone tracker
 - `docs/context.md` — hardware and architecture context
