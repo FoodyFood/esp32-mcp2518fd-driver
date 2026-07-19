@@ -109,6 +109,17 @@ Other ESP32 boards and MCP2518FD breakout variants should work provided the SPI 
 
 ---
 
+## Installation
+
+**PlatformIO** — add to `platformio.ini`:
+```ini
+lib_deps = foodyfood/esp32-mcp2518fd-driver
+```
+
+**Arduino IDE** — search for `esp32-mcp2518fd-driver` in the Library Manager.
+
+---
+
 ## Quick start
 
 ```cpp
