@@ -213,11 +213,9 @@ void runTest()
     }
 
     // ------------------------------------------------------------------
-    // SPEC-003: getErrors() and hasErrors() — verified in loopback
-    // Error counter registers are readable and return sane values after
-    // successful loopback TX. No-second-node behaviour verified manually.
+    // Error counters and bus health
     // ------------------------------------------------------------------
-    Serial.println("SPEC-003: getErrors() / hasErrors() in loopback:");
+    Serial.println("getErrors() / hasErrors() in loopback:");
     can.configure(125000, 2000000, MODE_INTERNAL_LB);
 
     CanMsg txE;
@@ -231,9 +229,9 @@ void runTest()
     CHECK("getErrors() busOff=false after clean loopback", !e.busOff);
 
     // ------------------------------------------------------------------
-    // SPEC-004: configurable FIFO depth + interrupt-driven RX
+    // Configurable RX FIFO depth
     // ------------------------------------------------------------------
-    Serial.println("SPEC-004: configurable FIFO depth (depth=16):");
+    Serial.println("configurable FIFO depth (depth=16):");
     can.configure(125000, 2000000, MODE_INTERNAL_LB, 16);
 
     {
@@ -260,7 +258,7 @@ void runTest()
 
     // Overflow: use depth=4, send 5 frames without draining, verify rxOverflow,
     // then drain and verify recovery (rxOverflow clears after getErrors())
-    Serial.println("SPEC-004: overflow + recovery (depth=4):");
+    Serial.println("RX FIFO overflow + recovery (depth=4):");
     can.configure(125000, 2000000, MODE_INTERNAL_LB, 4);
     {
         CanMsg tf;
@@ -270,9 +268,9 @@ void runTest()
             tf.id = 0x400 + i;
             can.transmit(tf);  // blocking — each frame lands in RX FIFO before next TX
         }
-        // FIFO holds 4; 5th was discarded and RXOVIF set in CiFIFOSTA2
+        // FIFO holds 4; 5th frame is discarded and the overflow flag is set
         CHECK("rxOverflow set after 5th frame", can.getErrors().rxOverflow);
-        // getErrors() cleared the flag — verify recovery
+        // getErrors() clears the flag — verify recovery
         CHECK("rxOverflow cleared after getErrors()", !can.getErrors().rxOverflow);
         // Drain remaining frames
         CanMsg rf = {};
@@ -280,10 +278,9 @@ void runTest()
     }
 
     // ------------------------------------------------------------------
-    // SPEC-004: INT pin (GPIO 34) — ISR sets flag, available() returns
-    // true within 1 ms without polling the FIFO status register.
+    // Interrupt-driven RX via INT pin (GPIO 34)
     // ------------------------------------------------------------------
-    Serial.println("SPEC-004: INT pin interrupt-driven RX:");
+    Serial.println("INT pin interrupt-driven RX:");
     {
         MCP2518Driver canInt(spi, PIN_CS, 34);
         canInt.configure(125000, 2000000, MODE_INTERNAL_LB);

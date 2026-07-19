@@ -165,6 +165,33 @@ Before starting a new spec, verify all existing examples in this order:
 - If interactive or scope-based, document expected manual observation in the example's README
 - Add the new example to the Files list below and the Examples table in `README.md`
 
+## Examples vs Test Harnesses
+
+These are two different things and must be kept separate.
+
+**`examples/`** — pure user-facing code. A library user reads these to learn how to use the
+driver in their own project. Rules:
+- No CHECK() macros, no pass/fail output, no assertion loops
+- No SPEC-NNN references or internal development terminology
+- No register names, bit positions, or datasheet section numbers in comments
+- Every file has a clear one-sentence learning objective at the top
+- Code flows in reading order: includes → pin constants → driver construction → setup → logic
+- Comments explain *why*, not *what* — restating the code adds no value
+- A user should be able to copy this code directly into their own project
+
+**`tests/integration/`** — test harnesses that verify the driver on real hardware. These are
+not for library users. Rules:
+- CHECK() macros and pass/fail output are expected and correct here
+- Spec references (SPEC-NNN) are allowed — this is where implementation is verified
+- Each harness is a self-contained PlatformIO project under `examples/<name>/` that is
+  *also* registered in the integration suite runner
+- single_node, id_filter, and two_node are test harnesses, not user examples
+
+**When adding a new feature:**
+- The integration test assertion goes in single_node or two_node (test harness)
+- If the feature has a meaningful usage pattern worth showing, create a new example in `examples/`
+- Do not add CHECK() to an existing clean example just to verify a new feature
+
 ## Key Implementation Rules
 - NEVER do a 32-bit read-modify-write of CiCON — use byte-level write8() to CiCON+3 for REQOP
 - NEVER read CiFIFOUAm while in Configuration mode — UA is only valid outside config mode
@@ -239,13 +266,14 @@ Update this table when a new spec is added.
   and how it moves closer to the goal
 
 ## Files
-- `.github/workflows/ci.yml` — CI workflow: unit tests + build all examples on every PR, auto-merge on pass
-- `examples/single_node/src/main.cpp` — single-board config and bitrate regression tests
-- `examples/id_filter/src/main.cpp` — acceptance filter demonstration (SID/EID filtering)
-- `examples/two_node/src/main.cpp` — two-node regression test (real bus, COM4 + COM3)
+- `.github/workflows/ci.yml` — CI workflow: unit tests + build all examples and harnesses on every PR, auto-merge on pass
 - `examples/walkie_talkie/` — interactive text chat between two nodes
 - `examples/scope_loopback/` — continuous TX in MODE_EXTERNAL_LB for scope measurements
 - `examples/bus_monitor/` — two nodes continuously transmitting counters (node_a → COM4, node_b → COM3)
+- `examples/int_pin/` — interrupt-driven RX demonstration
+- `tests/integration/single_node/src/main.cpp` — single-board regression harness: config, bitrates, raw API, error detection, FIFO depth, INT pin
+- `tests/integration/id_filter/src/main.cpp` — filter regression harness: SID/EID exact, range, multi-filter, catch-all
+- `tests/integration/two_node/src/main.cpp` — two-node regression harness: real bus, COM4 + COM3
 - `include/mcp2518fd_can.h` — public driver API, CanMsg, CanStatus
 - `include/mcp2518fd_presets.h` — bit timing preset constants (Arduino-free, used by unit tests)
 - `include/mcp2518fd_timing.h` — pure-logic timing functions: calcBitTiming, calcTxTimeout, EID/filter encode (Arduino-free, used by unit tests)

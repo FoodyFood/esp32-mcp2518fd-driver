@@ -21,6 +21,7 @@ Options:
   --port-b      Node B port for two_node / all              (default: COM3)
   --baud        Baud rate                                   (default: 115200)
   --no-upload   Skip firmware upload, run tests immediately
+  --build-only  Build only, no upload or serial verification (for CI)
 """
 
 import sys
@@ -52,14 +53,16 @@ def main():
     parser.add_argument("--port-b",    default="COM3")
     parser.add_argument("--baud",      type=int, default=115200)
     parser.add_argument("--no-upload", action="store_true")
+    parser.add_argument("--build-only", action="store_true",
+                        help="Build only, no upload or serial verification")
     args = parser.parse_args()
 
     configure_logging()
 
     if args.suite == "all":
-        ok = run_all(args.port, args.port_b, args.baud, args.no_upload)
+        ok = run_all(args.port, args.port_b, args.baud, args.no_upload, args.build_only)
     else:
-        ok = run_suite(args.suite, args.port, args.port_b, args.baud, args.no_upload)
+        ok = run_suite(args.suite, args.port, args.port_b, args.baud, args.no_upload, args.build_only)
 
     sys.exit(0 if ok else 1)
 
