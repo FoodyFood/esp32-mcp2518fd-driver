@@ -51,12 +51,6 @@ jobs:
       - name: Install PlatformIO
         run: pip install platformio
 
-      - name: Patch lib_deps for CI (symlink → lib_extra_dirs)
-        run: |
-          sed -i '/lib_deps.*symlink/d' examples/${{ matrix.example }}/platformio.ini
-          sed -i 's|\[platformio\]|[platformio]\nlib_extra_dirs = ../..| ' examples/${{ matrix.example }}/platformio.ini
-          cat examples/${{ matrix.example }}/platformio.ini
-
       - name: Build ${{ matrix.example }}
         run: cd examples/${{ matrix.example }} && pio run
 
