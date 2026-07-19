@@ -156,3 +156,37 @@ Run: `wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit &&
 | single_node      | ✅ Verified | All assertions OK on COM4; depth=16 burst, overflow+recovery, INT pin |
 | id_filter        | ✅ Verified | All assertions OK on COM4; no regressions |
 | two_node         | ✅ Verified | All assertions OK on both nodes; overflow test A depth=4 B bursts 5 |
+
+## SPEC-005 — RX Timestamp and Listen-Only Mode Validation
+
+| Feature | Status | Notes |
+|---|---|---|
+| `CanMsg.timestamp` field | ✅ Verified | 0 when timestamping disabled; TBC value when enabled |
+| `configure()` enableTimestamp parameter | ✅ Verified | Default false; sets RXTSEN in FIFO2, enables CiTBC after setMode() |
+| `configureRaw()` enableTimestamp parameter | ✅ Verified | Same behaviour |
+| CiTBC free-running counter | ✅ Verified | TBCEN=1 written after mode transition; TBCPRE=0 = 50 ns/count at 20 MHz |
+| RXTSEN in CiFIFOCON2 | ✅ Verified | Bit 5; config-mode-only; slot grows from 72 to 76 bytes |
+| RX message object layout with RXTSEN | ✅ Verified | R0(+0) R1(+4) R2/timestamp(+8) payload(+12) — timestamp before payload |
+| timestamp > 0 after loopback | ✅ Verified | Confirmed on hardware |
+| timestamp delta ~10 ms | ✅ Verified | Observed 251124 counts (~12.6 ms incl. frame time) |
+| timestamp=0 when enableTimestamp=false | ✅ Verified | Regression check passes |
+| payload intact with timestamp enabled | ✅ Verified | payloadOffset=12 when mTimestamp=true |
+| Max RX FIFO depth with timestamp | ✅ Verified | Clamped to 23 (76-byte slots); 24 without |
+| `transmit()` returns NoAck in MODE_LISTEN | ✅ Verified | Early return before any FIFO access |
+| MODE_LISTEN two-node: A receives, B no errors | ✅ Verified | A received frames; B TEC=0, not bus-off |
+
+### Hardware observations
+- CiTSCON must be written AFTER setMode() exits config mode — writing TBCEN in config mode
+  does not survive the mode transition (register resets on config-mode exit)
+- RX message object layout: timestamp (R2) is at offset +8, payload starts at +12 when RXTSEN=1.
+  This is the opposite of what the spec originally assumed (payload-then-timestamp).
+- In MODE_LISTEN, Node B (MODE_NORMAL) transmits with NoAck result — expected because A sends
+  no ACK. B does not go bus-off. A receives frames with TEC=0.
+- Timestamp delta for 10 ms delay: 251124 counts = 12.6 ms (includes ~2.6 ms frame time
+  at 125 kbps nominal / 2 Mbps data in loopback)
+
+| Example          | Status      | Notes                                                                 |
+|------------------|-------------|-----------------------------------------------------------------------|
+| single_node      | ✅ Verified | All assertions OK on COM4; timestamp, payload, delta, listen-only |
+| id_filter        | ✅ Verified | All assertions OK on COM4; no regressions |
+| two_node         | ✅ Verified | All assertions OK on both nodes; listen-only A/B test |

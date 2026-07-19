@@ -302,6 +302,72 @@ void runTest()
         CHECK("available() false after drain", !canInt.available());
     }
 
+    // ------------------------------------------------------------------
+    // SPEC-005: RX timestamp
+    // ------------------------------------------------------------------
+    Serial.println("RX timestamp (enableTimestamp=true):");
+    can.configure(125000, 2000000, MODE_INTERNAL_LB, 16, true);
+    {
+        CanMsg tf;
+        tf.id = 0x700; tf.fdf = true; tf.brs = true; tf.dlc = 8;
+        for (int i = 0; i < 8; i++) tf.data[i] = (uint8_t)(0xA0 + i);
+        can.transmit(tf);
+        CanMsg rf = {};
+        bool got = can.receive(rf, 50);
+        CHECK("receive() returns true with timestamp enabled", got);
+        CHECK("timestamp > 0 after loopback", rf.timestamp > 0);
+        CHECK("payload intact with timestamp enabled", rf.data[0] == 0xA0 && rf.data[7] == 0xA7);
+
+        // Two frames 10 ms apart — delta should be ~200000 TBC counts at 20 MHz
+        CanMsg tf2;
+        tf2.id = 0x701; tf2.fdf = true; tf2.brs = true; tf2.dlc = 8;
+        can.transmit(tf2);
+        CanMsg rf2a = {};
+        can.receive(rf2a, 50);
+
+        delay(10);
+
+        CanMsg tf3;
+        tf3.id = 0x702; tf3.fdf = true; tf3.brs = true; tf3.dlc = 8;
+        can.transmit(tf3);
+        CanMsg rf2b = {};
+        can.receive(rf2b, 50);
+
+        uint32_t diff = rf2b.timestamp - rf2a.timestamp;
+        // 10 ms at 20 MHz, TBCPRE=0: 1 count = 50 ns, 10 ms = 200000 counts
+        // Allow generous window: 50000-350000
+        CHECK("timestamp delta ~10 ms (50000-350000 counts)", diff >= 50000 && diff <= 350000);
+        Serial.printf("  ts_a=%lu ts_b=%lu delta=%lu (~%.1f us)\n",
+                      (unsigned long)rf2a.timestamp, (unsigned long)rf2b.timestamp,
+                      (unsigned long)diff, diff * 0.05f);
+    }
+
+    // ------------------------------------------------------------------
+    // SPEC-005: timestamp=0 when not enabled (regression)
+    // ------------------------------------------------------------------
+    Serial.println("timestamp=0 when not enabled:");
+    {
+        can.configure(125000, 2000000, MODE_INTERNAL_LB);
+        CanMsg tf;
+        tf.id = 0x710; tf.fdf = true; tf.brs = true; tf.dlc = 8;
+        can.transmit(tf);
+        CanMsg rf = {};
+        can.receive(rf, 50);
+        CHECK("timestamp=0 when enableTimestamp=false", rf.timestamp == 0);
+    }
+
+    // ------------------------------------------------------------------
+    // SPEC-005: transmit() returns NoAck in MODE_LISTEN
+    // ------------------------------------------------------------------
+    Serial.println("transmit() in MODE_LISTEN returns NoAck:");
+    can.configure(125000, 2000000, MODE_LISTEN);
+    {
+        CanMsg tf;
+        tf.id = 0x720; tf.fdf = true; tf.brs = true; tf.dlc = 8;
+        CHECK("transmit() = NoAck in MODE_LISTEN",
+              can.transmit(tf) == CanTxResult::NoAck);
+    }
+
 
     Serial.println();
 }

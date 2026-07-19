@@ -134,6 +134,12 @@ constexpr uint32_t TREC_TXBO   = (1u << 21);  // TEC > 255 (bus-off)
 constexpr uint32_t BDIAG1_NACKERR = (1u << 18);  // transmitted message not acknowledged
 constexpr uint32_t BDIAG1_TXBOERR = (1u << 23);  // device went to bus-off
 
+// CiTSCON bit positions (DS20006027B Register 3-12, page 33)
+// bit 16 = TBCEN: enable free-running time base counter
+// bit 17 = TSEOF: 1 = timestamp at EOF, 0 = timestamp at SOF
+// bits 9:0 = TBCPRE: prescaler (0 = increment every 1 FSYS clock)
+constexpr uint32_t TSCON_TBCEN = (1u << 16);
+
 // CiRXOVIF: bit N = FIFO N overflowed; FIFO2 = bit 2
 constexpr uint32_t RXOVIF_FIFO2 = (1u << 2);
 

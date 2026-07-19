@@ -1,7 +1,7 @@
 # SPEC-005 — RX Timestamp and Listen-Only Mode Validation
 
 ## Status
-Pending
+Done
 
 ## Priority
 Medium
@@ -54,7 +54,27 @@ the bus. The mode needs to be validated and documented.
 - CiTSCON register (0x014): TBCEN bit enables the time base counter — verify bit position against DS20006027B
 - CiTBC register (0x010): 32-bit free-running counter value
 - RXTSEN is bit 5 of CiFIFOCONm — already defined as `FIFOCON_RXTSEN` in registers.h
-- RX message object layout with timestamp: words 0–1 are T0/T1 (ID + control), words 2–N are
-  payload, final word is timestamp — verify exact position against DS20006027B Table 3-2
+- RX message object layout with timestamp (DS20006027B Table 3-6 / ref manual Table 7-1):
+  R0 (+0) = SID/EID, R1 (+4) = FILHIT/ESI/FDF/BRS/RTR/IDE/DLC,
+  R2 (+8) = RXMSGTS (timestamp, only when RXTSEN=1), R3 (+12) = payload bytes 0-3, ...
+  The timestamp word comes BEFORE the payload, not after.
 - In listen-only mode the chip cannot transmit; `transmit()` should return `CanTxResult::NoAck`
   immediately without attempting to write to the TX FIFO
+- CiTSCON must be written AFTER setMode() exits config mode — writing TBCEN in config mode
+  does not survive the mode transition (register resets on config-mode exit)
+- TBCPRE=0 (default): TBC increments every 1 FSYS clock = 50 ns at 20 MHz
+- Slot size with RXTSEN=1: 4(R0)+4(R1)+4(R2)+64(payload) = 76 bytes; UA advances by 76
+
+## Datasheet findings
+- DS20006027B Table 3-6 / ref manual Table 7-1: RX message object word order is
+  R0 (SID/EID), R1 (control), R2 (RXMSGTS, only when RXTSEN=1), then payload.
+  The timestamp is at offset +8 from the slot base, payload starts at +12 (with RXTSEN)
+  or +8 (without RXTSEN). This is the opposite of what the spec originally assumed.
+- CiTSCON.TBCEN (bit 16) must be written after setMode() completes — the register
+  resets when the chip exits Configuration mode, so writing it during configFifos()
+  (which runs in config mode) has no effect.
+- Ref manual page 58: "The TBC has to be disabled before writing to CiTBC by clearing
+  CiTSCON.TBCEN." TBCPRE=0 gives 1-clock resolution (50 ns at 20 MHz).
+- Listen Only mode (ref manual page 12): "TXREQ bits will be ignored. No error flags or
+  Acknowledge signals are sent." The chip receives normally but transmits nothing.
+  transmit() must detect MODE_LISTEN and return NoAck immediately — confirmed on hardware.

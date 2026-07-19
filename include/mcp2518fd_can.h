@@ -39,12 +39,13 @@ inline constexpr uint8_t dlcToLen(uint8_t dlc)
 
 struct CanMsg
 {
-    uint32_t id   = 0;     // Frame identifier: 11-bit SID (ext=false) or 29-bit EID (ext=true)
-    bool     ext  = false; // false = standard 11-bit frame, true = extended 29-bit frame
-    bool     fdf  = false; // true = CAN FD frame, false = Classic CAN
-    bool     brs  = false; // true = switch to data bit rate in payload phase
-    uint8_t  dlc  = 0;     // Data Length Code (0–15)
-    uint8_t  data[64] = {}; // Payload bytes (up to 64 for CAN FD)
+    uint32_t id        = 0;     // Frame identifier: 11-bit SID (ext=false) or 29-bit EID (ext=true)
+    bool     ext       = false; // false = standard 11-bit frame, true = extended 29-bit frame
+    bool     fdf       = false; // true = CAN FD frame, false = Classic CAN
+    bool     brs       = false; // true = switch to data bit rate in payload phase
+    uint8_t  dlc       = 0;     // Data Length Code (0–15)
+    uint32_t timestamp = 0;     // RX hardware timestamp (TBC counts); 0 when timestamping not enabled
+    uint8_t  data[64]  = {};    // Payload bytes (up to 64 for CAN FD)
 };
 
 // ----------------------------------------------------------------------------
@@ -100,11 +101,18 @@ public:
     // nominalBps  — arbitration phase rate in bps (e.g. 125000, 250000, 500000, 1000000)
     // dataBps     — data phase rate in bps       (e.g. 1000000, 2000000, 4000000, 5000000)
     // mode        — MODE_NORMAL, MODE_INTERNAL_LB, MODE_EXTERNAL_LB, etc.
-    // rxFifoDepth — RX FIFO slot count (1–24 at PLSIZE_64; clamped to 24). Default 16.
-    //               RAM budget: FIFO1 (TX, depth=4) = 288 bytes; FIFO2 max = 24 × 72 = 1728 bytes.
+    // rxFifoDepth — RX FIFO slot count (1–23 at PLSIZE_64 with timestamp, 1–24 without).
+    //               Default 16. Clamped to max.
+    //               RAM budget: FIFO1 (TX, depth=4) = 288 bytes; remaining = 1760 bytes.
+    //               Without timestamp: slot = 72 bytes → max 24. With: slot = 76 bytes → max 23.
+    // enableTimestamp — when true, enables the free-running CiTBC counter and sets RXTSEN in
+    //               FIFO2 so each received message object includes a 32-bit hardware timestamp.
+    //               The timestamp is captured at SOF (TSEOF=0, TSRES=0). Resolution: 1 FSYS clock
+    //               (50 ns at 20 MHz). Populated in msg.timestamp after receive().
     //
     // Returns CanStatus::OK when the chip confirms the requested mode.
-    CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode, uint8_t rxFifoDepth = 16);
+    CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode,
+                        uint8_t rxFifoDepth = 16, bool enableTimestamp = false);
 
     // Change the data bit rate at runtime without disturbing the nominal rate.
     // Performs a config-mode round-trip and returns to the previous mode.
@@ -168,7 +176,8 @@ public:
     //
     // configureRaw() and setDataBitTimingRaw() bypass auto-detection and
     // accept pre-computed register words directly.
-    CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode, uint8_t rxFifoDepth = 16);
+    CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode,
+                            uint8_t rxFifoDepth = 16, bool enableTimestamp = false);
     CanStatus setDataBitTimingRaw(uint32_t dbtcfg, uint32_t tdcfg);
 
 private:
@@ -177,6 +186,7 @@ private:
     uint32_t   mTxTimeoutMs = 10;
     uint32_t   mNbtcfg      = 0;
     int8_t     mIntPin      = -1;
+    bool       mTimestamp   = false;  // true when RXTSEN + CiTBC are enabled
     volatile bool mRxPending = false;
 
     static MCP2518Driver* sIsrInstance;  // single-instance ISR trampoline
@@ -186,7 +196,7 @@ private:
     // Returns frequency in Hz, or 0 if the clock is not ready.
     uint32_t detectFsys();
 
-    void configFifos(uint8_t rxFifoDepth);
+    void configFifos(uint8_t rxFifoDepth, bool enableTimestamp);
     void configFilter();  // installs catch-all filter 0 → FIFO2
     void applyTiming(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg);
     uint16_t txRamAddr();

@@ -53,7 +53,7 @@ transmit behaviour — implement SPEC-003 first.
 
 | Spec | Title | Gaps closed | Status |
 |---|---|---|---|
-| [SPEC-005](SPEC-005-rx-timestamp-and-listen-only.md) | RX Timestamp and Listen-Only Mode Validation | G6, G10 | Pending |
+| [SPEC-005](SPEC-005-rx-timestamp-and-listen-only.md) | RX Timestamp and Listen-Only Mode Validation | G6, G10 | Done |
 
 ## Group E — Lifecycle (BMS reset sequences)
 

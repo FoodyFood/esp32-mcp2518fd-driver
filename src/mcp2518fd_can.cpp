@@ -10,7 +10,8 @@ MCP2518Driver::MCP2518Driver(SPIClass& spi, uint8_t csPin, int8_t intPin)
 // ----------------------------------------------------------------------------
 // Public API
 
-CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode, uint8_t rxFifoDepth)
+CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode,
+                                   uint8_t rxFifoDepth, bool enableTimestamp)
 {
     mSpi.begin();
     mSpi.reset();
@@ -25,12 +26,17 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
         return CanStatus::RATE_NOT_ACHIEVABLE;
 
     applyTiming(nbtcfg, dbtcfg, tdcfg);
-    configFifos(rxFifoDepth);
+    configFifos(rxFifoDepth, enableTimestamp);
     configFilter();
     mTxTimeoutMs = calcTxTimeout(mFsys, nbtcfg, dbtcfg);
     mNbtcfg = nbtcfg;
 
     if (!mSpi.setMode(mode)) return CanStatus::MODE_TIMEOUT;
+
+    // Enable TBC after mode transition — CiTSCON is not config-mode-only
+    // and must be set after exiting config mode to survive the transition
+    if (enableTimestamp)
+        mSpi.write32(REG_CiTSCON, TSCON_TBCEN);
 
     if (mIntPin >= 0)
     {
@@ -65,7 +71,8 @@ CanStatus MCP2518Driver::setDataRate(uint32_t dataBps)
     return CanStatus::OK;
 }
 
-CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode, uint8_t rxFifoDepth)
+CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode,
+                                      uint8_t rxFifoDepth, bool enableTimestamp)
 {
     mSpi.begin();
     mSpi.reset();
@@ -73,12 +80,16 @@ CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t
     mSpi.setMode(MODE_CONFIG);
 
     applyTiming(nbtcfg, dbtcfg, tdcfg);
-    configFifos(rxFifoDepth);
+    configFifos(rxFifoDepth, enableTimestamp);
     configFilter();
     mTxTimeoutMs = calcTxTimeout(0, nbtcfg, dbtcfg);  // fsys unknown in raw path
     mNbtcfg = nbtcfg;
 
     if (!mSpi.setMode(mode)) return CanStatus::MODE_TIMEOUT;
+
+    if (enableTimestamp)
+        mSpi.write32(REG_CiTSCON, TSCON_TBCEN);
+
     return CanStatus::OK;
 }
 
@@ -96,6 +107,9 @@ CanStatus MCP2518Driver::setDataBitTimingRaw(uint32_t dbtcfg, uint32_t tdcfg)
 
 CanTxResult MCP2518Driver::transmit(const CanMsg& msg)
 {
+    // Listen Only mode: chip ignores TXREQ, no ACK sent — return immediately
+    if (mSpi.getMode() == MODE_LISTEN) return CanTxResult::NoAck;
+
     if (!(mSpi.read32(FIFO_STA(1)) & FIFOSTA_TFNRFNIF))
         return CanTxResult::FifoFull;
 
@@ -215,10 +229,22 @@ bool MCP2518Driver::receive(CanMsg& msg, uint32_t timeoutMs)
     msg.brs = (r1 >> 6) & 1;
     msg.dlc = r1 & 0xFu;
 
+    // RX message object layout (DS20006027B Table 3-6 / ref manual Table 7-1):
+    //   R0 (+0)  — SID/EID
+    //   R1 (+4)  — FILHIT, ESI, FDF, BRS, RTR, IDE, DLC
+    //   R2 (+8)  — RXMSGTS (only present when RXTSEN=1)
+    //   R3 (+12 with timestamp, +8 without) — payload bytes 0-3
+    uint8_t payloadOffset = mTimestamp ? 12 : 8;
+
+    if (mTimestamp)
+        msg.timestamp = mSpi.read32(addr + 8);
+    else
+        msg.timestamp = 0;
+
     uint8_t len = dlcToLen(msg.dlc);
     for (uint8_t i = 0; i < len; i += 4)
     {
-        uint32_t w = mSpi.read32(addr + 8 + i);
+        uint32_t w = mSpi.read32(addr + payloadOffset + i);
         msg.data[i]   =  w        & 0xFF;
         msg.data[i+1] = (w >> 8)  & 0xFF;
         msg.data[i+2] = (w >> 16) & 0xFF;
@@ -281,21 +307,27 @@ void MCP2518Driver::applyTiming(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg
     mSpi.write8(REG_CiCON + 2, con2);
 }
 
-void MCP2518Driver::configFifos(uint8_t rxFifoDepth)
+void MCP2518Driver::configFifos(uint8_t rxFifoDepth, bool enableTimestamp)
 {
-    // Clamp to 24 — hard max at PLSIZE_64 with FIFO1 depth=4
-    // RAM: FIFO1 = 4 × 72 = 288 bytes; remaining = 1760 bytes; floor(1760/72) = 24
-    if (rxFifoDepth < 1)  rxFifoDepth = 1;
-    if (rxFifoDepth > 24) rxFifoDepth = 24;
+    mTimestamp = enableTimestamp;
+
+    // RAM budget: FIFO1 (TX, depth=4) = 4 × 72 = 288 bytes; remaining = 1760 bytes
+    // Without timestamp: slot = R0+R1+payload = 4+4+64 = 72 bytes → floor(1760/72) = 24
+    // With timestamp:    slot = R0+R1+R2+payload = 4+4+4+64 = 76 bytes → floor(1760/76) = 23
+    uint8_t maxDepth = enableTimestamp ? 23 : 24;
+    if (rxFifoDepth < 1)        rxFifoDepth = 1;
+    if (rxFifoDepth > maxDepth) rxFifoDepth = maxDepth;
 
     uint32_t plsize   = (uint32_t)PLSIZE_64 << FIFOCON_PLSIZE_SHIFT;
     uint32_t txFsize  = (4u - 1u) << FIFOCON_FSIZE_SHIFT;  // FSIZE field = depth-1
     uint32_t rxFsize  = (uint32_t)(rxFifoDepth - 1u) << FIFOCON_FSIZE_SHIFT;
     mSpi.write32(FIFO_CON(1), plsize | txFsize | FIFOCON_TXAT_3 | FIFOCON_TXEN);
 
+    // RXTSEN (bit 5) enables per-message timestamp capture in RAM (DS20006027B page 55)
     // TFNRFNIE (bit 0) enables the per-FIFO not-empty interrupt — feeds CiINT.RXIF
     uint32_t rxCon = plsize | rxFsize;
-    if (mIntPin >= 0) rxCon |= FIFOCON_TFNRFNIE;
+    if (enableTimestamp) rxCon |= FIFOCON_RXTSEN;
+    if (mIntPin >= 0)    rxCon |= FIFOCON_TFNRFNIE;
     mSpi.write32(FIFO_CON(2), rxCon);
 
     // Enable RXIE in CiINT so the INT pin asserts on RX (DS20006027B Register 3-14 bit 17)

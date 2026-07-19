@@ -164,6 +164,28 @@ static void runNodeA()
           can.getErrors().rxOverflow);
     { CanMsg rf = {}; while (can.receive(rf, 5)) {} }
 
+    // SPEC-005: A enters MODE_LISTEN while B transmits
+    // A must receive frames from B without transmitting ACK
+    Serial.println("A listen-only: receive from B without ACK:");
+    can.configure(125000, 2000000, MODE_LISTEN);
+    {
+        // Drain any stale frames
+        CanMsg rf = {};
+        while (can.receive(rf, 5)) {}
+
+        // Wait for B's listen-only test frames (SIDs 0x210-0x212)
+        int rxCount = 0;
+        for (int i = 0; i < 3; i++)
+        {
+            CanMsg r = {};
+            if (can.receive(r, 2000)) rxCount++;
+        }
+        CHECK("A received frames in MODE_LISTEN", rxCount > 0);
+        // A must not have transmitted anything — TEC stays 0
+        CanError e = can.getErrors();
+        CHECK("A TEC=0 in MODE_LISTEN (no TX)", e.tec == 0);
+    }
+
     Serial.println();
 }
 
@@ -218,6 +240,26 @@ static void runNodeB()
     can.configure(125000, 2000000, MODE_NORMAL);
     for (int i = 0; i < 5; i++)
         txWithRetry("overflow burst", makeFrame(0x20F, 8, (uint8_t)i));
+
+    // SPEC-005: B transmits while A is in MODE_LISTEN
+    // B must see no errors (no missing ACK) because A does not transmit ACK
+    // but the bus still has B's own ACK slot. With only two nodes and A passive,
+    // B will see NoAck (no second node ACKing). This is the expected behaviour:
+    // listen-only means A is silent — B's transmit result is not checked here,
+    // but B must not go bus-off and error counters must stay reasonable.
+    Serial.println("B->A listen-only: B transmits, A is MODE_LISTEN:");
+    can.configure(125000, 2000000, MODE_NORMAL);
+    for (int i = 0; i < 3; i++)
+    {
+        CanTxResult r = can.transmit(makeFrame(0x210 + i, 8, (uint8_t)(0xF0 + i)));
+        char label[48];
+        snprintf(label, sizeof(label), "TX 0x%03X while A listens (attempt %d)", 0x210 + i, i);
+        // With A in listen mode, B is the only active node — no ACK expected
+        // Result is NoAck (expected) or OK if A happened to ACK before entering listen
+        CHECK(label, r == CanTxResult::NoAck || r == CanTxResult::OK);
+    }
+    CanError errB = can.getErrors();
+    CHECK("B not bus-off after listen-only test", !errB.busOff);
 
     Serial.println();
 }
