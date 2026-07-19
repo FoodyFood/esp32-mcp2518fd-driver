@@ -28,6 +28,7 @@ can.receive(rx, 500);  // blocking, 500 ms timeout
 | **Peer-to-peer telemetry** | Two ESP32 boards talking directly over CAN FD — sensor nodes, drone ESCs, data concentrators |
 | **Scope / analyser stimulus** | Drive known CAN FD frames onto the bus for oscilloscope or protocol analyser capture |
 | **Production self-test** | Verify chip and transceiver wiring at factory or field bring-up — no second node required |
+| **Battery simulator** | Impersonate a real EV battery pack on a CAN FD bus — transmit the periodic BMS frames a vehicle, inverter or charger expects, without a real battery present |
 
 See [`docs/use_case_coverage.md`](docs/use_case_coverage.md) for the full feature-by-use-case coverage matrix and gap tracking.
 
