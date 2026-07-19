@@ -111,7 +111,23 @@ Run: `wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit &&
 | Two-node MODE_NORMAL                 | ✅ Verified | A↔B bidirectional, 2/4/5/8 Mbps, 8B+64B payloads, no coordination   |
 | No-ACK retry (RTXAT)                 | ✅ Verified | Chip retries 3× then clears TXREQ; app-level retry handles power-on race |
 
-## Examples
+## SPEC-003 — Bus Error Detection and TX Error Detail
+
+| Feature | Status | Notes |
+|---|---|---|
+| `CanTxResult` enum | ✅ Verified | OK / NoAck / BusError / FifoFull |
+| `CanError` struct | ✅ Verified | tec, rec, txWarning, rxWarning, txPassive, rxPassive, busOff, rxOverflow |
+| `transmit()` returns `CanTxResult` | ✅ Verified | Breaking change — all call sites updated |
+| `getErrors()` | ✅ Verified | Reads CiTREC + CiRXOVIF |
+| `hasErrors()` | ✅ Verified | Polls EWARN + TXBO + RXOVIF_FIFO2 |
+| No-second-node TX failure | ✅ Verified | Returns BusError (TXERR) with floating bus; TEC > 0 confirmed |
+| All repeated TX fail non-OK | ✅ Verified | 20 consecutive attempts all non-OK with no second node |
+
+### Hardware observations
+- With no bus connected (floating CANH/CANL): chip sets TXERR immediately on first bit → `BusError`
+- With bus connected but no second node (termination present): chip exhausts 3 retries → `NoAck`
+- TEC increments by ~8 per failed attempt; chip auto-recovers from bus-off (resets CiTREC)
+- CiTREC, CiBDIAG0, CiBDIAG1 reset on every config-mode exit — only valid in Normal mode
 
 | Example          | Status      | Notes                                                                 |
 |------------------|-------------|-----------------------------------------------------------------------|

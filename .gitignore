@@ -12,3 +12,6 @@ __pycache__/
 # Datasheet PDFs — download from Microchip, do not commit
 docs/reference/*.pdf
 docs/reference/*.txt
+
+# Local
+next_steps.md

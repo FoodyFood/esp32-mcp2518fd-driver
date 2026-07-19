@@ -57,9 +57,13 @@ One feature per step. Do not combine multiple unverified features in one step.
 - Keep each layer in its correct file (`registers.h`, `mcp2518fd_can.*`, `mcp2518fd_spi.*`)
 - Update all affected call sites in examples and tests in the same change
 - Build must pass before proceeding to testing
+- **Do NOT use WSL or pio directly to build.** The integration test runner (verify.py) uploads
+  and verifies on real hardware from Windows — it is the only build+test tool needed.
+  Unit tests are the only exception (they run on the host via WSL, no hardware required).
 
 ### 4. Test on real hardware
 Two ESP32 boards are available (COM4 and COM3).
+All integration test commands run directly on Windows — never via WSL.
 
 **single_node — always run first:**
 ```

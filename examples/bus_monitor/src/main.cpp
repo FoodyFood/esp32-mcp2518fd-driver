@@ -99,7 +99,7 @@ void loop()
     {
         lastTx = now;
         CanMsg tx = makeTxFrame();
-        if (can.transmit(tx))
+        if (can.transmit(tx) == CanTxResult::OK)
             txCounter++;
         else
             Serial.printf("  [TX FAIL count=%lu]\n", txCounter);

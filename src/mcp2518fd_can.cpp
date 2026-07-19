@@ -87,20 +87,18 @@ CanStatus MCP2518Driver::setDataBitTimingRaw(uint32_t dbtcfg, uint32_t tdcfg)
     return CanStatus::OK;
 }
 
-bool MCP2518Driver::transmit(const CanMsg& msg)
+CanTxResult MCP2518Driver::transmit(const CanMsg& msg)
 {
     if (!(mSpi.read32(FIFO_STA(1)) & FIFOSTA_TFNRFNIF))
-        return false;
+        return CanTxResult::FifoFull;
 
     uint16_t addr = txRamAddr();
 
     uint32_t t0, t1;
     if (msg.ext)
     {
-        // 29-bit EID: T0[10:0]=SID[10:0]=id>>18, T0[28:11]=EID[17:0]=id&0x3FFFF
-        // T1 bit4=IDE=1  (DS20006027B Table 3-5)
         t0 = encodeEidT0(msg.id);
-        t1 = (1u << 4)  // IDE
+        t1 = (1u << 4)
            | ((msg.fdf ? 1u : 0u) << 7)
            | ((msg.brs ? 1u : 0u) << 6)
            | (msg.dlc & 0xFu);
@@ -134,10 +132,36 @@ bool MCP2518Driver::transmit(const CanMsg& msg)
         if (!(mSpi.read32(FIFO_CON(1)) & FIFOCON_TXREQ))
         {
             uint32_t sta = mSpi.read32(FIFO_STA(1));
-            return !(sta & (FIFOSTA_TXABT | FIFOSTA_TXERR));
+            if (sta & FIFOSTA_TXERR) return CanTxResult::BusError;
+            if (sta & FIFOSTA_TXABT) return CanTxResult::NoAck;
+            return CanTxResult::OK;
         }
     }
-    return false;
+    return CanTxResult::NoAck;
+}
+
+CanError MCP2518Driver::getErrors()
+{
+    uint32_t trec = mSpi.read32(REG_CiTREC);
+    uint32_t ovif = mSpi.read32(REG_CiRXOVIF);
+
+    CanError e;
+    e.rec        = (uint8_t)(trec & 0xFF);
+    e.tec        = (uint8_t)((trec >> 8) & 0xFF);
+    e.txWarning  = !!(trec & TREC_TXWARN);
+    e.rxWarning  = !!(trec & TREC_RXWARN);
+    e.txPassive  = !!(trec & TREC_TXBP);
+    e.rxPassive  = !!(trec & TREC_RXBP);
+    e.busOff     = !!(trec & TREC_TXBO);
+    e.rxOverflow = !!(ovif & RXOVIF_FIFO2);
+    return e;
+}
+
+bool MCP2518Driver::hasErrors()
+{
+    uint32_t trec = mSpi.read32(REG_CiTREC);
+    if (trec & (TREC_EWARN | TREC_TXBO)) return true;
+    return !!(mSpi.read32(REG_CiRXOVIF) & RXOVIF_FIFO2);
 }
 
 bool MCP2518Driver::available()
