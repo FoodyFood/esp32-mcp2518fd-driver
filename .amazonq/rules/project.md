@@ -91,6 +91,38 @@ git add . && git commit -m "SPEC-NNN step N: short description"
 - Update `docs/status.md` with observed hardware values
 - Code and docs in the same commit. Never commit unverified code.
 
+## Unit Tests
+
+Unit tests live in `tests/unit/` as a self-contained PlatformIO project with a `native` env.
+They run on the host via WSL — no hardware required.
+
+```bash
+wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit && ~/.local/bin/pio test -e native"
+```
+
+**When to add unit tests:**
+- Any pure-logic function with no hardware dependency is a unit test candidate.
+- If a function can be extracted into `mcp2518fd_timing.h`, `mcp2518fd_presets.h`, or a similar
+  hardware-free header, it must have unit tests before the spec is marked Done.
+- New bit-packing logic (T0/R0 encode/decode, filter OBJ/MASK encoding) must have roundtrip tests.
+- New register address helpers (inline constexpr address calculations) must have address value tests.
+- New rejection/guard logic in calculation functions must have negative-case tests.
+- Unit tests must pass (`50 succeeded` or equivalent) before committing any spec step that adds
+  or modifies testable logic. Run them as part of the pre-commit check alongside the integration suite.
+- Never remove or weaken an existing unit test assertion.
+
+## CI (GitHub Actions)
+
+Every PR runs `.github/workflows/ci.yml` which:
+- Runs all 50 unit tests on `ubuntu-24.04` (native PlatformIO env, no hardware)
+- Builds every example for ESP32 without uploading (catches compile errors on all examples)
+- Auto-merges the PR via squash if all jobs pass
+
+The workflow patches `lib_deps = symlink://../..` → `lib_extra_dirs = ../..` at build time
+so examples build correctly in CI without symlink support. Local development is unaffected.
+
+To add a new example to CI: add its directory name to the `matrix.example` list in `ci.yml`.
+
 ## Regression Testing
 Run the full suite after every spec before marking it Done:
 ```
@@ -179,19 +211,24 @@ The public API is the primary product. Every design decision must be evaluated a
   and how it moves closer to the goal
 
 ## Files
+- `.github/workflows/ci.yml` — CI workflow: unit tests + build all examples on every PR, auto-merge on pass
 - `examples/single_node/src/main.cpp` — single-board config and bitrate regression tests
 - `examples/id_filter/src/main.cpp` — acceptance filter demonstration (SID/EID filtering)
 - `examples/two_node/src/main.cpp` — two-node regression test (real bus, COM4 + COM3)
 - `examples/walkie_talkie/` — interactive text chat between two nodes
 - `examples/scope_loopback/` — continuous TX in MODE_EXTERNAL_LB for scope measurements
 - `examples/bus_monitor/` — two nodes continuously transmitting counters (node_a → COM4, node_b → COM3)
-- `include/mcp2518fd_can.h` — public driver API, CanMsg, CanStatus, bit timing presets
+- `include/mcp2518fd_can.h` — public driver API, CanMsg, CanStatus
+- `include/mcp2518fd_presets.h` — bit timing preset constants (Arduino-free, used by unit tests)
+- `include/mcp2518fd_timing.h` — pure-logic timing functions: calcBitTiming, calcTxTimeout, EID/filter encode (Arduino-free, used by unit tests)
 - `include/mcp2518fd_registers.h` — all register addresses, masks, constants
 - `include/mcp2518fd_spi.h` / `src/mcp2518fd_spi.cpp` — SPI transport + mode control
 - `src/mcp2518fd_can.cpp` — driver implementation
 - `tests/integration/verify.py` — integration test entry point (upload + verify, single suite or all)
 - `tests/integration/mcp_test/` — runner, suites, upload, serial I/O modules
-- `tests/unit/` — placeholder for future unit tests (no hardware required)
+- `tests/unit/platformio.ini` — native PlatformIO env for host-side unit tests
+- `tests/unit/test/test_unit/test_main.cpp` — 50 unit tests: dlcToLen, calcBitTiming, calcTxTimeout, EID encode/decode, filter encoding, register addresses, bit constants
+- `tests/unit/README.md` — unit test coverage summary and run instructions
 - `tools/search.py` — PDF search tool for datasheet verification
 - `docs/status.md` — milestone tracker
 - `docs/context.md` — hardware and architecture context

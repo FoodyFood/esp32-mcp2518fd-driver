@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    name: Unit tests (native)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-native-${{ hashFiles('tests/unit/platformio.ini') }}
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Run unit tests
+        run: cd tests/unit && pio test -e native
+
+  build-examples:
+    name: Build ${{ matrix.example }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - single_node
+          - id_filter
+          - two_node
+          - walkie_talkie
+          - scope_loopback
+          - bus_monitor
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-esp32-${{ matrix.example }}-${{ hashFiles(format('examples/{0}/platformio.ini', matrix.example)) }}
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Build ${{ matrix.example }}
+        run: cd examples/${{ matrix.example }} && pio run
+
+  auto-merge:
+    name: Auto-merge
+    runs-on: ubuntu-24.04
+    needs: [unit-tests, build-examples]
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Enable auto-merge
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              merge_method: 'squash',
+            });

@@ -2,6 +2,32 @@
 
 Each item below has been tested on real hardware and confirmed working.
 
+## Unit Tests
+
+| Area | Count | Status |
+|---|---|---|
+| `dlcToLen()` | 2 | ✅ Passing |
+| `calcBitTiming()` — rate vs presets (20/40 MHz) | 8 | ✅ Passing |
+| `calcBitTiming()` — TDC enabled/disabled/TDCO | 4 | ✅ Passing |
+| `calcBitTiming()` — rejection cases | 5 | ✅ Passing |
+| `calcBitTiming()` — sample point / SJW | 2 | ✅ Passing |
+| `calcTxTimeout()` | 3 | ✅ Passing |
+| EID encode/decode roundtrip | 5 | ✅ Passing |
+| Filter OBJ/MASK encoding | 5 | ✅ Passing |
+| Register address helpers | 10 | ✅ Passing |
+| FIFOCON/FIFOSTA bit constants | 6 | ✅ Passing |
+| **Total** | **50** | **✅ All passing** |
+
+Run: `wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit && ~/.local/bin/pio test -e native"`
+
+## CI
+
+| Check | Status |
+|---|---|
+| Unit tests (native, ubuntu-24.04) | ✅ Configured |
+| Build all 6 examples (ESP32, no upload) | ✅ Configured |
+| Auto-merge on PR pass | ✅ Configured |
+
 ## Transport Layer
 
 | Feature                        | Status      | Notes                                              |

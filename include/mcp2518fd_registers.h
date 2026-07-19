@@ -1,6 +1,10 @@
 #pragma once
 
-#include <Arduino.h>
+#ifdef ARDUINO
+#  include <Arduino.h>
+#else
+#  include <stdint.h>
+#endif
 
 // SPI Instructions
 constexpr uint8_t MCP_CMD_RESET = 0x00;
