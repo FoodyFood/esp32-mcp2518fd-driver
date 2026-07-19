@@ -154,6 +154,22 @@ If any previously passing check fails, stop and fix the regression before contin
 - All registers are little-endian (LSB at lower address)
 - FSYS = 20 MHz on this hardware — 8 Mbps data rate is not achievable (non-integer TQ count)
 
+## API Design Principles
+The public API is the primary product. Every design decision must be evaluated against:
+- **Easy to consume** — the common case (send a frame, receive a frame) must be obvious and
+  require minimal setup. A new user should be productive in under 10 lines.
+- **Configurable enough** — advanced use cases (raw timing, custom oscillators, EID, filters)
+  must be reachable without forking the driver or bypassing the API.
+- **Single Responsibility** — each function, class and file has one reason to change.
+  `CanMsg` owns message data. `MCP2518Driver` owns chip lifecycle and FIFO management.
+  `MCP2518SPI` owns the wire protocol. Do not blur these boundaries.
+- **Tidy first** — structural changes (rename, extract, reorganise) are committed separately
+  from behavioural changes. Never mix a refactor with a feature in the same commit.
+- **Additive, not breaking** — new fields on `CanMsg` must have safe zero-value defaults so
+  existing callers compile and behave correctly without modification.
+- **No hidden state** — every configuration decision visible to the caller must be
+  expressible through the public API; nothing important should be buried in a private default.
+
 ## Code Style
 - No third-party CAN libraries
 - Minimal code — only what is needed to satisfy the current spec
