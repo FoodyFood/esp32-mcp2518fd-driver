@@ -1,0 +1,36 @@
+name: Publish to PlatformIO Registry
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  ci-checks:
+    uses: ./.github/workflows/ci-checks.yml
+
+  publish:
+    name: Publish to PlatformIO Registry
+    runs-on: ubuntu-24.04
+    needs: [ci-checks]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Check tag matches library.json version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          LIB_VER=$(python3 -c "import json; print(json.load(open('library.json'))['version'])")
+          if [ "$TAG" != "$LIB_VER" ]; then
+            echo "ERROR: tag $TAG does not match library.json version $LIB_VER"
+            echo "Update library.json (and library.properties) to $TAG before tagging."
+            exit 1
+          fi
+          echo "Version check passed: $TAG"
+
+      - name: Publish
+        env:
+          PLATFORMIO_AUTH_TOKEN: ${{ secrets.PLATFORMIO_AUTH_TOKEN }}
+        run: pio pkg publish --no-interactive
