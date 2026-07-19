@@ -230,6 +230,55 @@ void runTest()
     CHECK("getErrors() tec=0 after clean loopback", e.tec == 0);
     CHECK("getErrors() busOff=false after clean loopback", !e.busOff);
 
+    // ------------------------------------------------------------------
+    // SPEC-004: configurable FIFO depth + interrupt-driven RX
+    // ------------------------------------------------------------------
+    Serial.println("SPEC-004: configurable FIFO depth (depth=16):");
+    can.configure(125000, 2000000, MODE_INTERNAL_LB, 16);
+
+    {
+        CanMsg tf;
+        tf.fdf = true; tf.brs = true; tf.dlc = 8;
+        bool allTx = true;
+        for (int i = 0; i < 16; i++)
+        {
+            tf.id = 0x300 + i;
+            for (int j = 0; j < 8; j++) tf.data[j] = (uint8_t)(i * 8 + j);
+            if (can.transmit(tf) != CanTxResult::OK) { allTx = false; break; }
+        }
+        CHECK("16 frames transmitted into depth-16 FIFO", allTx);
+
+        int rxCount = 0;
+        for (int i = 0; i < 16; i++)
+        {
+            CanMsg rf = {};
+            if (can.receive(rf, 50)) rxCount++;
+        }
+        CHECK("all 16 frames received without overflow", rxCount == 16);
+        CHECK("no overflow after 16 frames", !can.getErrors().rxOverflow);
+    }
+
+    // Overflow: use depth=4, send 5 frames without draining, verify rxOverflow,
+    // then drain and verify recovery (rxOverflow clears after getErrors())
+    Serial.println("SPEC-004: overflow + recovery (depth=4):");
+    can.configure(125000, 2000000, MODE_INTERNAL_LB, 4);
+    {
+        CanMsg tf;
+        tf.fdf = true; tf.brs = true; tf.dlc = 8;
+        for (int i = 0; i < 5; i++)
+        {
+            tf.id = 0x400 + i;
+            can.transmit(tf);  // blocking — each frame lands in RX FIFO before next TX
+        }
+        // FIFO holds 4; 5th was discarded and RXOVIF set in CiFIFOSTA2
+        CHECK("rxOverflow set after 5th frame", can.getErrors().rxOverflow);
+        // getErrors() cleared the flag — verify recovery
+        CHECK("rxOverflow cleared after getErrors()", !can.getErrors().rxOverflow);
+        // Drain remaining frames
+        CanMsg rf = {};
+        while (can.receive(rf, 5)) {}
+    }
+
     Serial.println();
 }
 

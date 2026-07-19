@@ -2,15 +2,15 @@
 #include "mcp2518fd_registers.h"
 #include "mcp2518fd_timing.h"
 
-MCP2518Driver::MCP2518Driver(SPIClass& spi, uint8_t csPin)
-    : mSpi(spi, csPin), mFsys(0), mTxTimeoutMs(10), mNbtcfg(0)
+MCP2518Driver::MCP2518Driver(SPIClass& spi, uint8_t csPin, int8_t intPin)
+    : mSpi(spi, csPin), mFsys(0), mTxTimeoutMs(10), mNbtcfg(0), mIntPin(intPin), mRxPending(false)
 {
 }
 
 // ----------------------------------------------------------------------------
 // Public API
 
-CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode)
+CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode, uint8_t rxFifoDepth)
 {
     mSpi.begin();
     mSpi.reset();
@@ -25,12 +25,19 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
         return CanStatus::RATE_NOT_ACHIEVABLE;
 
     applyTiming(nbtcfg, dbtcfg, tdcfg);
-    configFifos();
+    configFifos(rxFifoDepth);
     configFilter();
     mTxTimeoutMs = calcTxTimeout(mFsys, nbtcfg, dbtcfg);
     mNbtcfg = nbtcfg;
 
     if (!mSpi.setMode(mode)) return CanStatus::MODE_TIMEOUT;
+
+    if (mIntPin >= 0)
+    {
+        sIsrInstance = this;
+        attachInterrupt(digitalPinToInterrupt(mIntPin), sIsrHandler, FALLING);
+    }
+
     return CanStatus::OK;
 }
 
@@ -58,7 +65,7 @@ CanStatus MCP2518Driver::setDataRate(uint32_t dataBps)
     return CanStatus::OK;
 }
 
-CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode)
+CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode, uint8_t rxFifoDepth)
 {
     mSpi.begin();
     mSpi.reset();
@@ -66,7 +73,7 @@ CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t
     mSpi.setMode(MODE_CONFIG);
 
     applyTiming(nbtcfg, dbtcfg, tdcfg);
-    configFifos();
+    configFifos(rxFifoDepth);
     configFilter();
     mTxTimeoutMs = calcTxTimeout(0, nbtcfg, dbtcfg);  // fsys unknown in raw path
     mNbtcfg = nbtcfg;
@@ -154,6 +161,11 @@ CanError MCP2518Driver::getErrors()
     e.rxPassive  = !!(trec & TREC_RXBP);
     e.busOff     = !!(trec & TREC_TXBO);
     e.rxOverflow = !!(ovif & RXOVIF_FIFO2);
+    // Also check per-FIFO RXOVIF in CiFIFOSTA2 (bit 3) — set when FIFO is full and a frame is discarded
+    // CiRXOVIF is the aggregate; CiFIFOSTA2.RXOVIF is the per-FIFO source
+    if (!e.rxOverflow) e.rxOverflow = !!(mSpi.read32(FIFO_STA(2)) & FIFOSTA_RXOVIF);
+    // Clear: write 0 to CiFIFOSTA2 to clear RXOVIF bit (DS20005678E page 62)
+    if (e.rxOverflow) mSpi.write32(FIFO_STA(2), 0);
     return e;
 }
 
@@ -166,6 +178,7 @@ bool MCP2518Driver::hasErrors()
 
 bool MCP2518Driver::available()
 {
+    if (mRxPending) return true;
     return !!(mSpi.read32(FIFO_STA(2)) & FIFOSTA_TFNRFNIF);
 }
 
@@ -213,6 +226,7 @@ bool MCP2518Driver::receive(CanMsg& msg, uint32_t timeoutMs)
     }
 
     mSpi.write32(FIFO_CON(2), FIFOCON_UINC);
+    mRxPending = false;
     return true;
 }
 
@@ -267,12 +281,29 @@ void MCP2518Driver::applyTiming(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg
     mSpi.write8(REG_CiCON + 2, con2);
 }
 
-void MCP2518Driver::configFifos()
+void MCP2518Driver::configFifos(uint8_t rxFifoDepth)
 {
-    uint32_t plsize = (uint32_t)PLSIZE_64 << FIFOCON_PLSIZE_SHIFT;
-    uint32_t fsize  = (4u << FIFOCON_FSIZE_SHIFT);
-    mSpi.write32(FIFO_CON(1), plsize | fsize | FIFOCON_TXAT_3 | FIFOCON_TXEN);
-    mSpi.write32(FIFO_CON(2), plsize | fsize);
+    // Clamp to 24 — hard max at PLSIZE_64 with FIFO1 depth=4
+    // RAM: FIFO1 = 4 × 72 = 288 bytes; remaining = 1760 bytes; floor(1760/72) = 24
+    if (rxFifoDepth < 1)  rxFifoDepth = 1;
+    if (rxFifoDepth > 24) rxFifoDepth = 24;
+
+    uint32_t plsize   = (uint32_t)PLSIZE_64 << FIFOCON_PLSIZE_SHIFT;
+    uint32_t txFsize  = (4u - 1u) << FIFOCON_FSIZE_SHIFT;  // FSIZE field = depth-1
+    uint32_t rxFsize  = (uint32_t)(rxFifoDepth - 1u) << FIFOCON_FSIZE_SHIFT;
+    mSpi.write32(FIFO_CON(1), plsize | txFsize | FIFOCON_TXAT_3 | FIFOCON_TXEN);
+
+    // TFNRFNIE (bit 0) enables the per-FIFO not-empty interrupt — feeds CiINT.RXIF
+    uint32_t rxCon = plsize | rxFsize;
+    if (mIntPin >= 0) rxCon |= FIFOCON_TFNRFNIE;
+    mSpi.write32(FIFO_CON(2), rxCon);
+
+    // Enable RXIE in CiINT so the INT pin asserts on RX (DS20006027B Register 3-14 bit 17)
+    if (mIntPin >= 0)
+    {
+        uint8_t intByte2 = mSpi.read8(REG_CiINT + 2);
+        mSpi.write8(REG_CiINT + 2, intByte2 | CINT2_RXIE);
+    }
 }
 
 void MCP2518Driver::configFilter()
@@ -318,4 +349,14 @@ uint16_t MCP2518Driver::txRamAddr()
 uint16_t MCP2518Driver::rxRamAddr()
 {
     return (uint16_t)(RAM_BASE + mSpi.read32(FIFO_UA(2)));
+}
+
+// ----------------------------------------------------------------------------
+// Static ISR trampoline — no SPI inside ISR, flag only
+
+MCP2518Driver* MCP2518Driver::sIsrInstance = nullptr;
+
+void IRAM_ATTR MCP2518Driver::sIsrHandler()
+{
+    if (sIsrInstance) sIsrInstance->mRxPending = true;
 }

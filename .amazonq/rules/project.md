@@ -201,6 +201,31 @@ The public API is the primary product. Every design decision must be evaluated a
 - ISR functions must be marked `IRAM_ATTR` on ESP32
 - No TEF, no TXQ — FIFO1=TX, FIFO2=RX only (filters route to FIFO2)
 
+## Version Bumping
+
+The library version is tracked in two files that must always be in sync:
+- `library.json` — `"version"` field
+- `library.properties` — `version=` field
+
+**Rule:** Bump the minor version (`0.X.0 → 0.X+1.0`) as the first commit when starting a new spec.
+The commit message must be: `SPEC-NNN step 0: bump version to 0.X.0`
+
+Version → spec alignment:
+
+| Version | Spec |
+|---|---|
+| 0.1.0 | Initial release |
+| 0.2.0 | SPEC-002 (Filters) |
+| 0.3.0 | SPEC-003 (Bus errors) |
+| 0.4.0 | SPEC-004 (Interrupt RX + FIFO depth) |
+| 0.5.0 | SPEC-005 (RX timestamp + listen-only) |
+| 0.6.0 | SPEC-006 (Stop/restart/sleep) |
+| 0.7.0 | SPEC-007 (Battery simulator example) |
+
+Update this table when a new spec is added.
+
+---
+
 ## Commit and Documentation
 - Commit after every verified step — no exceptions
 - Commit message format: `SPEC-NNN step N: short description`

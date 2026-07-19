@@ -43,7 +43,7 @@ from SPEC-003 for the overflow acceptance criterion — implement SPEC-003 first
 
 | Spec | Title | Gaps closed | Status |
 |---|---|---|---|
-| [SPEC-004](SPEC-004-interrupt-rx-and-fifo-depth.md) | Interrupt-driven RX and Configurable FIFO Depth | G4, G8 | Pending |
+| [SPEC-004](SPEC-004-interrupt-rx-and-fifo-depth.md) | Interrupt-driven RX and Configurable FIFO Depth | G4, G8 | In Progress |
 
 ## Group D — Passive Monitoring (logger + BMS tooling)
 
