@@ -5,6 +5,10 @@
 # IDE
 .vscode/
 
+# Python
+__pycache__/
+*.pyc
+
 # Datasheet PDFs — download from Microchip, do not commit
 docs/reference/*.pdf
 docs/reference/*.txt
