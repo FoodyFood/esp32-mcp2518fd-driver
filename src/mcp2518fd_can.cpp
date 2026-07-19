@@ -334,11 +334,61 @@ void MCP2518Driver::configFifos()
 
 void MCP2518Driver::configFilter()
 {
-    mSpi.write8(REG_CiFLTCON0, 0x00);
-    mSpi.write32(REG_CiFLTOBJ0, 0x00000000UL);
-    mSpi.write32(REG_CiMASK0,   0x00000000UL);
-    mSpi.write8(REG_CiFLTCON0, (1u << 7) | 0x02);
+    // Catch-all: id=0, mask=0 (all don't-care), ext=false (MIDE=0 → match both SID and EID)
+    setFilter(0, 0, 0, false);
 }
+
+void MCP2518Driver::setFilter(uint8_t index, uint32_t id, uint32_t mask, bool ext)
+{
+    if (index > 31) return;
+
+    // Disable filter before modifying OBJ/MASK (DS20006027B Register 3-32 Note 1)
+    uint16_t conReg  = FLTCON_REG(index);
+    uint8_t  conByte = FLTCON_BYTE(index);
+    mSpi.write8(conReg + conByte, 0x00);
+
+    // Encode OBJ: SID[10:0] at bits[10:0], EID[17:0] at bits[28:11], EXIDE at bit[30]
+    // Same bit layout as T0/R0 message object (DS20006027B Register 3-33)
+    uint32_t obj = 0;
+    if (ext)
+    {
+        uint32_t sid = (id >> 18) & 0x7FFu;
+        uint32_t eid = id & 0x3FFFFu;
+        obj = sid | (eid << 11) | (1u << 30);  // EXIDE=1
+    }
+    else
+    {
+        obj = id & 0x7FFu;
+    }
+
+    // Encode MASK: same layout, MIDE at bit[30]
+    uint32_t msk = 0;
+    if (ext)
+    {
+        uint32_t msid = (mask >> 18) & 0x7FFu;
+        uint32_t meid = mask & 0x3FFFFu;
+        msk = msid | (meid << 11) | (1u << 30);  // MIDE=1
+    }
+    else
+    {
+        msk = mask & 0x7FFu;
+        // MIDE=0: match both standard and extended if mask=0, or SID-only if mask set
+    }
+
+    mSpi.write32(FLTOBJ(index), obj);
+    mSpi.write32(FLTMSK(index), msk);
+
+    // Re-enable: FLTEN=1, route to FIFO2 (DS20006027B Register 3-32)
+    mSpi.write8(conReg + conByte, (1u << 7) | 0x02);
+}
+
+void MCP2518Driver::clearFilter(uint8_t index)
+{
+    if (index > 31) return;
+    mSpi.write8(FLTCON_REG(index) + FLTCON_BYTE(index), 0x00);
+}
+
+
 
 uint16_t MCP2518Driver::txRamAddr()
 {

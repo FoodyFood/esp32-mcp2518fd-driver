@@ -25,7 +25,7 @@ SPEC-002 depends on SPEC-001 for the EID filter path.
 | Spec | Title | Gaps closed | Status |
 |---|---|---|---|
 | [SPEC-001](SPEC-001-extended-id.md) | 29-bit Extended ID (EID) Support | G1 | Done |
-| [SPEC-002](SPEC-002-acceptance-filters.md) | Acceptance Filter API | G2 | Pending |
+| [SPEC-002](SPEC-002-acceptance-filters.md) | Acceptance Filter API | G2 | Done |
 
 ## Group B — Error Visibility (EV battery + inverter)
 

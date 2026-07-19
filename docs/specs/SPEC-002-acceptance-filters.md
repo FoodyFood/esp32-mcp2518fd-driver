@@ -1,7 +1,7 @@
 # SPEC-002 — Acceptance Filter API
 
 ## Status
-Pending
+Done
 
 ## Priority
 High

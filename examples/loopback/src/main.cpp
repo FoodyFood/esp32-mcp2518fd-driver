@@ -256,6 +256,52 @@ void runTest()
     for (int i = 0; i < 8; i++) sidDataOk &= (rxS.data[i] == txS.data[i]);
     CHECK("SID all 8 bytes match",         sidDataOk);
 
+    // ------------------------------------------------------------------
+    // Acceptance filter — SID exact match
+    // setFilter(0, 0x7EC, 0x7FF, false): only 0x7EC passes, 0x123 is dropped
+    // ------------------------------------------------------------------
+    Serial.println("Acceptance filter SID 0x7EC @ 2 Mbps:");
+    can.configure(125000, 2000000, MODE_INTERNAL_LB);
+    can.setFilter(0, 0x7EC, 0x7FF, false);
+
+    CanMsg txF1;
+    txF1.id = 0x123; txF1.fdf = true; txF1.brs = true; txF1.dlc = 1;
+    txF1.data[0] = 0xAA;
+    can.transmit(txF1);  // should be filtered out
+
+    CanMsg txF2;
+    txF2.id = 0x7EC; txF2.fdf = true; txF2.brs = true; txF2.dlc = 1;
+    txF2.data[0] = 0xBB;
+    can.transmit(txF2);  // should pass
+
+    CanMsg rxF = {};
+    bool gotF = can.receive(rxF, 50);
+    CHECK("filter: 0x7EC received",       gotF && rxF.id == 0x7EC);
+    CHECK("filter: 0x123 not in FIFO",    !can.available());
+
+    // ------------------------------------------------------------------
+    // Acceptance filter — 29-bit EID exact match
+    // setFilter(0, 0x1C42017B, 0x1FFFFFFF, true): only EID passes
+    // ------------------------------------------------------------------
+    Serial.println("Acceptance filter EID 0x1C42017B @ 2 Mbps:");
+    can.configure(125000, 2000000, MODE_INTERNAL_LB);
+    can.setFilter(0, 0x1C42017BUL, 0x1FFFFFFFUL, true);
+
+    CanMsg txE1;
+    txE1.id = 0x18DAF101UL; txE1.ext = true; txE1.fdf = true; txE1.brs = true; txE1.dlc = 1;
+    txE1.data[0] = 0x11;
+    can.transmit(txE1);  // should be filtered out
+
+    CanMsg txE2;
+    txE2.id = 0x1C42017BUL; txE2.ext = true; txE2.fdf = true; txE2.brs = true; txE2.dlc = 1;
+    txE2.data[0] = 0x22;
+    can.transmit(txE2);  // should pass
+
+    CanMsg rxE2 = {};
+    bool gotE = can.receive(rxE2, 50);
+    CHECK("EID filter: 0x1C42017B received",   gotE && rxE2.id == 0x1C42017BUL);
+    CHECK("EID filter: 0x18DAF101 not in FIFO", !can.available());
+
     Serial.println();
 }
 

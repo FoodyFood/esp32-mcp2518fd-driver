@@ -95,6 +95,20 @@ public:
     // Blocking receive with explicit timeout in milliseconds.
     bool receive(CanMsg& msg, uint32_t timeoutMs);
 
+    // Configure an acceptance filter.
+    // index  0–31 selects the filter slot.
+    // id     identifier to match (11-bit SID or 29-bit EID depending on ext).
+    // mask   bits set to 1 are compared; bits 0 are don’t-care.
+    // ext    false = match standard frames (MIDE=1, EXIDE=0 not set)
+    //        true  = match extended frames only (MIDE=1, EXIDE=1)
+    //        Pass ext=false with mask=0 to match all frame types (catch-all).
+    // All matched frames route to FIFO2.
+    // Safe to call in normal mode — disables filter, updates, re-enables.
+    void setFilter(uint8_t index, uint32_t id, uint32_t mask, bool ext);
+
+    // Disable a filter slot without changing its OBJ/MASK registers.
+    void clearFilter(uint8_t index);
+
     // Return the current operating mode (OPMOD field of CiCON).
     // Compare against MODE_* constants from mcp2518fd_registers.h.
     uint8_t getMode();
@@ -137,7 +151,7 @@ private:
 
     void calcTxTimeout(uint32_t nbtcfg, uint32_t dbtcfg);
     void configFifos();
-    void configFilter();
+    void configFilter();  // installs catch-all filter 0 → FIFO2
     void applyTiming(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg);
     uint16_t txRamAddr();
     uint16_t rxRamAddr();

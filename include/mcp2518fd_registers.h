@@ -58,13 +58,21 @@ inline constexpr uint16_t FIFO_CON(uint8_t m) { return 0x05C + (m - 1) * 0x0C; }
 inline constexpr uint16_t FIFO_STA(uint8_t m) { return 0x060 + (m - 1) * 0x0C; }
 inline constexpr uint16_t FIFO_UA(uint8_t m)  { return 0x064 + (m - 1) * 0x0C; }
 
-// Filter registers (DS20006027B page 13)
-// CiFLTCONm: m=0..7, each register controls 4 filters
-// byte 0 = Filter 0: FLTEN0 (bit7) + F0BP[4:0]
+// Filter registers (DS20006027B Register 3-32, page 60)
+// CiFLTCONm: one register per 4 filters, each filter occupies one byte
+// byte layout per filter: [FLTEN | — | — | FnBP[4:0]]
+// Register for filter n: 0x1D0 + (n/4)*4
+// Byte offset within register: n%4 (byte 0 = bits[7:0])
 constexpr uint16_t REG_CiFLTCON0 = 0x1D0;
-// CiFLTOBJm / CiMASKm: stride 8 bytes per filter (OBJ then MASK)
+// CiFLTOBJn / CiMASKn: stride 8 bytes per filter
+// CiFLTOBJn = 0x1F0 + n*8,  CiMASKn = 0x1F4 + n*8  (DS20006027B page 13)
 constexpr uint16_t REG_CiFLTOBJ0 = 0x1F0;
 constexpr uint16_t REG_CiMASK0   = 0x1F4;
+
+inline constexpr uint16_t FLTOBJ(uint8_t n) { return 0x1F0 + (uint16_t)n * 8; }
+inline constexpr uint16_t FLTMSK(uint8_t n) { return 0x1F4 + (uint16_t)n * 8; }
+inline constexpr uint16_t FLTCON_REG(uint8_t n) { return 0x1D0 + ((uint16_t)n / 4) * 4; }
+inline constexpr uint8_t  FLTCON_BYTE(uint8_t n) { return n % 4; }  // byte offset within register
 
 // RAM
 constexpr uint16_t RAM_BASE = 0x400;
