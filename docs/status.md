@@ -129,11 +129,30 @@ Run: `wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit &&
 - TEC increments by ~8 per failed attempt; chip auto-recovers from bus-off (resets CiTREC)
 - CiTREC, CiBDIAG0, CiBDIAG1 reset on every config-mode exit — only valid in Normal mode
 
+## SPEC-004 — Interrupt-driven RX and Configurable FIFO Depth
+
+| Feature | Status | Notes |
+|---|---|---|
+| `configure()` rxFifoDepth parameter | ✅ Verified | Default 16; clamped to 24 (hard max at PLSIZE_64 with FIFO1 depth=4) |
+| FSIZE field encoding (depth-1) | ✅ Verified | FSIZE=15 for depth=16; 16 frames received without overflow |
+| `configureRaw()` rxFifoDepth parameter | ✅ Verified | Same clamping logic |
+| RX FIFO overflow detection | ✅ Verified | depth=4, 5 frames → CiFIFOSTA2.RXOVIF set; getErrors().rxOverflow=true |
+| Overflow recovery | ✅ Verified | getErrors() clears RXOVIF via write-0 to CiFIFOSTA2; second call returns false |
+| Two-node overflow | ✅ Verified | A depth=4, B bursts 5 frames; A confirms rxOverflow on real bus |
+| INT pin (GPIO 34) ISR | ✅ Verified | available() returns true within 1 ms after TX; no polling loop needed |
+| TFNRFNIE + RXIE enabled in config mode | ✅ Verified | CiFIFOCON2 bit 0 + CiINT byte 2 bit 1 set when intPin >= 0 |
+| ISR is IRAM_ATTR, sets flag only | ✅ Verified | No SPI inside ISR; static trampoline via sIsrInstance |
+| Polling fallback (intPin=-1) | ✅ Verified | available() polls FIFOSTA_TFNRFNIF as before; all existing tests pass |
+
+### Hardware observations
+- CiRXOVIF (0x028) is read-only — cleared by writing 0 to CiFIFOSTA2 (FIFO_STA(2))
+- FSIZE field is depth-1: FSIZE=0 → 1 slot, FSIZE=15 → 16 slots, FSIZE=23 → 24 slots
+- Max safe RX FIFO depth at PLSIZE_64 with FIFO1 depth=4: floor((2048-288)/72) = 24 slots
+- INT pin fires within ~50 µs of frame arrival in internal loopback at 2 Mbps
+- Static ISR trampoline (sIsrInstance) limits driver to one interrupt-enabled instance per program
+
 | Example          | Status      | Notes                                                                 |
 |------------------|-------------|-----------------------------------------------------------------------|
-| single_node      | ✅ Verified | 42 assertions, all OK on COM4; config, bitrates, raw API              |
-| id_filter        | ✅ Verified | 15 assertions, all OK on COM4; SID/EID exact, range, multi, catch-all |
-| two_node         | ✅ Verified | Full bidirectional test, all assertions OK on both nodes              |
-| walkie_talkie    | ✅ Verified | Text chat working between two boards over real bus                    |
-| scope_loopback   | ✅ Verified | FSYS=20 MHz detected, 24 µs first dominant run @ 125 kbps scope-confirmed |
-| bus_monitor      | ✅ Verified | Autonomous boot, continuous TX/RX both nodes, RX_ERR=0 sustained. Redesigned to compile-time NODE_SID (node_a/node_b envs) — no serial input required |
+| single_node      | ✅ Verified | All assertions OK on COM4; depth=16 burst, overflow+recovery, INT pin |
+| id_filter        | ✅ Verified | All assertions OK on COM4; no regressions |
+| two_node         | ✅ Verified | All assertions OK on both nodes; overflow test A depth=4 B bursts 5 |

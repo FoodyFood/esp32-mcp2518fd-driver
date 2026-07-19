@@ -7,7 +7,7 @@ from .suites import run_single_board, run_two_node
 log = logging.getLogger("mcp_test")
 
 # Suite definitions — order matters for regression runs
-SUITES = ["single_node", "id_filter", "two_node"]
+SUITES = ["single_node", "id_filter", "two_node", "int_pin"]
 
 
 def run_suite(env, port, port_b, baud, skip_upload):
