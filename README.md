@@ -200,6 +200,7 @@ Each example is a self-contained PlatformIO project.
 | `examples/walkie_talkie` | Text chat between two boards over CAN FD — type in one Serial monitor, read on the other. |
 | `examples/scope_loopback` | Continuous TX in `MODE_EXTERNAL_LB` for oscilloscope measurements — real bus signals, self-ACK. |
 | `examples/bus_monitor` | Two nodes continuously transmitting counters — autonomous boot, no serial input required. node_a env → COM4 (ID=0x100), node_b env → COM3 (ID=0x200). Bus load testing and integrity checking. |
+| `examples/int_pin` | Interrupt-driven RX demonstration — main loop does other work while frames arrive asynchronously via GPIO 34 INT pin. Shows the non-blocking pattern to copy into your own code. |
 
 ```bash
 # Full regression suite (upload + verify all three automatable examples):

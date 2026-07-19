@@ -279,6 +279,32 @@ void runTest()
         while (can.receive(rf, 5)) {}
     }
 
+    // ------------------------------------------------------------------
+    // SPEC-004: INT pin (GPIO 34) — ISR sets flag, available() returns
+    // true within 1 ms without polling the FIFO status register.
+    // ------------------------------------------------------------------
+    Serial.println("SPEC-004: INT pin interrupt-driven RX:");
+    {
+        MCP2518Driver canInt(spi, PIN_CS, 34);
+        canInt.configure(125000, 2000000, MODE_INTERNAL_LB);
+
+        CanMsg tf;
+        tf.id = 0x600; tf.fdf = true; tf.brs = true; tf.dlc = 8;
+        canInt.transmit(tf);
+
+        uint32_t t0 = millis();
+        bool flagSet = false;
+        while (millis() - t0 < 1)
+        {
+            if (canInt.available()) { flagSet = true; break; }
+        }
+        CHECK("available() true within 1 ms via INT pin", flagSet);
+
+        CanMsg rf = {};
+        canInt.receive(rf, 5);
+        CHECK("available() false after drain", !canInt.available());
+    }
+
 
     Serial.println();
 }
