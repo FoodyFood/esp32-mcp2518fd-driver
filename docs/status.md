@@ -72,8 +72,10 @@ Each item below has been tested on real hardware and confirmed working.
 | `CanStatus` enum                     | ✅ Verified | OK / MODE_TIMEOUT / RATE_NOT_ACHIEVABLE / CLOCK_NOT_READY             |
 | `getFsys()`                          | ✅ Verified | Returns detected FSYS in Hz after configure()                         |
 | `readOsc()`                          | ✅ Verified | Returns raw OSC register value for diagnostics                        |
-| `CanMsg.id` + `CanMsg.ext`           | ✅ Verified | Replaces `sid`; ext=false=11-bit SID, ext=true=29-bit EID; zero defaults preserve all existing callers |
-| 29-bit EID transmit + receive        | ✅ Verified | T0[28:11]=EID[17:0], T0[10:0]=SID[10:0], T1.IDE=1; loopback id=0x1C420017 OK; two-node all assertions OK |
+| `setFilter(index, id, mask, ext)`    | ✅ Verified | Disable→write OBJ+MASK→re-enable; safe in normal mode; routes to FIFO2 |
+| `clearFilter(index)`                 | ✅ Verified | Writes 0x00 to filter byte — disables without touching OBJ/MASK         |
+| Acceptance filter SID exact match    | ✅ Verified | 0x7EC passes, 0x123 dropped — loopback confirmed                        |
+| Acceptance filter EID exact match    | ✅ Verified | 0x1C42017B passes, 0x18DAF101 dropped — loopback confirmed              |
 
 ## Two-Node (Real Bus)
 
@@ -87,7 +89,8 @@ Each item below has been tested on real hardware and confirmed working.
 
 | Example          | Status      | Notes                                                                 |
 |------------------|-------------|-----------------------------------------------------------------------|
-| loopback         | ✅ Verified | 47 assertions, all OK on COM4; includes 29-bit EID round-trip         |
+| single_node      | ✅ Verified | 42 assertions, all OK on COM4; config, bitrates, raw API              |
+| id_filter        | ✅ Verified | 15 assertions, all OK on COM4; SID/EID exact, range, multi, catch-all |
 | two_node         | ✅ Verified | Full bidirectional test, all assertions OK on both nodes              |
 | walkie_talkie    | ✅ Verified | Text chat working between two boards over real bus                    |
 | scope_loopback   | ✅ Verified | FSYS=20 MHz detected, 24 µs first dominant run @ 125 kbps scope-confirmed |

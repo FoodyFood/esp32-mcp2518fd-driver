@@ -12,7 +12,7 @@ import os
 import fitz
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-REF_DIR    = os.path.join(SCRIPT_DIR, "reference")
+REF_DIR    = os.path.join(SCRIPT_DIR, "..", "docs", "reference")
 
 PDFS = {
     "DATASHEET": os.path.join(REF_DIR, "External-CAN-FD-Controller-with-SPI-Interface-DS20006027B.pdf"),
