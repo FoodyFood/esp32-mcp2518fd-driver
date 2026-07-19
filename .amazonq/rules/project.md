@@ -108,8 +108,22 @@ python ../../tools/run_test.py --env two_node --port-a COM4 --port-b COM3
 ```
 Both nodes must report all assertions OK.
 
-**After every spec, re-run loopback and two_node in full to confirm no regressions.**
-If a new feature has a dedicated example, run that example too before committing.
+**After every spec, re-run the full regression suite to confirm no regressions:**
+```
+cd examples/single_node
+pio run -e single_node --target upload --upload-port COM4
+python ../../tools/run_test.py --env single_node --port COM4
+
+cd examples/id_filter
+pio run -e id_filter --target upload --upload-port COM4
+python ../../tools/run_test.py --env id_filter --port COM4
+
+cd examples/two_node
+pio run -e two_node --target upload --upload-port COM4
+pio run -e two_node --target upload --upload-port COM3
+python ../../tools/run_test.py --env two_node --port-a COM4 --port-b COM3
+```
+All three suites (single_node, id_filter, two_node) must report PASS.
 
 **Additional hardware checks required by specific specs:**
 - SPEC-003 (bus errors): test with bus disconnected — one node only, MODE_NORMAL, verify NoAck and TEC increment

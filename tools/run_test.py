@@ -12,7 +12,7 @@ Usage:
     python tools/run_test.py --env two_node --port-a COM4 --port-b COM3
 
 Options:
-  --env       PlatformIO environment name (single_node | id_filter | two_node)
+  --env       Environment to run (single_node | id_filter | two_node)
   --port      Serial port for single-board tests
   --port-a    Serial port for node A
   --port-b    Serial port for node B
