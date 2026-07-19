@@ -253,8 +253,20 @@ The library version is tracked in two files that must always be in sync:
 - `library.json` — `"version"` field
 - `library.properties` — `version=` field
 
-**Rule:** Bump the minor version (`0.X.0 → 0.X+1.0`) as the first commit when starting a new spec.
-The commit message must be: `SPEC-NNN step 0: bump version to 0.X.0`
+**Rule:** The very first action when starting a new spec is to create a feature branch, then bump
+the minor version as the first commit on that branch.
+
+```
+git checkout -b spec-NNN-short-description
+```
+
+Then commit the version bump:
+```
+git add library.json library.properties && git commit -m "SPEC-NNN step 0: bump version to 0.X.0"
+```
+
+All spec work — implementation, tests, docs — stays on the branch until hardware verification
+is complete. Only then open a PR to merge into main. Never commit spec work directly to main.
 
 Version → spec alignment:
 
