@@ -179,18 +179,31 @@ driver in their own project. Rules:
 - Comments explain *why*, not *what* — restating the code adds no value
 - A user should be able to copy this code directly into their own project
 
-**`tests/integration/`** — test harnesses that verify the driver on real hardware. These are
-not for library users. Rules:
+**`tests/integration/<harness>/`** — test harnesses that verify the driver on real hardware.
+These are not for library users. There is no limit on how many harnesses exist — create as
+many as needed to verify features cleanly without polluting examples. Rules:
 - CHECK() macros and pass/fail output are expected and correct here
-- Spec references (SPEC-NNN) are allowed — this is where implementation is verified
-- Each harness is a self-contained PlatformIO project under `examples/<name>/` that is
-  *also* registered in the integration suite runner
-- single_node, id_filter, and two_node are test harnesses, not user examples
+- SPEC-NNN references are allowed and encouraged — this is the paper trail
+- Each harness is a self-contained PlatformIO project with `lib_deps = symlink://../../..`
+- Register it in `tests/integration/mcp_test/runner.py` SUITES list
+- Add a `build-harnesses` matrix entry in `.github/workflows/ci-checks.yml`
+- CI builds every harness via `verify.py --suite <name> --build-only` (no hardware required)
+- Hardware runs use `verify.py --suite <name> --port COM4` as normal
 
 **When adding a new feature:**
-- The integration test assertion goes in single_node or two_node (test harness)
-- If the feature has a meaningful usage pattern worth showing, create a new example in `examples/`
-- Do not add CHECK() to an existing clean example just to verify a new feature
+- Assertions go in the appropriate test harness in `tests/integration/` — create a new
+  harness if the feature is large enough to warrant its own focused test program
+- If the feature has a meaningful usage pattern worth showing to a user, create a new
+  example in `examples/` — but only if it teaches something a user would actually copy
+- Never add CHECK() to a user-facing example
+
+**Compatibility check on every new feature:**
+When implementing a new feature, two locations must be checked for call sites that may
+need updating:
+1. `examples/` — all user-facing examples that use the public API
+2. `tests/integration/` — all test harnesses
+Both must compile and pass before a spec step is committed. A change that breaks an
+example or a harness is not done.
 
 ## Key Implementation Rules
 - NEVER do a 32-bit read-modify-write of CiCON — use byte-level write8() to CiCON+3 for REQOP
