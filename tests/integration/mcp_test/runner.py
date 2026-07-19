@@ -1,8 +1,10 @@
 """Orchestrates upload + test for one suite or all three in sequence."""
 
+import logging
 from .upload import upload
 from .suites import run_single_board, run_two_node
-from .serial_io import safe_print
+
+log = logging.getLogger("mcp_test")
 
 # Suite definitions — order matters for regression runs
 SUITES = ["single_node", "id_filter", "two_node"]
@@ -26,23 +28,28 @@ def run_suite(env, port, port_b, baud, skip_upload):
 
 
 def run_all(port, port_b, baud, skip_upload):
-    """Run all three suites in sequence. Returns True only if all pass."""
+    """Run all suites in sequence. Returns True only if all pass."""
     results = {}
     for env in SUITES:
-        safe_print(f"\n{'='*50}")
-        safe_print(f"SUITE: {env}")
-        safe_print(f"{'='*50}")
+        log.info("")
+        log.info("=" * 50)
+        log.info("SUITE: %s", env)
+        log.info("=" * 50)
         results[env] = run_suite(env, port, port_b, baud, skip_upload)
 
-    safe_print("\n" + "="*50)
-    safe_print("REGRESSION SUMMARY")
-    safe_print("="*50)
+    log.info("")
+    log.info("=" * 50)
+    log.info("REGRESSION SUMMARY")
+    log.info("=" * 50)
     all_passed = True
     for env, passed in results.items():
-        safe_print(f"  {env:<16}  {'PASS' if passed else 'FAIL'}")
+        status = "PASS" if passed else "FAIL"
+        (log.info if passed else log.error)("  %-16s  %s", env, status)
         if not passed:
             all_passed = False
-    safe_print("")
-    safe_print("RESULT: " + ("PASS - all suites OK." if all_passed
-                              else "FAIL - one or more suites failed."))
+    log.info("")
+    if all_passed:
+        log.info("RESULT: PASS - all suites OK.")
+    else:
+        log.error("RESULT: FAIL - one or more suites failed.")
     return all_passed

@@ -1,14 +1,10 @@
 """Serial I/O primitives shared by all test suites."""
 
-import sys
 import time
 import serial
+import logging
 
-
-def safe_print(s):
-    """Print safely on Windows consoles that don't support all Unicode."""
-    sys.stdout.buffer.write((s + "\n").encode("utf-8", errors="replace"))
-    sys.stdout.buffer.flush()
+log = logging.getLogger("mcp_test")
 
 
 def reset_board(s):

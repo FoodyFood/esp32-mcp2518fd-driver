@@ -123,8 +123,10 @@ Before starting a new spec, verify all existing examples in this order:
 - Create a new example when a feature does not fit cleanly into an existing one, or would
   make it too large or unfocused
 - Each example is a self-contained PlatformIO project under `examples/<name>/`
-- If automatable (deterministic pass/fail), add a suite to `tests/integration/mcp_test/suites.py`
-  and register it in `tests/integration/mcp_test/runner.py`
+- If automatable (deterministic pass/fail, no scope, no human interaction required) it
+  **must** be added to the integration suite — add a suite to `tests/integration/mcp_test/suites.py`
+  and register it in `tests/integration/mcp_test/runner.py`. Automatable examples that are
+  not in the regression suite do not count as verified.
 - If interactive or scope-based, document expected manual observation in the example's README
 - Add the new example to the Files list below and the Examples table in `README.md`
 

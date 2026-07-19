@@ -25,11 +25,24 @@ Options:
 
 import sys
 import argparse
+import logging
 import os
 
 sys.path.insert(0, os.path.dirname(__file__))
 
 from mcp_test.runner import run_suite, run_all, SUITES
+
+
+def configure_logging():
+    handler = logging.StreamHandler(sys.stdout)
+    handler.stream = open(sys.stdout.fileno(), mode='w',
+                          encoding='utf-8', errors='replace', closefd=False)
+    handler.setFormatter(logging.Formatter(
+        fmt="%(asctime)s  %(levelname)-5s  %(message)s",
+        datefmt="%H:%M:%S"
+    ))
+    logging.getLogger("mcp_test").setLevel(logging.DEBUG)
+    logging.getLogger("mcp_test").addHandler(handler)
 
 
 def main():
@@ -40,6 +53,8 @@ def main():
     parser.add_argument("--baud",      type=int, default=115200)
     parser.add_argument("--no-upload", action="store_true")
     args = parser.parse_args()
+
+    configure_logging()
 
     if args.suite == "all":
         ok = run_all(args.port, args.port_b, args.baud, args.no_upload)
