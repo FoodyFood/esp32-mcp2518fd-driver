@@ -51,6 +51,20 @@ jobs:
       - name: Install PlatformIO
         run: pip install platformio
 
+      - name: Patch lib_deps for CI
+        # symlink:// works locally on Windows but causes PlatformIO to copy the
+        # entire repo into libdeps on Linux, hitting path length limits.
+        # Replace with lib_deps pointing to the checked-out repo root directly.
+        run: |
+          python3 - examples/${{ matrix.example }}/platformio.ini <<'EOF'
+          import re, sys
+          path = sys.argv[1]
+          txt = open(path).read()
+          txt = re.sub(r'lib_deps\s*=\s*symlink://[^\n]+', 'lib_deps = file://../..', txt)
+          open(path, 'w').write(txt)
+          print(open(path).read())
+          EOF
+
       - name: Build ${{ matrix.example }}
         run: cd examples/${{ matrix.example }} && pio run
 
