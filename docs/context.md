@@ -34,25 +34,28 @@ Build the driver incrementally, one verified feature at a time.
 
 ## Architecture
 
-| File                        | Purpose                                                      |
-|-----------------------------|--------------------------------------------------------------|
-| `include/mcp2518fd_can.h`   | MCP2518Driver public API, CanMsg struct, bit timing presets  |
-| `include/mcp2518fd_spi.h`   | MCP2518SPI class declaration                                 |
-| `include/mcp2518fd_registers.h` | Register addresses, masks, constants                     |
-| `src/mcp2518fd_can.cpp`     | CAN driver — configure, transmit, receive, bitrate switch    |
-| `src/mcp2518fd_spi.cpp`     | SPI transport + mode control implementation                  |
-| `examples/loopback/`        | Regression test — single-board internal loopback             |
-| `examples/two_node/`        | Two-node bidirectional test over real bus                    |
-| `examples/walkie_talkie/`   | Text chat between two nodes                                  |
-| `examples/scope_loopback/`  | Continuous TX in MODE_EXTERNAL_LB for scope measurements     |
-| `examples/bus_monitor/`     | Two nodes continuously talking — bus load + integrity check. Autonomous: node_a env → COM4 (SID=0x100), node_b env → COM3 (SID=0x200) |
-| `docs/context.md`           | This file                                                    |
-| `docs/status.md`            | Verified milestone tracker                                   |
-| `docs/registers.md`         | Register field reference                                     |
-| `tools/run_test.py`         | Automated test runner — loopback and two-node                |
-| `tools/check_timing.py`     | Verify bit timing preset values against datasheet formula    |
-| `tools/find_timing.py`      | Calculate NBTCFG/DBTCFG values for a target rate             |
-| `docs/search.py`            | PDF search tool — queries both reference PDFs                |
+| File                            | Purpose                                                      |
+|---------------------------------|--------------------------------------------------------------|
+| `include/mcp2518fd_can.h`       | MCP2518Driver public API, CanMsg struct                      |
+| `include/mcp2518fd_presets.h`   | Bit timing preset constants — Arduino-free, used by unit tests |
+| `include/mcp2518fd_timing.h`    | Pure-logic timing functions: calcBitTiming, calcTxTimeout, EID/filter encode — Arduino-free, used by unit tests |
+| `include/mcp2518fd_spi.h`       | MCP2518SPI class declaration                                 |
+| `include/mcp2518fd_registers.h` | Register addresses, masks, constants                         |
+| `src/mcp2518fd_can.cpp`         | CAN driver — configure, transmit, receive, bitrate switch    |
+| `src/mcp2518fd_spi.cpp`         | SPI transport + mode control implementation                  |
+| `examples/single_node/`         | Regression test — single-board internal loopback             |
+| `examples/id_filter/`           | Acceptance filter demonstration (SID/EID filtering)          |
+| `examples/two_node/`            | Two-node bidirectional test over real bus                    |
+| `examples/walkie_talkie/`       | Text chat between two nodes                                  |
+| `examples/scope_loopback/`      | Continuous TX in MODE_EXTERNAL_LB for scope measurements     |
+| `examples/bus_monitor/`         | Two nodes continuously talking — bus load + integrity check. Autonomous: node_a env → COM4 (SID=0x100), node_b env → COM3 (SID=0x200) |
+| `tests/unit/`                   | 50 native unit tests — no hardware required, runs on host via PlatformIO native env |
+| `tests/integration/verify.py`   | Integration test runner — upload + verify, single suite or all |
+| `.github/workflows/ci.yml`      | CI: unit tests + build all examples on every PR, auto-merge on pass |
+| `docs/context.md`               | This file                                                    |
+| `docs/status.md`                | Verified milestone tracker                                   |
+| `docs/registers.md`             | Register field reference                                     |
+| `tools/search.py`               | PDF search tool — queries both reference PDFs                |
 
 ## Key Decisions
 

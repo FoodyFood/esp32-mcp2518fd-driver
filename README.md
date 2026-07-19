@@ -158,7 +158,7 @@ can.configureRaw(NBTCFG_125K_40MHZ, DBTCFG_2M_40MHZ, TDC_2M_40MHZ, MODE_NORMAL);
 can.setDataBitTimingRaw(DBTCFG_8M_40MHZ, TDC_8M_40MHZ);
 ```
 
-Presets for 20 MHz and 40 MHz are defined in `mcp2518fd_can.h`. All use BRP=0, exact rates, 80% sample point.
+Presets for 20 MHz and 40 MHz are defined in `mcp2518fd_presets.h`. All use BRP=0, exact rates, 80% sample point.
 
 ---
 
@@ -183,6 +183,9 @@ python tests/integration/verify.py --suite all --port COM4 --port-b COM3
 python tests/integration/verify.py --suite single_node --port COM4
 python tests/integration/verify.py --suite id_filter   --port COM4
 python tests/integration/verify.py --suite two_node    --port COM4 --port-b COM3
+
+# Unit tests (no hardware required):
+wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit && ~/.local/bin/pio test -e native"
 ```
 
 ---
@@ -241,7 +244,9 @@ graph LR
 
 ```
 include/
-  mcp2518fd_can.h           # Public driver API — CanMsg, MCP2518Driver, presets
+  mcp2518fd_can.h           # Public driver API — CanMsg, MCP2518Driver
+  mcp2518fd_presets.h       # Bit timing preset constants (Arduino-free)
+  mcp2518fd_timing.h        # Pure-logic timing functions — calcBitTiming, calcTxTimeout, EID/filter encode
   mcp2518fd_spi.h           # SPI transport layer
   mcp2518fd_registers.h     # All register addresses, masks and constants
 
@@ -261,7 +266,10 @@ tests/
   integration/
     verify.py               # Entry point — upload + verify, single suite or all
     mcp_test/               # runner, suites, upload, serial I/O modules
-  unit/                     # Placeholder for future unit tests (no hardware required)
+  unit/
+    platformio.ini          # Native PlatformIO env — runs on host, no hardware required
+    test/test_unit/
+      test_main.cpp         # 50 unit tests: dlcToLen, calcBitTiming, calcTxTimeout, EID/filter encode, register addresses
 
 tools/
   search.py                 # PDF search tool — queries both datasheets
@@ -275,6 +283,10 @@ docs/
     README.md               # Spec index and implementation order
     SPEC-NNN-*.md           # Individual feature specs
   reference/                # Place downloaded PDFs here (see reference/README.md)
+
+.github/
+  workflows/
+    ci.yml                  # CI: unit tests + build all examples on every PR, auto-merge on pass
 
 library.json                # PlatformIO library manifest
 library.properties          # Arduino IDE library manifest
@@ -294,6 +306,12 @@ All register addresses, bit positions and field definitions are verified against
 PDFs are not committed to this repo. Download them and place in `docs/reference/` — see [`docs/reference/README.md`](docs/reference/README.md).
 
 ---
+
+## CI
+
+Every PR runs unit tests and builds all examples on `ubuntu-24.04`. Auto-merges on pass.
+
+[![CI](https://github.com/FoodyFood/esp32-mcp2518fd-driver/actions/workflows/ci.yml/badge.svg)](https://github.com/FoodyFood/esp32-mcp2518fd-driver/actions/workflows/ci.yml)
 
 ## Prerequisites
 
