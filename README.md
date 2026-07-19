@@ -21,7 +21,7 @@ can.receive(rx, 500);  // blocking, 500 ms timeout
 
 | Use case | Description |
 |---|---|
-| **Battery simulator** | Impersonate a real EV battery pack on a CAN FD bus — transmit the periodic BMS frames a solar inverter or charger expects, so you can develop and test without a battery present |
+| **Battery simulator** | Impersonate a real EV battery pack on a CAN FD bus — transmit the periodic BMS frames a solar inverter or charger expects, so you can develop, test, and simulate errors without a physical battery present |
 | **EV battery gateway** | Read cell voltages, SOC and temperatures from a CAN FD BMS (Kia 64 FD, VW MEB) and re-publish over a second bus or WiFi |
 | **UDS diagnostics** | Send ISO 14229 requests to a vehicle ECU over CAN FD and receive multi-frame ISO-TP responses |
 | **Inverter interface** | Send torque/speed setpoints to a CAN FD motor controller and read back telemetry at 10 ms intervals |
