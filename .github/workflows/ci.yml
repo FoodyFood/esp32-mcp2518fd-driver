@@ -10,22 +10,4 @@ jobs:
   ci-checks:
     uses: ./.github/workflows/ci-checks.yml
 
-  auto-merge:
-    name: Auto-merge
-    runs-on: ubuntu-24.04
-    needs: [ci-checks]
-    if: github.event_name == 'pull_request'
-    permissions:
-      pull-requests: write
-      contents: write
-    steps:
-      - name: Enable auto-merge
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.pulls.merge({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
-              merge_method: 'squash',
-            });
+
