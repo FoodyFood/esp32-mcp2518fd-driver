@@ -62,24 +62,39 @@ See [`docs/use_case_coverage.md`](docs/use_case_coverage.md) for the full featur
 
 ## Why this driver
 
-Every existing Arduino/ESP32 CAN FD library for the MCP2518FD either wraps Microchip's own
-`canfdspi` API or makes undocumented assumptions about register state. This driver is built
-from scratch, one register at a time, with a clear paper trail from datasheet to working
-hardware for every decision.
+Existing Arduino/ESP32 CAN FD libraries for the MCP2518FD are wrappers around Microchip's
+reference `canfdspi` API — a codebase full of undocumented assumptions, magic numbers and
+silent failure modes. In production hardware — EV gateways, inverter interfaces, diagnostic
+tools — that is not acceptable. A driver that works on a desk but drops frames under load,
+or silently misconfigures bit timing, is worse than no driver at all.
 
-- **Auditable** — every register write is traceable to a datasheet page and table number
-- **Minimal** — no RTOS, no heap allocation, no dependencies beyond Arduino SPI
-- **Verified** — every feature is tested on two real hardware nodes before being committed;
-  no feature is marked done without hardware evidence from both nodes. Bus signals are
-  verified with a DSO at each stage — not just software assertions
-- **Spec-driven** — new features start as a written spec with acceptance criteria; code
-  follows the spec, not the other way around
+This driver was built because nothing available could be trusted in a real product.
+
+- **Production-grade reliability** — every feature is verified on two real hardware nodes
+  under real bus conditions before it ships. Bus signals are confirmed on a DSO. If it isn't
+  verified on hardware, it isn't in the driver.
+- **Zero hidden state** — every register write traces directly to a datasheet page. No magic
+  numbers, no inherited assumptions, no surprises when you read the source.
+- **Minimal and dependency-free** — no RTOS, no heap allocation, no third-party CAN library.
+  Just Arduino SPI and direct register access. Less code means fewer failure modes.
+- **Spec-driven** — every feature starts as a written spec with explicit acceptance criteria.
+  Code follows the spec. The spec is in the repo. You can read exactly what was intended and
+  exactly what was verified.
+
+The result is a driver you can ship in a product and stand behind.
 
 ---
 
-## Test Hardware
+## Verified on real hardware
 
-This driver was developed and verified on the following hardware. Other ESP32 boards and MCP2518FD breakout variants should work provided the SPI pins are configured correctly.
+Every feature in this driver was developed and verified on real hardware — not simulated,
+not assumed. The oscilloscope capture below shows a live CAN FD data burst on the bus:
+CANH, CANL, and the A−B differential signal. Clean edges, correct differential swing, no
+ringing. This is what the driver produces on real silicon.
+
+<img src="docs/images/captured_can_fd_data.png" width="700" alt="Oscilloscope capture of CAN FD bus signals — CANH, CANL and A−B differential">
+
+Other ESP32 boards and MCP2518FD breakout variants should work provided the SPI pins are configured correctly.
 
 <img src="docs/images/mcp2518fd_breakout_board.jpg" width="400" alt="MCP2518FD breakout board">
 
