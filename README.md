@@ -70,13 +70,18 @@ hardware for every decision.
 - **Auditable** — every register write is traceable to a datasheet page and table number
 - **Minimal** — no RTOS, no heap allocation, no dependencies beyond Arduino SPI
 - **Verified** — every feature is tested on two real hardware nodes before being committed;
-  no feature is marked done without hardware evidence from both nodes
+  no feature is marked done without hardware evidence from both nodes. Bus signals are
+  verified with a DSO at each stage — not just software assertions
 - **Spec-driven** — new features start as a written spec with acceptance criteria; code
   follows the spec, not the other way around
 
 ---
 
-## Hardware
+## Test Hardware
+
+This driver was developed and verified on the following hardware. Other ESP32 boards and MCP2518FD breakout variants should work provided the SPI pins are configured correctly.
+
+<img src="docs/images/mcp2518fd_breakout_board.jpg" width="400" alt="MCP2518FD breakout board">
 
 | Item | Detail |
 |---|---|
@@ -260,12 +265,7 @@ docs/
   use_case_coverage.md      # Real-world use case analysis and gap tracking
   specs/                    # One spec per feature — read before implementing
     README.md               # Spec index and implementation order
-    SPEC-001-*.md           # 29-bit extended ID
-    SPEC-002-*.md           # Acceptance filters
-    SPEC-003-*.md           # Bus error detection + TX error detail
-    SPEC-004-*.md           # Interrupt RX + configurable FIFO depth
-    SPEC-005-*.md           # RX timestamp + listen-only mode
-    SPEC-006-*.md           # stop() / restart() / sleep()
+    SPEC-NNN-*.md           # Individual feature specs
   search.py                 # PDF search tool — queries both datasheets
   reference/                # Place downloaded PDFs here (see reference/README.md)
 
