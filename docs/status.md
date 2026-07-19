@@ -72,6 +72,8 @@ Each item below has been tested on real hardware and confirmed working.
 | `CanStatus` enum                     | ✅ Verified | OK / MODE_TIMEOUT / RATE_NOT_ACHIEVABLE / CLOCK_NOT_READY             |
 | `getFsys()`                          | ✅ Verified | Returns detected FSYS in Hz after configure()                         |
 | `readOsc()`                          | ✅ Verified | Returns raw OSC register value for diagnostics                        |
+| `CanMsg.id` + `CanMsg.ext`           | ✅ Verified | Replaces `sid`; ext=false=11-bit SID, ext=true=29-bit EID; zero defaults preserve all existing callers |
+| 29-bit EID transmit + receive        | ✅ Verified | T0[28:11]=EID[17:0], T0[10:0]=SID[10:0], T1.IDE=1; loopback id=0x1C420017 OK; two-node all assertions OK |
 
 ## Two-Node (Real Bus)
 
@@ -85,7 +87,7 @@ Each item below has been tested on real hardware and confirmed working.
 
 | Example          | Status      | Notes                                                                 |
 |------------------|-------------|-----------------------------------------------------------------------|
-| loopback         | ✅ Verified | 34 assertions, all OK on COM3 and COM4                                |
+| loopback         | ✅ Verified | 47 assertions, all OK on COM4; includes 29-bit EID round-trip         |
 | two_node         | ✅ Verified | Full bidirectional test, all assertions OK on both nodes              |
 | walkie_talkie    | ✅ Verified | Text chat working between two boards over real bus                    |
 | scope_loopback   | ✅ Verified | FSYS=20 MHz detected, 24 µs first dominant run @ 125 kbps scope-confirmed |

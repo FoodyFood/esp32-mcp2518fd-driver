@@ -1,7 +1,7 @@
 # SPEC-001 — 29-bit Extended ID (EID) Support
 
 ## Status
-Pending
+Done
 
 ## Priority
 High

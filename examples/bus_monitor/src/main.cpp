@@ -43,7 +43,7 @@ static uint32_t lastStatus = 0;
 static CanMsg makeTxFrame()
 {
     CanMsg msg;
-    msg.sid   = NODE_SID;
+    msg.id    = NODE_SID;
     msg.fdf   = true;
     msg.brs   = true;
     msg.dlc   = 8;
@@ -115,12 +115,12 @@ void loop()
             rxCounter++;
             uint32_t cnt = rx.data[0] | ((uint32_t)rx.data[1] << 8)
                          | ((uint32_t)rx.data[2] << 16) | ((uint32_t)rx.data[3] << 24);
-            Serial.printf("  RX SID=0x%03X count=%lu\n", rx.sid, cnt);
+            Serial.printf("  RX ID=0x%03lX count=%lu\n", (unsigned long)rx.id, cnt);
         }
         else
         {
             rxErrors++;
-            Serial.printf("  RX SID=0x%03X INTEGRITY FAIL\n", rx.sid);
+            Serial.printf("  RX ID=0x%03lX INTEGRITY FAIL\n", (unsigned long)rx.id);
         }
     }
 

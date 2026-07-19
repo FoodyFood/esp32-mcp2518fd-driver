@@ -38,10 +38,10 @@ static void CHECK(const char* label, bool pass)
     Serial.printf("  %-48s %s\n", label, pass ? "OK" : "FAIL");
 }
 
-static CanMsg makeFrame(uint16_t sid, uint8_t dlc, uint8_t seed)
+static CanMsg makeFrame(uint32_t id, uint8_t dlc, uint8_t seed)
 {
     CanMsg msg;
-    msg.sid = sid;
+    msg.id  = id;
     msg.fdf = true;
     msg.brs = true;
     msg.dlc = dlc;
@@ -82,8 +82,8 @@ static bool rxAndVerify(const char* label, const CanMsg& expected)
     CHECK(buf, got);
     if (!got) return false;
 
-    snprintf(buf, sizeof(buf), "RX %s SID=0x%03X", label, expected.sid);
-    CHECK(buf, rx.sid == expected.sid);
+    snprintf(buf, sizeof(buf), "RX %s ID=0x%03lX", label, (unsigned long)expected.id);
+    CHECK(buf, rx.id == expected.id);
 
     snprintf(buf, sizeof(buf), "RX %s DLC=%d", label, expected.dlc);
     CHECK(buf, rx.dlc == expected.dlc);
@@ -94,7 +94,7 @@ static bool rxAndVerify(const char* label, const CanMsg& expected)
     snprintf(buf, sizeof(buf), "RX %s all %d bytes match", label, len);
     CHECK(buf, dataOk);
 
-    return got && (rx.sid == expected.sid) && (rx.dlc == expected.dlc) && dataOk;
+    return got && (rx.id == expected.id) && (rx.dlc == expected.dlc) && dataOk;
 }
 
 static bool switchRate(uint32_t dataBps, const char* label)
