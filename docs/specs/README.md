@@ -61,7 +61,7 @@ Stop/restart and sleep/wake. Self-contained, no dependencies.
 
 | Spec | Title | Gaps closed | Status |
 |---|---|---|---|
-| [SPEC-006](SPEC-006-stop-restart-sleep.md) | Stop, Restart and Sleep/Wake Lifecycle | G7 | Pending |
+| [SPEC-006](SPEC-006-stop-restart-sleep.md) | Stop, Restart and Sleep/Wake Lifecycle | G7 | Done |
 
 ## Group F — Real-World Examples (consumes previous specs)
 

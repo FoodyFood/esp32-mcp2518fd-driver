@@ -113,3 +113,11 @@ entering the active mode. Verified at 2 Mbps with TDCO=19.
 CiFIFOUAm holds the byte offset from RAM base (0x400), not the absolute SPI address.
 Actual RAM address = 0x400 + UA.
 Verified: UA1=0x000 → RAM 0x400, UA2=0x010 → RAM 0x410 (16-byte objects, PLSIZE=0, no TEF/TXQ).
+
+### OSC.OSCDIS is bit 2, not bit 3
+OSC register byte 0 layout (DS20006027B Register 3-1): `— CLKODIV[1:0] SCLKDIV LPMEN OSCDIS — PLLEN`
+= bits 7..0. OSCDIS is bit 2. LPMEN is bit 3.
+Sleep handshake: poll OPMOD==CONFIG (4) AND OSC.OSCDIS==1 to confirm sleep entered.
+Wake: clear OSCDIS (bit 2 of OSC byte 0) — chip re-enables oscillator and transitions to CONFIG.
+Writing REQOP=CONFIG does NOT exit sleep; only clearing OSCDIS or RXCAN activity does.
+configure() must clear OSCDIS before reset() if the chip is sleeping, otherwise detectFsys() fails.

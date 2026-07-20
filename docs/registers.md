@@ -4,6 +4,21 @@ Chip: MCP2518FD — 40 MHz oscillator, SPI mode 0,0, little-endian byte order.
 
 ---
 
+## OSC — Oscillator Control Register (0xE00)
+
+| Bits | Field   | Description                                              |
+|------|---------|----------------------------------------------------------|
+| 10   | OSCREADY | Clock running and stable (read-only)                   |
+| 4    | SCLKDIV | System clock divisor (1 = divide by 2; config mode only) |
+| 3    | LPMEN   | Low-Power Mode enable (0 = normal sleep, 1 = LPM)       |
+| 2    | OSCDIS  | Clock disable: 1 = sleeping; clear to wake               |
+| 0    | PLLEN   | PLL enable (1 = 40 MHz from 4 MHz input; config mode only) |
+
+Sleep handshake: OPMOD reads CONFIG (4) and OSCDIS reads 1 when chip is in Sleep mode.
+Wake: write OSCDIS=0 (clear bit 2 of OSC byte 0). Chip transitions to CONFIG automatically.
+
+---
+
 ## CiCON — CAN Control Register (0x000)
 
 | Bits  | Field  | Description                        |

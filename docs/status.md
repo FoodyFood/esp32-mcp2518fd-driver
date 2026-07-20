@@ -157,11 +157,30 @@ Run: `wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit &&
 | id_filter        | ✅ Verified | All assertions OK on COM4; no regressions |
 | two_node         | ✅ Verified | All assertions OK on both nodes; overflow test A depth=4 B bursts 5 |
 
-## SPEC-005 — RX Timestamp and Listen-Only Mode Validation
+## SPEC-006 — Stop, Restart and Sleep/Wake Lifecycle
 
 | Feature | Status | Notes |
 |---|---|---|
-| `CanMsg.timestamp` field | ✅ Verified | 0 when timestamping disabled; TBC value when enabled |
+| `stop()` | ✅ Verified | Enters MODE_CONFIG; saves previous mode; idempotent |
+| `restart()` | ✅ Verified | Restores saved mode; loopback TX/RX intact after restart |
+| `sleep()` | ✅ Verified | REQOP=001 (LPMEN=0); handshake: OPMOD=CONFIG + OSCDIS=1 |
+| `wake()` | ✅ Verified | Clears OSC.OSCDIS (bit 2); waits OSCREADY; restores previous mode |
+| `configure()` sleep guard | ✅ Verified | Clears OSCDIS before reset() if chip is sleeping |
+
+### Hardware observations
+- OSCDIS is bit 2 of OSC byte 0 (not bit 3 as initially assumed)
+- Sleep handshake: OPMOD reads CONFIG (4) and OSCDIS reads 1 within ~1 ms of REQOP=001
+- Wake by clearing OSCDIS: OSCREADY asserts within 1 ms; previous mode restored cleanly
+- configure() called after sleep() without wake(): OSCDIS guard clears it, reset proceeds normally
+- All loopback assertions pass after stop/restart and sleep/wake cycles
+
+| Example          | Status      | Notes                                                                 |
+|------------------|-------------|-----------------------------------------------------------------------|
+| single_node      | ✅ Verified | All assertions OK on COM4; stop/restart/sleep/wake all pass |
+| id_filter        | ✅ Verified | All assertions OK on COM4; no regressions |
+| two_node         | ✅ Verified | All assertions OK on both nodes; no regressions |
+| unit tests       | ✅ Verified | 50/50 passing |
+
 | `configure()` enableTimestamp parameter | ✅ Verified | Default false; sets RXTSEN in FIFO2, enables CiTBC after setMode() |
 | `configureRaw()` enableTimestamp parameter | ✅ Verified | Same behaviour |
 | CiTBC free-running counter | ✅ Verified | TBCEN=1 written after mode transition; TBCPRE=0 = 50 ns/count at 20 MHz |

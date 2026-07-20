@@ -156,6 +156,27 @@ public:
     // Disable a filter slot without changing its OBJ/MASK registers.
     void clearFilter(uint8_t index);
 
+    // Pause the driver — enters Configuration mode, halting TX and RX.
+    // Timing and FIFO configuration are preserved. Safe to call at any time.
+    // Call restart() to resume. transmit() is invalid while stopped.
+    CanStatus stop();
+
+    // Resume after stop() — returns to the mode that was active before stop().
+    // Does not re-run configure(); all timing and filter state is preserved.
+    CanStatus restart();
+
+    // Enter low-power Sleep mode (REQOP=001, LPMEN=0).
+    // The chip halts the clock and preserves register/RAM contents.
+    // Wake-up requires bus activity on RXCAN or a call to wake().
+    // Returns CanStatus::OK when OPMOD confirms sleep (OPMOD=CONFIG, OSCDIS=1).
+    CanStatus sleep();
+
+    // Exit Sleep mode and restore the mode that was active before sleep().
+    // Waits for OSCREADY before restoring the previous mode.
+    // Note: on ESP32, GPIO 34 (INT) can be used as a deep-sleep wake source —
+    // configure esp_sleep_enable_ext0_wakeup() in your application if needed.
+    CanStatus wake();
+
     // Return the current operating mode (OPMOD field of CiCON).
     // Compare against MODE_* constants from mcp2518fd_registers.h.
     uint8_t getMode();
@@ -187,6 +208,7 @@ private:
     uint32_t   mNbtcfg      = 0;
     int8_t     mIntPin      = -1;
     bool       mTimestamp   = false;  // true when RXTSEN + CiTBC are enabled
+    uint8_t    mPrevMode    = MODE_CONFIG;  // saved by stop() and sleep()
     volatile bool mRxPending = false;
 
     static MCP2518Driver* sIsrInstance;  // single-instance ISR trampoline

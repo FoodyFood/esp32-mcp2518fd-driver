@@ -14,6 +14,14 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
                                    uint8_t rxFifoDepth, bool enableTimestamp)
 {
     mSpi.begin();
+    // If the chip is in Sleep mode (OSCDIS=1), clear it before reset
+    // so the oscillator is running when reset() is issued
+    if (mSpi.read32(REG_OSC) & OSC_OSCDIS)
+    {
+        uint8_t osc0 = mSpi.read8(REG_OSC);
+        mSpi.write8(REG_OSC, osc0 & ~(uint8_t)OSC_OSCDIS);
+        delay(5);  // oscillator stabilisation (max 3 ms, DS20006027B page 79)
+    }
     mSpi.reset();
     delay(20);
     mSpi.setMode(MODE_CONFIG);
@@ -259,6 +267,53 @@ bool MCP2518Driver::receive(CanMsg& msg, uint32_t timeoutMs)
 uint8_t MCP2518Driver::getMode()
 {
     return mSpi.getMode();
+}
+
+CanStatus MCP2518Driver::stop()
+{
+    mPrevMode = mSpi.getMode();
+    if (mPrevMode == MODE_CONFIG) return CanStatus::OK;  // already stopped
+    if (!mSpi.setMode(MODE_CONFIG)) return CanStatus::MODE_TIMEOUT;
+    return CanStatus::OK;
+}
+
+CanStatus MCP2518Driver::restart()
+{
+    if (!mSpi.setMode(mPrevMode)) return CanStatus::MODE_TIMEOUT;
+    return CanStatus::OK;
+}
+
+CanStatus MCP2518Driver::sleep()
+{
+    mPrevMode = mSpi.getMode();
+    // Request sleep: REQOP=001 (LPMEN=0 is the reset default — normal sleep, not LPM)
+    // DS20005678E page 11: sleep entered when current message completes
+    mSpi.write8(REG_CiCON + 3, MODE_SLEEP << 0);  // REQOP in bits[2:0] of byte 3
+    // Handshake: OPMOD=CONFIG and OSC.OSCDIS=1 (DS20005678E page 11)
+    uint32_t start = millis();
+    while (millis() - start < 100)
+    {
+        if (mSpi.getMode() == MODE_CONFIG && (mSpi.read32(REG_OSC) & OSC_OSCDIS))
+            return CanStatus::OK;
+    }
+    return CanStatus::MODE_TIMEOUT;
+}
+
+CanStatus MCP2518Driver::wake()
+{
+    // Exit sleep by clearing OSC.OSCDIS (bit 2 of OSC byte 0)
+    // DS20005678E page 11: clearing OSCDIS re-enables the clock;
+    // module transitions automatically to Configuration mode.
+    uint8_t osc0 = mSpi.read8(REG_OSC);
+    mSpi.write8(REG_OSC, osc0 & ~(uint8_t)OSC_OSCDIS);
+    // Wait for OSCREADY (up to 3 ms oscillator stabilisation, DS20006027B page 79)
+    uint32_t start = millis();
+    while (millis() - start < 10)
+    {
+        if ((mSpi.read32(REG_OSC) >> 10) & 1) break;  // OSCREADY
+    }
+    if (!mSpi.setMode(mPrevMode)) return CanStatus::MODE_TIMEOUT;
+    return CanStatus::OK;
 }
 
 uint32_t MCP2518Driver::readOsc()
