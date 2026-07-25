@@ -1,7 +1,7 @@
 # SPEC-006 — Stop, Restart and Sleep/Wake Lifecycle
 
 ## Status
-Pending
+Done
 
 ## Priority
 Medium
@@ -49,3 +49,19 @@ public API method.
 - Sleep wake-up on MCP2518FD: the chip wakes on bus activity or on the INT pin being driven;
   verify wake-up sequence (OSC ready check) against DS20006027B before implementing `wake()`
 - Do not auto-call `restart()` inside `wake()` without confirming OSCREADY first
+
+## Datasheet findings
+- **OSCDIS is bit 2** of OSC byte 0 (DS20006027B Register 3-1, page 17). Not bit 3.
+  Layout: `— CLKODIV[1:0] SCLKDIV LPMEN OSCDIS — PLLEN` → bits 7..0.
+- **Sleep handshake**: poll `OPMOD == MODE_CONFIG` AND `OSC.OSCDIS == 1` to confirm sleep
+  entered (DS20006027B page 26 note 2, ref manual page 11).
+- **Sleep exit**: clear `OSC.OSCDIS` (bit 2 of OSC byte 0). The chip re-enables the oscillator
+  and transitions automatically to Configuration mode. Writing REQOP=CONFIG does NOT exit sleep.
+  (DS20005678E page 11 section 2.4.1; ref manual Figure 2-1 shows `WAKIF or OSC.OSCDIS=0`.)
+- **OSCREADY after wake**: oscillator stabilisation from sleep is up to 3 ms (DS20006027B page 79
+  TOSCSLP). Poll bit 10 of OSC register before restoring the previous mode.
+- **configure() must handle sleep**: if the chip is sleeping when configure() is called, OSCDIS
+  must be cleared before reset() is issued, otherwise detectFsys() reads OSCREADY=0 and returns 0.
+- **Normal sleep vs LPM**: REQOP=001 with LPMEN=0 (reset default) enters normal sleep — register
+  and RAM contents preserved. LPMEN=1 enters LPM — logic powered down, contents lost, wake via
+  nCS assertion only. This driver uses normal sleep only.

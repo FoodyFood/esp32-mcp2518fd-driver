@@ -369,6 +369,63 @@ void runTest()
     }
 
 
+    // ------------------------------------------------------------------
+    // SPEC-006: stop() / restart()
+    // ------------------------------------------------------------------
+    Serial.println("stop() / restart():");
+    can.configure(500000, 2000000, MODE_INTERNAL_LB);
+    {
+        CHECK("mode = INTERNAL_LB before stop", can.getMode() == MODE_INTERNAL_LB);
+        CHECK("stop() returns OK", can.stop() == CanStatus::OK);
+        CHECK("mode = CONFIG after stop", can.getMode() == MODE_CONFIG);
+
+        // transmit() while stopped — FIFO UA is invalid in config mode, so
+        // the TX FIFO not-full flag is unreliable; document as invalid.
+        // We verify restart() restores the mode and loopback works again.
+        CHECK("restart() returns OK", can.restart() == CanStatus::OK);
+        CHECK("mode = INTERNAL_LB after restart", can.getMode() == MODE_INTERNAL_LB);
+
+        CanMsg tf;
+        tf.id = 0x730; tf.fdf = true; tf.brs = true; tf.dlc = 8;
+        for (int i = 0; i < 8; i++) tf.data[i] = (uint8_t)(0xB0 + i);
+        CHECK("transmit() OK after restart", can.transmit(tf) == CanTxResult::OK);
+        CanMsg rf = {};
+        bool got = can.receive(rf, 50);
+        CHECK("receive() OK after restart", got);
+        bool dataOk = got && rf.id == tf.id && rf.dlc == 8;
+        for (int i = 0; i < 8 && dataOk; i++) dataOk &= (rf.data[i] == tf.data[i]);
+        CHECK("all 8 bytes match after restart", dataOk);
+
+        // stop() is idempotent
+        can.stop();
+        CHECK("stop() idempotent (already stopped)", can.stop() == CanStatus::OK);
+        CHECK("mode still CONFIG after double stop", can.getMode() == MODE_CONFIG);
+        can.restart();
+    }
+
+    // ------------------------------------------------------------------
+    // SPEC-006: sleep() / wake()
+    // ------------------------------------------------------------------
+    Serial.println("sleep() / wake():");
+    can.configure(500000, 2000000, MODE_INTERNAL_LB);
+    {
+        CHECK("sleep() returns OK", can.sleep() == CanStatus::OK);
+        CHECK("mode = CONFIG (sleep handshake) after sleep()", can.getMode() == MODE_CONFIG);
+        CHECK("wake() returns OK", can.wake() == CanStatus::OK);
+        CHECK("mode = INTERNAL_LB after wake", can.getMode() == MODE_INTERNAL_LB);
+
+        CanMsg tf;
+        tf.id = 0x740; tf.fdf = true; tf.brs = true; tf.dlc = 8;
+        for (int i = 0; i < 8; i++) tf.data[i] = (uint8_t)(0xC0 + i);
+        CHECK("transmit() OK after wake", can.transmit(tf) == CanTxResult::OK);
+        CanMsg rf = {};
+        bool got = can.receive(rf, 50);
+        CHECK("receive() OK after wake", got);
+        bool dataOk = got && rf.id == tf.id && rf.dlc == 8;
+        for (int i = 0; i < 8 && dataOk; i++) dataOk &= (rf.data[i] == tf.data[i]);
+        CHECK("all 8 bytes match after wake", dataOk);
+    }
+
     Serial.println();
 }
 
