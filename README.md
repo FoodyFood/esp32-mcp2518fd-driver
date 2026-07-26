@@ -125,6 +125,9 @@ Each example is a self-contained PlatformIO project — open, build and flash di
 | [`bus_monitor`](examples/bus_monitor/) | Two nodes transmitting counters continuously — a starting point for any two-node project |
 | [`int_pin`](examples/int_pin/) | Wire the INT pin so frame arrival triggers an ISR instead of polling — main loop stays free |
 | [`scope_loopback`](examples/scope_loopback/) | Drive real CAN FD signals on CANH/CANL from a single board — no second node needed for scope measurements |
+| [`uds_filter`](examples/uds_filter/) | Set an acceptance filter so your board only wakes up for the frames it cares about — demonstrated with a UDS request/response pattern |
+| [`can_logger`](examples/can_logger/) | Passively monitor a CAN bus in listen-only mode with per-frame hardware timestamps — completely invisible to other nodes |
+| [`classic_can`](examples/classic_can/) | Use the MCP2518FD as a plain CAN 2.0B controller to talk to legacy devices — demonstrated with a vehicle ECU and dashboard simulation |
 
 ---
 
