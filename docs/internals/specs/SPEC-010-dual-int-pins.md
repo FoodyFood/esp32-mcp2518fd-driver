@@ -1,7 +1,7 @@
 # SPEC-010 — Dual INT Pin Support (INT0 / INT1)
 
 ## Status
-Pending
+Done
 
 ## Context
 Drawn from [`docs/use_cases/uc-dala-battery-emulator.md`](../use_cases/uc-dala-battery-emulator.md) IR-20.
@@ -17,12 +17,19 @@ driver cannot attach an ISR on that board and falls back to polling — or fails
 interrupts entirely.
 
 ## Datasheet findings
-_To be filled in during implementation after PDF verification._
 
-Key questions to verify from datasheet:
-- What events are routed to INT vs INT0 vs INT1?
-- Can INT0 alone be used as a general-purpose RX-ready interrupt?
-- Is INT0 sufficient to replace INT for our use case (RX FIFO not empty)?
+Verified against DS20006027B (datasheet) page 18 (IOCON register) and page 76 (I/O configuration).
+
+- **INT** (pin 4): asserted on any interrupt in CiINT (xIF & xIE) — the combined interrupt.
+- **INT1/GPIO1** (pin 8): RX interrupt — asserted when `CiINT.RXIF & RXIE` are set. Active as interrupt when IOCON.PM1=0.
+- **INT0/GPIO0** (pin 9): TX interrupt — asserted when `CiINT.TXIF & TXIE` are set. Active as interrupt when IOCON.PM0=0.
+- Reset default: PM1=1, PM0=1 (both pins are GPIO by default — must explicitly clear PM1 to activate INT1).
+- **INT0 cannot be used for RX-ready** — it is TX-only. Only INT1 or INT serve RX.
+- IOCON register address: `REG_IOCON` = 0xE04. PM1 is bit 25 (byte 3, bit 1). PM0 is bit 24 (byte 3, bit 0).
+- IOCON **must be written byte-by-byte** using single data byte SFR WRITE (DS20006027B page 70 note, page 19 note 2).
+- To activate INT1 as RX interrupt: `write8(REG_IOCON + 3, read8(REG_IOCON + 3) & ~(1u << 1))` — clears PM1.
+- RXIE in CiINT (byte 2, bit 1) is already set by `configFifos()` when any int pin is active — no change needed there.
+- INT0 is not useful for our use case (RX FIFO not empty). It is skipped for ISR attachment.
 
 ## Acceptance criteria
 

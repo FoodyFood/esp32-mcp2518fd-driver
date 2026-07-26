@@ -2,9 +2,12 @@
 #include "mcp2518fd_registers.h"
 #include "mcp2518fd_timing.h"
 
-MCP2518Driver::MCP2518Driver(SPIClass& spi, uint8_t csPin, int8_t intPin)
-    : mSpi(spi, csPin), mFsys(0), mTxTimeoutMs(10), mNbtcfg(0), mIntPin(intPin), mRxPending(false)
+MCP2518Driver::MCP2518Driver(SPIClass& spi, uint8_t csPin,
+                             int8_t intPin, int8_t int0Pin, int8_t int1Pin)
+    : mSpi(spi, csPin), mFsys(0), mTxTimeoutMs(10), mNbtcfg(0),
+      mIntPin(intPin), mInt1Pin(int1Pin), mRxPending(false)
 {
+    (void)int0Pin;  // INT0 is TX-only; not useful for RX-ready signalling
 }
 
 // ----------------------------------------------------------------------------
@@ -66,6 +69,11 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
     {
         sIsrInstance = this;
         attachInterrupt(digitalPinToInterrupt(mIntPin), sIsrHandler, FALLING);
+    }
+    else if (mInt1Pin >= 0)
+    {
+        sIsrInstance = this;
+        attachInterrupt(digitalPinToInterrupt(mInt1Pin), sIsrHandler, FALLING);
     }
 
     return CanStatus::OK;
@@ -372,13 +380,24 @@ void MCP2518Driver::configFifos(uint8_t rxFifoDepth, bool enableTimestamp)
 
     uint32_t rxCon = plsize | rxFsize;
     if (enableTimestamp) rxCon |= FIFOCON_RXTSEN;
-    if (mIntPin >= 0)    rxCon |= FIFOCON_TFNRFNIE;
+
+    bool anyIntPin = (mIntPin >= 0) || (mInt1Pin >= 0);
+    if (anyIntPin) rxCon |= FIFOCON_TFNRFNIE;
     mSpi.write32(FIFO_CON(2), rxCon);
 
-    if (mIntPin >= 0)
+    if (anyIntPin)
     {
         uint8_t intByte2 = mSpi.read8(REG_CiINT + 2);
         mSpi.write8(REG_CiINT + 2, intByte2 | CINT2_RXIE);
+    }
+
+    // Activate INT1 as RX interrupt output when int1Pin is wired and INT is not.
+    // PM1=0 in IOCON byte 3 routes CiINT.RXIF to the INT1 pin (DS20006027B page 18).
+    // IOCON must be written byte-by-byte (datasheet note 2, page 19).
+    if (mInt1Pin >= 0 && mIntPin < 0)
+    {
+        uint8_t iocon3 = mSpi.read8(REG_IOCON + 3);
+        mSpi.write8(REG_IOCON + 3, iocon3 & ~IOCON3_PM1);
     }
 }
 

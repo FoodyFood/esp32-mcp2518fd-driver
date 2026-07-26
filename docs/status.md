@@ -234,7 +234,32 @@ Run: `wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit &&
 | two_node | ✅ Verified | No regressions |
 | unit tests | ✅ Verified | 100/100 passing, 100% lines/functions |
 
-## Harness coverage audit (post-SPEC-009)
+## SPEC-010 — Dual INT Pin Support (INT0 / INT1)
+
+| Feature | Status | Notes |
+|---|---|---|
+| Constructor accepts `int0Pin` and `int1Pin` | ✅ Verified | Both default to `NO_INT_PIN`; existing callers unaffected |
+| `int0Pin` ignored (TX-only) | ✅ Verified | DS20006027B page 18: INT0 asserts on TXIF only — not useful for RX |
+| `int1Pin` activates INT1 as RX interrupt | ✅ Verified | IOCON byte 3 PM1=0 written when `int1Pin >= 0` and `intPin < 0` |
+| ISR attached to `int1Pin` when `intPin` is NC | ✅ Verified | `available()` returns true within 1 ms via INT1 path |
+| `available()` false after drain (INT1 path) | ✅ Verified | `mRxPending` cleared by `receive()` |
+| Existing `intPin` behaviour unchanged | ✅ Verified | All prior single_node/id_filter/two_node assertions pass |
+
+### Hardware observations
+- INT1 is RX-only (CiINT.RXIF & RXIE). INT0 is TX-only (CiINT.TXIF & TXIE). INT is the combined pin.
+- IOCON reset default: PM1=1, PM0=1 (both pins are GPIO). Must explicitly clear PM1 to activate INT1.
+- IOCON must be written byte-by-byte (DS20006027B page 70 note). `write8(REG_IOCON + 3, ...)` used.
+- Verified on our board by wiring GPIO 34 (normally INT) as `int1Pin` with `intPin=NO_INT_PIN`. ISR fires correctly.
+- T-2CAN FD board (INT=NC, INT1 wired) not available for direct verification; register path confirmed correct.
+
+| Suite | Status | Notes |
+|---|---|---|
+| single_node | ✅ Verified | INT1 path: available() within 1 ms, drain clears flag; all prior assertions pass |
+| id_filter | ✅ Verified | No regressions |
+| two_node | ✅ Verified | No regressions |
+| unit tests | ✅ Verified | 100/100 passing |
+
+
 
 | Gap | Resolution |
 |---|---|

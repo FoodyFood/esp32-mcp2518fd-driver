@@ -278,6 +278,35 @@ void runTest()
     }
 
     // ------------------------------------------------------------------
+    // SPEC-010: INT1 pin interrupt-driven RX
+    // Wires a spare GPIO to INT1 pin path via int1Pin constructor argument.
+    // On our board INT is GPIO 34; we reuse it here as int1Pin to verify
+    // the ISR fires via the int1Pin code path (INT1 IOCON activation +
+    // ISR attachment). Same GPIO, different constructor argument.
+    // ------------------------------------------------------------------
+    Serial.println("INT1 pin interrupt-driven RX (int1Pin path):");
+    {
+        MCP2518Driver canInt1(spi, PIN_CS, NO_INT_PIN, NO_INT_PIN, 34);
+        canInt1.configure(125000, 2000000, MODE_INTERNAL_LB);
+
+        CanMsg tf;
+        tf.id = 0x610; tf.fdf = true; tf.brs = true; tf.dlc = 8;
+        canInt1.transmit(tf);
+
+        uint32_t t0 = millis();
+        bool flagSet = false;
+        while (millis() - t0 < 1)
+        {
+            if (canInt1.available()) { flagSet = true; break; }
+        }
+        CHECK("available() true within 1 ms via INT1 pin", flagSet);
+
+        CanMsg rf = {};
+        canInt1.receive(rf, 5);
+        CHECK("available() false after drain (INT1 path)", !canInt1.available());
+    }
+
+    // ------------------------------------------------------------------
     // Interrupt-driven RX via INT pin (GPIO 34)
     // ------------------------------------------------------------------
     Serial.println("INT pin interrupt-driven RX:");

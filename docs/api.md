@@ -108,14 +108,21 @@ struct CanConfig {
 ### Constructor
 
 ```cpp
-MCP2518Driver(SPIClass& spi, uint8_t csPin, int8_t intPin = NO_INT_PIN);
+MCP2518Driver(SPIClass& spi, uint8_t csPin,
+              int8_t intPin  = NO_INT_PIN,
+              int8_t int0Pin = NO_INT_PIN,
+              int8_t int1Pin = NO_INT_PIN);
 ```
 
 | Parameter | Description |
 |---|---|
 | `spi` | An initialised `SPIClass` instance. Call `spi.begin(...)` before `configure()`. |
 | `csPin` | GPIO connected to the MCP2518FD CS pin. |
-| `intPin` | GPIO connected to the MCP2518FD INT pin (active-low). Pass `NO_INT_PIN` (default) for polling-only mode. |
+| `intPin` | GPIO connected to the MCP2518FD INT pin (active-low, asserts on any interrupt). Pass `NO_INT_PIN` (default) for polling-only mode. |
+| `int0Pin` | GPIO connected to INT0 (TX interrupt only — not used for RX). Accepted for API compatibility; currently ignored. |
+| `int1Pin` | GPIO connected to INT1 (RX interrupt). Used on boards where INT is not wired (e.g. LilyGo T-2CAN FD). When `intPin` is `NO_INT_PIN` and `int1Pin` is valid, the driver activates INT1 as an RX interrupt output and attaches the ISR to this pin. |
+
+ISR priority: `intPin` is used first. If `intPin` is `NO_INT_PIN`, `int1Pin` is used. If neither is valid, the driver operates in polling mode.
 
 ---
 

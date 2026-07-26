@@ -90,9 +90,14 @@ constexpr int8_t NO_INT_PIN = -1;
 class MCP2518Driver
 {
 public:
-    // intPin — GPIO connected to MCP2518FD INT (active-low).
-    //          Pass NO_INT_PIN (default) for polling-only mode.
-    MCP2518Driver(SPIClass& spi, uint8_t csPin, int8_t intPin = NO_INT_PIN);
+    // intPin  — GPIO connected to MCP2518FD INT (active-low, asserts on any interrupt).
+    // int0Pin — GPIO connected to INT0 (TX interrupt only — not used for RX).
+    // int1Pin — GPIO connected to INT1 (RX interrupt — preferred on boards where INT is NC).
+    // Pass NO_INT_PIN (default) for any pin not connected.
+    MCP2518Driver(SPIClass& spi, uint8_t csPin,
+                  int8_t intPin  = NO_INT_PIN,
+                  int8_t int0Pin = NO_INT_PIN,
+                  int8_t int1Pin = NO_INT_PIN);
 
     // Reset, auto-detect oscillator, calculate bit timing, configure FIFOs and
     // catch-all filter, then enter the requested mode.
@@ -161,6 +166,7 @@ private:
     uint32_t   mTxTimeoutMs   = 10;
     uint32_t   mNbtcfg        = 0;
     int8_t     mIntPin        = NO_INT_PIN;
+    int8_t     mInt1Pin       = NO_INT_PIN;
     bool       mTimestamp     = false;
     uint8_t    mStopPrevMode  = MODE_CONFIG;
     uint8_t    mSleepPrevMode = MODE_CONFIG;

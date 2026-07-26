@@ -151,6 +151,12 @@ constexpr uint8_t  OSC_CLKODIV_DIV2    = 0x01u;  // 01 = ÷2
 constexpr uint8_t  OSC_CLKODIV_DIV4    = 0x02u;  // 10 = ÷4
 constexpr uint8_t  OSC_CLKODIV_DIV10   = 0x03u;  // 11 = ÷10 (reset default)
 
+// IOCON byte 3 (bits 31:24) — PM1/PM0 configure INT1/INT0 as interrupt or GPIO
+// DS20006027B Register 3-2, page 18. Must be written byte-by-byte.
+// PM1=0: INT1 = RX interrupt (CiINT.RXIF & RXIE)  PM1=1: GPIO1 (reset default)
+// PM0=0: INT0 = TX interrupt (CiINT.TXIF & TXIE)  PM0=1: GPIO0 (reset default)
+constexpr uint8_t IOCON3_PM1 = (1u << 1);  // bit 25 of IOCON = byte 3 bit 1
+
 // CiRXOVIF: bit N = FIFO N overflowed; FIFO2 = bit 2
 constexpr uint32_t RXOVIF_FIFO2 = (1u << 2);
 
