@@ -9,13 +9,8 @@
 // or error frames, so it is completely invisible to the other nodes on the bus.
 // Every frame is captured with a hardware timestamp accurate to 50 ns.
 //
-// Connect this board to any active CAN FD bus (or run alongside bus_monitor).
-// Every frame that arrives is printed to Serial in a candump-style format:
-//
-//   t=12507.6 ms  ID=0x100  FD BRS  DLC=8  01 02 03 04 05 06 07 08
-//
-// No second board is required — the logger works on any live bus.
-// To test without a second node, run alongside scope_loopback on the same bus.
+// Connect this board to any active CAN FD bus running at 125 kbps nominal / 2 Mbps data.
+// To test without a second node, run alongside scope_loopback — it uses the same rate.
 
 constexpr uint8_t PIN_SCK  = 33;
 constexpr uint8_t PIN_MISO = 35;
@@ -62,7 +57,7 @@ void setup()
     // MODE_LISTEN means this board never transmits — completely passive.
     CanConfig cfg;
     cfg.enableTimestamp = true;
-    CanStatus s = can.configure(500000, 2000000, MODE_LISTEN, cfg);
+    CanStatus s = can.configure(125000, 2000000, MODE_LISTEN, cfg);
 
     Serial.println("\n==========================");
     Serial.println("  CAN FD Logger");
