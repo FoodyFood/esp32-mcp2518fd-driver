@@ -88,12 +88,12 @@ void loop()
     static uint32_t lastSlow = 0;
 
     uint32_t now = millis();
-    updateVehicleState();
 
     // 10 ms frames — engine and speed
     if (now - lastFast >= 10)
     {
         lastFast = now;
+        updateVehicleState();
 
         CanMsg engine = classicFrame(ID_ENGINE);
         engine.data[0] = (rpm >> 8) & 0xFF;

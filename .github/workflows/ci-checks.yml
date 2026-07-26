@@ -45,7 +45,6 @@ jobs:
         example:
           - walkie_talkie
           - scope_loopback
-          - bus_monitor
           - int_pin
           - uds_filter
           - can_logger

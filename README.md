@@ -122,7 +122,6 @@ Each example is a self-contained PlatformIO project — open, build and flash di
 | Example | What you'll learn |
 |---|---|
 | [`walkie_talkie`](examples/walkie_talkie/) | Send and receive variable-length messages between two boards — the two-node pattern in its simplest form |
-| [`bus_monitor`](examples/bus_monitor/) | Two nodes transmitting counters continuously — a starting point for any two-node project |
 | [`int_pin`](examples/int_pin/) | Wire the INT pin so frame arrival triggers an ISR instead of polling — main loop stays free |
 | [`scope_loopback`](examples/scope_loopback/) | Drive real CAN FD signals on CANH/CANL from a single board — no second node needed for scope measurements |
 | [`uds_filter`](examples/uds_filter/) | Set an acceptance filter so your board only wakes up for the frames it cares about — demonstrated with a UDS request/response pattern |

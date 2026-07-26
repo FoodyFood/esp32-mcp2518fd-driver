@@ -15,7 +15,7 @@
 //   t=12507.6 ms  ID=0x100  FD BRS  DLC=8  01 02 03 04 05 06 07 08
 //
 // No second board is required — the logger works on any live bus.
-// To test with a single board, change MODE_LISTEN to MODE_INTERNAL_LB.
+// To test without a second node, run alongside scope_loopback on the same bus.
 
 constexpr uint8_t PIN_SCK  = 33;
 constexpr uint8_t PIN_MISO = 35;

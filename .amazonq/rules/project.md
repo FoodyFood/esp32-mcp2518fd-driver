@@ -45,6 +45,7 @@ Every spec follows these five steps in order. One feature per step. No skipping.
 - Layer ownership: `registers.h` → constants · `mcp2518fd_spi.*` → wire protocol · `mcp2518fd_can.*` → driver logic.
 - Update all affected call sites (examples + harnesses) in the same change.
 - **Do NOT use WSL or pio directly to build.** Use `verify.py` for integration builds. Unit tests are the only WSL exception.
+- **NEVER pipe or filter command output in any way.** No `findstr`, no `grep`, no `tail`, no `head`, no `| anything`. These hide errors and successes alike, cause silent failures, and always require a re-run. Always capture and display the full raw output directly.
 - Build must pass before testing.
 
 ### 4. Test on real hardware
@@ -220,7 +221,6 @@ A spec that passes hardware but has stale docs is NOT Done. New public API witho
 - `src/mcp2518fd_can.cpp` — driver implementation
 - `examples/walkie_talkie/` — send/receive variable-length messages, two nodes
 - `examples/scope_loopback/` — continuous TX in MODE_EXTERNAL_LB for scope measurements
-- `examples/bus_monitor/` — two nodes transmitting counters (node_a=COM4, node_b=COM3)
 - `examples/int_pin/` — interrupt-driven RX via INT pin
 - `tests/integration/verify.py` — integration test entry point
 - `tests/integration/mcp_test/` — runner, suites, upload, serial I/O
