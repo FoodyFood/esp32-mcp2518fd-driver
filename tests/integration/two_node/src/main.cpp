@@ -157,11 +157,11 @@ static void runNodeA()
     // RX FIFO overflow test — A uses a shallow FIFO, B bursts more frames
     // than it can hold. A verifies the overflow flag is set.
     Serial.println("RX overflow (depth=4, B sends 5):");
-    can.configure(125000, 2000000, MODE_NORMAL, 4);
+    can.configure(125000, 2000000, MODE_NORMAL, CanConfig{4});
     { CanMsg rf = {}; while (can.receive(rf, 5)) {} }
     delay(500);
     CHECK("rxOverflow after 5 frames into depth-4 FIFO",
-          can.getErrors().rxOverflow);
+          can.readAndClearErrors().rxOverflow);
     { CanMsg rf = {}; while (can.receive(rf, 5)) {} }
 
     // SPEC-005: A enters MODE_LISTEN while B transmits
@@ -182,7 +182,7 @@ static void runNodeA()
         }
         CHECK("A received frames in MODE_LISTEN", rxCount > 0);
         // A must not have transmitted anything — TEC stays 0
-        CanError e = can.getErrors();
+        CanError e = can.readAndClearErrors();
         CHECK("A TEC=0 in MODE_LISTEN (no TX)", e.tec == 0);
     }
 
@@ -258,7 +258,7 @@ static void runNodeB()
         // Result is NoAck (expected) or OK if A happened to ACK before entering listen
         CHECK(label, r == CanTxResult::NoAck || r == CanTxResult::OK);
     }
-    CanError errB = can.getErrors();
+    CanError errB = can.readAndClearErrors();
     CHECK("B not bus-off after listen-only test", !errB.busOff);
 
     Serial.println();

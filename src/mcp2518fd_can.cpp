@@ -10,8 +10,12 @@ MCP2518Driver::MCP2518Driver(SPIClass& spi, uint8_t csPin, int8_t intPin)
 // ----------------------------------------------------------------------------
 // Public API
 
-CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode,
-                                   uint8_t rxFifoDepth, bool enableTimestamp)
+CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode)
+{
+    return configure(nominalBps, dataBps, mode, CanConfig{});
+}
+
+CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode, const CanConfig& cfg)
 {
     mSpi.begin();
     // If the chip is in Sleep mode (OSCDIS=1), clear it before reset
@@ -34,7 +38,7 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
         return CanStatus::RATE_NOT_ACHIEVABLE;
 
     applyTiming(nbtcfg, dbtcfg, tdcfg);
-    configFifos(rxFifoDepth, enableTimestamp);
+    configFifos(cfg.rxFifoDepth, cfg.enableTimestamp);
     configFilter();
     mTxTimeoutMs = calcTxTimeout(mFsys, nbtcfg, dbtcfg);
     mNbtcfg = nbtcfg;
@@ -43,7 +47,7 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
 
     // Enable TBC after mode transition — CiTSCON is not config-mode-only
     // and must be set after exiting config mode to survive the transition
-    if (enableTimestamp)
+    if (cfg.enableTimestamp)
         mSpi.write32(REG_CiTSCON, TSCON_TBCEN);
 
     if (mIntPin >= 0)
@@ -79,8 +83,12 @@ CanStatus MCP2518Driver::setDataRate(uint32_t dataBps)
     return CanStatus::OK;
 }
 
-CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode,
-                                      uint8_t rxFifoDepth, bool enableTimestamp)
+CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode)
+{
+    return configureRaw(nbtcfg, dbtcfg, tdcfg, mode, CanConfig{});
+}
+
+CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode, const CanConfig& cfg)
 {
     mSpi.begin();
     mSpi.reset();
@@ -88,14 +96,14 @@ CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t
     mSpi.setMode(MODE_CONFIG);
 
     applyTiming(nbtcfg, dbtcfg, tdcfg);
-    configFifos(rxFifoDepth, enableTimestamp);
+    configFifos(cfg.rxFifoDepth, cfg.enableTimestamp);
     configFilter();
     mTxTimeoutMs = calcTxTimeout(0, nbtcfg, dbtcfg);  // fsys unknown in raw path
     mNbtcfg = nbtcfg;
 
     if (!mSpi.setMode(mode)) return CanStatus::MODE_TIMEOUT;
 
-    if (enableTimestamp)
+    if (cfg.enableTimestamp)
         mSpi.write32(REG_CiTSCON, TSCON_TBCEN);
 
     return CanStatus::OK;
@@ -169,7 +177,7 @@ CanTxResult MCP2518Driver::transmit(const CanMsg& msg)
     return CanTxResult::NoAck;
 }
 
-CanError MCP2518Driver::getErrors()
+CanError MCP2518Driver::readAndClearErrors()
 {
     uint32_t trec = mSpi.read32(REG_CiTREC);
     uint32_t ovif = mSpi.read32(REG_CiRXOVIF);
@@ -183,10 +191,7 @@ CanError MCP2518Driver::getErrors()
     e.rxPassive  = !!(trec & TREC_RXBP);
     e.busOff     = !!(trec & TREC_TXBO);
     e.rxOverflow = !!(ovif & RXOVIF_FIFO2);
-    // Also check per-FIFO RXOVIF in CiFIFOSTA2 (bit 3) — set when FIFO is full and a frame is discarded
-    // CiRXOVIF is the aggregate; CiFIFOSTA2.RXOVIF is the per-FIFO source
     if (!e.rxOverflow) e.rxOverflow = !!(mSpi.read32(FIFO_STA(2)) & FIFOSTA_RXOVIF);
-    // Clear: write 0 to CiFIFOSTA2 to clear RXOVIF bit (DS20005678E page 62)
     if (e.rxOverflow) mSpi.write32(FIFO_STA(2), 0);
     return e;
 }
@@ -204,12 +209,6 @@ bool MCP2518Driver::available()
     return !!(mSpi.read32(FIFO_STA(2)) & FIFOSTA_TFNRFNIF);
 }
 
-bool MCP2518Driver::receive(CanMsg& msg)
-{
-    if (!available()) return false;
-    return receive(msg, 0);
-}
-
 bool MCP2518Driver::receive(CanMsg& msg, uint32_t timeoutMs)
 {
     uint32_t tw = millis();
@@ -225,23 +224,14 @@ bool MCP2518Driver::receive(CanMsg& msg, uint32_t timeoutMs)
 
     msg.ext = (r1 >> 4) & 1;
     if (msg.ext)
-    {
-        // R0[10:0]=SID[10:0], R0[28:11]=EID[17:0]  (DS20006027B Table 3-6)
         msg.id = decodeEidT0(r0);
-    }
     else
-    {
         msg.id = r0 & 0x7FFu;
-    }
+
     msg.fdf = (r1 >> 7) & 1;
     msg.brs = (r1 >> 6) & 1;
     msg.dlc = r1 & 0xFu;
 
-    // RX message object layout (DS20006027B Table 3-6 / ref manual Table 7-1):
-    //   R0 (+0)  — SID/EID
-    //   R1 (+4)  — FILHIT, ESI, FDF, BRS, RTR, IDE, DLC
-    //   R2 (+8)  — RXMSGTS (only present when RXTSEN=1)
-    //   R3 (+12 with timestamp, +8 without) — payload bytes 0-3
     uint8_t payloadOffset = mTimestamp ? 12 : 8;
 
     if (mTimestamp)
@@ -271,25 +261,22 @@ uint8_t MCP2518Driver::getMode()
 
 CanStatus MCP2518Driver::stop()
 {
-    mPrevMode = mSpi.getMode();
-    if (mPrevMode == MODE_CONFIG) return CanStatus::OK;  // already stopped
+    mStopPrevMode = mSpi.getMode();
+    if (mStopPrevMode == MODE_CONFIG) return CanStatus::OK;
     if (!mSpi.setMode(MODE_CONFIG)) return CanStatus::MODE_TIMEOUT;
     return CanStatus::OK;
 }
 
 CanStatus MCP2518Driver::restart()
 {
-    if (!mSpi.setMode(mPrevMode)) return CanStatus::MODE_TIMEOUT;
+    if (!mSpi.setMode(mStopPrevMode)) return CanStatus::MODE_TIMEOUT;
     return CanStatus::OK;
 }
 
 CanStatus MCP2518Driver::sleep()
 {
-    mPrevMode = mSpi.getMode();
-    // Request sleep: REQOP=001 (LPMEN=0 is the reset default — normal sleep, not LPM)
-    // DS20005678E page 11: sleep entered when current message completes
-    mSpi.write8(REG_CiCON + 3, MODE_SLEEP << 0);  // REQOP in bits[2:0] of byte 3
-    // Handshake: OPMOD=CONFIG and OSC.OSCDIS=1 (DS20005678E page 11)
+    mSleepPrevMode = mSpi.getMode();
+    mSpi.write8(REG_CiCON + 3, MODE_SLEEP << 0);
     uint32_t start = millis();
     while (millis() - start < 100)
     {
@@ -301,52 +288,36 @@ CanStatus MCP2518Driver::sleep()
 
 CanStatus MCP2518Driver::wake()
 {
-    // Exit sleep by clearing OSC.OSCDIS (bit 2 of OSC byte 0)
-    // DS20005678E page 11: clearing OSCDIS re-enables the clock;
-    // module transitions automatically to Configuration mode.
     uint8_t osc0 = mSpi.read8(REG_OSC);
     mSpi.write8(REG_OSC, osc0 & ~(uint8_t)OSC_OSCDIS);
-    // Wait for OSCREADY (up to 3 ms oscillator stabilisation, DS20006027B page 79)
     uint32_t start = millis();
     while (millis() - start < 10)
     {
         if ((mSpi.read32(REG_OSC) >> 10) & 1) break;  // OSCREADY
     }
-    if (!mSpi.setMode(mPrevMode)) return CanStatus::MODE_TIMEOUT;
+    if (!mSpi.setMode(mSleepPrevMode)) return CanStatus::MODE_TIMEOUT;
     return CanStatus::OK;
 }
 
-uint32_t MCP2518Driver::readOsc()
-{
-    return mSpi.read32(REG_OSC);
-}
-
 // ----------------------------------------------------------------------------
-// Private — timing helpers are free functions in mcp2518fd_timing.h
+// Private
 
 uint32_t MCP2518Driver::detectFsys()
 {
-    // OSC register (0xE00), byte 0 layout (DS20006027B Register 3-1):
-    //   bit 0 = PLLEN   — 1: PLL enabled (requires 4 MHz input, x10 = 40 MHz)
-    //   bit 4 = SCLKDIV — 1: SYSCLK divided by 2
-    // OSC byte 1:
-    //   bit 2 (bit 10 overall) = OSCREADY
-    //
-    // Wait for OSCREADY before reading SCLKDIV/PLLEN
     uint32_t start = millis();
     while (millis() - start < 10)
     {
         uint32_t osc = mSpi.read32(REG_OSC);
-        if ((osc >> 10) & 1)  // OSCREADY
+        if ((osc >> 10) & 1)
         {
             bool pllen   = (osc >> 0) & 1;
             bool sclkdiv = (osc >> 4) & 1;
-            uint32_t fsys = pllen ? 40000000u : 20000000u;  // PLL: 4MHz*10=40MHz; no PLL: crystal direct
+            uint32_t fsys = pllen ? 40000000u : 20000000u;
             if (sclkdiv) fsys /= 2;
             return fsys;
         }
     }
-    return 0;  // clock not ready
+    return 0;
 }
 
 void MCP2518Driver::applyTiming(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg)
@@ -355,7 +326,6 @@ void MCP2518Driver::applyTiming(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg
     mSpi.write32(REG_CiDBTCFG, dbtcfg);
     mSpi.write32(REG_CiTDC,    tdcfg);
 
-    // Disable TXQ and TEF, enable RTXAT
     uint8_t con2 = mSpi.read8(REG_CiCON + 2);
     con2 &= ~((1u << 4) | (1u << 3));
     con2 |= CON2_RTXAT;
@@ -366,26 +336,20 @@ void MCP2518Driver::configFifos(uint8_t rxFifoDepth, bool enableTimestamp)
 {
     mTimestamp = enableTimestamp;
 
-    // RAM budget: FIFO1 (TX, depth=4) = 4 × 72 = 288 bytes; remaining = 1760 bytes
-    // Without timestamp: slot = R0+R1+payload = 4+4+64 = 72 bytes → floor(1760/72) = 24
-    // With timestamp:    slot = R0+R1+R2+payload = 4+4+4+64 = 76 bytes → floor(1760/76) = 23
     uint8_t maxDepth = enableTimestamp ? 23 : 24;
     if (rxFifoDepth < 1)        rxFifoDepth = 1;
     if (rxFifoDepth > maxDepth) rxFifoDepth = maxDepth;
 
-    uint32_t plsize   = (uint32_t)PLSIZE_64 << FIFOCON_PLSIZE_SHIFT;
-    uint32_t txFsize  = (4u - 1u) << FIFOCON_FSIZE_SHIFT;  // FSIZE field = depth-1
-    uint32_t rxFsize  = (uint32_t)(rxFifoDepth - 1u) << FIFOCON_FSIZE_SHIFT;
+    uint32_t plsize  = (uint32_t)PLSIZE_64 << FIFOCON_PLSIZE_SHIFT;
+    uint32_t txFsize = (4u - 1u) << FIFOCON_FSIZE_SHIFT;
+    uint32_t rxFsize = (uint32_t)(rxFifoDepth - 1u) << FIFOCON_FSIZE_SHIFT;
     mSpi.write32(FIFO_CON(1), plsize | txFsize | FIFOCON_TXAT_3 | FIFOCON_TXEN);
 
-    // RXTSEN (bit 5) enables per-message timestamp capture in RAM (DS20006027B page 55)
-    // TFNRFNIE (bit 0) enables the per-FIFO not-empty interrupt — feeds CiINT.RXIF
     uint32_t rxCon = plsize | rxFsize;
     if (enableTimestamp) rxCon |= FIFOCON_RXTSEN;
     if (mIntPin >= 0)    rxCon |= FIFOCON_TFNRFNIE;
     mSpi.write32(FIFO_CON(2), rxCon);
 
-    // Enable RXIE in CiINT so the INT pin asserts on RX (DS20006027B Register 3-14 bit 17)
     if (mIntPin >= 0)
     {
         uint8_t intByte2 = mSpi.read8(REG_CiINT + 2);
@@ -395,7 +359,6 @@ void MCP2518Driver::configFifos(uint8_t rxFifoDepth, bool enableTimestamp)
 
 void MCP2518Driver::configFilter()
 {
-    // Catch-all: id=0, mask=0 (all don't-care), ext=false (MIDE=0 → match both SID and EID)
     setFilter(0, 0, 0, false);
 }
 
@@ -403,20 +366,16 @@ void MCP2518Driver::setFilter(uint8_t index, uint32_t id, uint32_t mask, bool ex
 {
     if (index > 31) return;
 
-    // Disable filter before modifying OBJ/MASK (DS20006027B Register 3-32 Note 1)
     uint16_t conReg  = FLTCON_REG(index);
     uint8_t  conByte = FLTCON_BYTE(index);
     mSpi.write8(conReg + conByte, 0x00);
 
-    // Encode OBJ: SID[10:0] at bits[10:0], EID[17:0] at bits[28:11], EXIDE at bit[30]
-    // Same bit layout as T0/R0 message object (DS20006027B Register 3-33)
     uint32_t obj = ext ? encodeFilterObjEid(id)   : (id   & 0x7FFu);
     uint32_t msk = ext ? encodeFilterMskEid(mask) : (mask & 0x7FFu);
 
     mSpi.write32(FLTOBJ(index), obj);
     mSpi.write32(FLTMSK(index), msk);
 
-    // Re-enable: FLTEN=1, route to FIFO2 (DS20006027B Register 3-32)
     mSpi.write8(conReg + conByte, (1u << 7) | 0x02);
 }
 
@@ -426,7 +385,11 @@ void MCP2518Driver::clearFilter(uint8_t index)
     mSpi.write8(FLTCON_REG(index) + FLTCON_BYTE(index), 0x00);
 }
 
-
+void MCP2518Driver::resetFilters()
+{
+    configFilter();  // reinstalls catch-all on filter 0
+    for (uint8_t i = 1; i <= 31; i++) clearFilter(i);
+}
 
 uint16_t MCP2518Driver::txRamAddr()
 {

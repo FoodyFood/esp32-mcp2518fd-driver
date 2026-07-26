@@ -110,7 +110,7 @@ After running tests, generate the coverage report:
 wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit && python3 coverage.py"
 ```
 
-Coverage baseline: **100% lines, 100% functions, ~68% branches** (branch ceiling is a
+Coverage baseline: **100% lines, 100% functions, ~77% branches** (branch ceiling is a
 property of `constexpr` ternary chains — not a gap to close).
 
 **When to add unit tests:**

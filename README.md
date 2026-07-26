@@ -168,11 +168,13 @@ void loop() {
 
 ### Hardware timestamps
 
-Pass `enableTimestamp=true` to get a 32-bit hardware counter value on every received frame.
+Pass a `CanConfig` with `enableTimestamp=true` to get a 32-bit hardware counter value on every received frame.
 Resolution is 1 FSYS clock — 50 ns at 20 MHz.
 
 ```cpp
-can.configure(500000, 2000000, MODE_NORMAL, 16, true);  // enable timestamps
+CanConfig cfg;
+cfg.enableTimestamp = true;
+can.configure(500000, 2000000, MODE_NORMAL, cfg);  // enable timestamps
 
 CanMsg rx;
 can.receive(rx, 500);

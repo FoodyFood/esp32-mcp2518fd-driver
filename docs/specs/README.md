@@ -70,7 +70,7 @@ No hardware changes. Must be done before SPEC-008 to avoid compounding the issue
 
 | Spec | Title | Status |
 |---|---|---|
-| [SPEC-007](SPEC-007-api-review.md) | Public API Review and Cleanup | Pending |
+| [SPEC-007](SPEC-007-api-review.md) | Public API Review and Cleanup | Done |
 
 ## Group G — Battery-Emulator Integration
 
