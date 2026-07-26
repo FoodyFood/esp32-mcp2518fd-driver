@@ -30,6 +30,15 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
     delay(20);
     mSpi.setMode(MODE_CONFIG);
 
+    if (cfg.clkoDivider != 0)
+    {
+        uint8_t enc = clkoDivToReg(cfg.clkoDivider);
+        if (enc == 0xFF) return CanStatus::RATE_NOT_ACHIEVABLE;
+        uint8_t osc0 = mSpi.read8(REG_OSC);
+        osc0 = (osc0 & ~(0x03u << OSC_CLKODIV_SHIFT)) | (enc << OSC_CLKODIV_SHIFT);
+        mSpi.write8(REG_OSC, osc0);
+    }
+
     mFsys = detectFsys();
     if (mFsys == 0) return CanStatus::CLOCK_NOT_READY;
 
@@ -99,6 +108,15 @@ CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t
     mSpi.reset();
     delay(20);
     mSpi.setMode(MODE_CONFIG);
+
+    if (cfg.clkoDivider != 0)
+    {
+        uint8_t enc = clkoDivToReg(cfg.clkoDivider);
+        if (enc == 0xFF) return CanStatus::RATE_NOT_ACHIEVABLE;
+        uint8_t osc0 = mSpi.read8(REG_OSC);
+        osc0 = (osc0 & ~(0x03u << OSC_CLKODIV_SHIFT)) | (enc << OSC_CLKODIV_SHIFT);
+        mSpi.write8(REG_OSC, osc0);
+    }
 
     applyTiming(nbtcfg, dbtcfg, tdcfg);
     configFifos(cfg.rxFifoDepth, cfg.enableTimestamp);

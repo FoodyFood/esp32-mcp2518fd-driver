@@ -1,7 +1,7 @@
 # SPEC-009 — CLKO Output Pin Configuration
 
 ## Status
-Pending
+Done
 
 ## Context
 Drawn from [`docs/use_cases/uc-dala-battery-emulator.md`](../use_cases/uc-dala-battery-emulator.md) IR-19.
@@ -16,11 +16,26 @@ Without CLKO configured correctly on the first chip, the second chip has no cloc
 and will fail to initialise on the T-2CAN FD board.
 
 ## Datasheet findings
-_To be filled in during implementation after PDF verification._
 
-Key registers to verify:
-- OSC register (0xE00) — CLKODIV field, CLKOEN bit
-- Confirm reset default of CLKODIV and CLKOEN
+**OSC register 0xE00, byte 0 (bits 7:0) — DS20006027B Register 3-1, page 16:**
+- `CLKODIV[1:0]` at bits 6:5. Encoding: `00`=÷1, `01`=÷2, `10`=÷4, `11`=÷10.
+- Reset default: both bits are `R/W-1` → reset value = `0b11` = ÷10. CLKO is active at reset.
+- **There is no CLKOEN bit.** The CLKO pin is always driven. "Disabled" in the spec means the
+  caller does not connect the pin; the driver leaves CLKODIV at reset default (÷10).
+- CLKODIV has no config-mode restriction — it is R/W at any time.
+- IOCON.SOF (bit 29 of IOCON at 0xE04) repurposes the CLKO/SOF pin to output a SOF pulse
+  instead of a clock. This is orthogonal to CLKODIV and not touched by this spec.
+- OSCREADY (OSC bit 10) is unaffected by CLKODIV — no interference with clock stability detection.
+
+**Implication for AC-3:** "CLKO disabled by default" means the driver does not write CLKODIV
+when `clkoDivider=0`, leaving the reset default (÷10) in place. The pin is not intentionally driven
+at a useful frequency, so existing callers are unaffected in practice.
+
+**Implication for AC-4:** 40 MHz oscillator with `clkoDivider=10` → CLKODIV=`11` → CLKO = 4 MHz.
+Second chip with 4 MHz input and PLLEN=1 → FSYS = 40 MHz. This is the T-2CAN FD use case.
+
+**API correction:** The spec draft says `clkoDivider=10` maps to CLKODIV=`11`. The accepted
+divisor values are 1, 2, 4, 10 only. Any other value is rejected with RATE_NOT_ACHIEVABLE.
 
 ## Acceptance criteria
 
@@ -52,10 +67,17 @@ All existing single_node, id_filter and two_node assertions pass after this chan
 
 ## API change
 ```cpp
-// clkoDivider: 0 = disabled, other values TBC from datasheet CLKODIV field
-CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode,
-                    uint8_t rxFifoDepth = 8, bool enableTimestamp = false,
-                    uint8_t clkoDivider = 0);
+// CanConfig gains a clkoDivider field:
+// 0 = leave at reset default (CLKO pin not intentionally used)
+// 1, 2, 4, 10 = set CLKODIV to divide SYSCLK by that value
+struct CanConfig {
+    uint8_t rxFifoDepth     = 16;
+    bool    enableTimestamp = false;
+    uint8_t clkoDivider     = 0;   // 0=default, 1/2/4/10=active
+};
+
+// configureRaw() also accepts CanConfig, so clkoDivider is reachable there too.
+// Invalid clkoDivider values (not in {0,1,2,4,10}) return RATE_NOT_ACHIEVABLE.
 ```
 
 ## Notes

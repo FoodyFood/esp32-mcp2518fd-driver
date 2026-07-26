@@ -67,9 +67,11 @@ struct CanConfig
 {
     uint8_t rxFifoDepth     = 16;    // RX FIFO slot count (1–23 with timestamp, 1–24 without)
     bool    enableTimestamp = false; // enable 32-bit hardware timestamp on each received frame
+    uint8_t clkoDivider     = 0;     // CLKO output divisor: 0=leave at reset default, 1/2/4/10=active
 
     CanConfig() = default;
-    explicit CanConfig(uint8_t depth, bool ts = false) : rxFifoDepth(depth), enableTimestamp(ts) {}
+    explicit CanConfig(uint8_t depth, bool ts = false, uint8_t clko = 0)
+        : rxFifoDepth(depth), enableTimestamp(ts), clkoDivider(clko) {}
 };
 
 // GPIO sentinel — pass as intPin when no interrupt pin is connected

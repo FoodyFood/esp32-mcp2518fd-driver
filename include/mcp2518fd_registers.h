@@ -140,9 +140,16 @@ constexpr uint32_t BDIAG1_TXBOERR = (1u << 23);  // device went to bus-off
 // bits 9:0 = TBCPRE: prescaler (0 = increment every 1 FSYS clock)
 constexpr uint32_t TSCON_TBCEN = (1u << 16);
 
-// OSC register bit positions (DS20006027B Register 3-1)
+// OSC register bit positions (DS20006027B Register 3-1, page 16)
 // bit 2 = OSCDIS: oscillator disabled (reads 1 in Sleep mode; clear to wake)
-constexpr uint32_t OSC_OSCDIS = (1u << 2);
+// bits 6:5 = CLKODIV[1:0]: clock output divisor
+//   00=÷1  01=÷2  10=÷4  11=÷10 (reset default = 11)
+constexpr uint32_t OSC_OSCDIS          = (1u << 2);
+constexpr uint8_t  OSC_CLKODIV_SHIFT   = 5;
+constexpr uint8_t  OSC_CLKODIV_DIV1    = 0x00u;  // 00 = ÷1
+constexpr uint8_t  OSC_CLKODIV_DIV2    = 0x01u;  // 01 = ÷2
+constexpr uint8_t  OSC_CLKODIV_DIV4    = 0x02u;  // 10 = ÷4
+constexpr uint8_t  OSC_CLKODIV_DIV10   = 0x03u;  // 11 = ÷10 (reset default)
 
 // CiRXOVIF: bit N = FIFO N overflowed; FIFO2 = bit 2
 constexpr uint32_t RXOVIF_FIFO2 = (1u << 2);

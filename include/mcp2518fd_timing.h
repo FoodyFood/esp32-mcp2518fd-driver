@@ -96,6 +96,18 @@ inline uint32_t calcTxTimeout(uint32_t fsys, uint32_t nbtcfg, uint32_t dbtcfg)
     return ms < 2 ? 2 : ms;
 }
 
+// CLKODIV encoding: maps divisor value to 2-bit CLKODIV field (OSC bits 6:5)
+// Valid divisors: 1, 2, 4, 10. Returns 0xFF for invalid values.
+// Encoding: 00=÷1, 01=÷2, 10=÷4, 11=÷10 (DS20006027B Register 3-1, page 16)
+inline constexpr uint8_t clkoDivToReg(uint8_t divisor)
+{
+    return (divisor ==  1) ? 0x00u
+         : (divisor ==  2) ? 0x01u
+         : (divisor ==  4) ? 0x02u
+         : (divisor == 10) ? 0x03u
+         : 0xFFu;  // invalid
+}
+
 // CAN FD DLC → byte length (DS20006027B Table 3-3)
 // DLC 0-8 map 1:1; DLC 9=12, 10=16, 11=20, 12=24, 13=32, 14=48, 15=64
 inline constexpr uint8_t dlcToLen(uint8_t dlc)
