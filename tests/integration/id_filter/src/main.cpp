@@ -127,6 +127,26 @@ void runTest()
     CHECK("0x200 received",        got5b && rx5b.id == 0x200);
     CHECK("0x300 not in FIFO",     !can.available());
 
+    // ------------------------------------------------------------------
+    // 6. resetFilters() — clears filters 1-31, reinstalls catch-all on 0
+    // ------------------------------------------------------------------
+    Serial.println("resetFilters() restores catch-all:");
+    can.configure(125000, 2000000, MODE_INTERNAL_LB);
+    can.setFilter(0, 0x100, 0x7FF, false);
+    can.setFilter(1, 0x200, 0x7FF, false);
+    can.resetFilters();
+
+    // After resetFilters(), all three IDs must pass
+    can.transmit(frame(0x100, false, 0x11));
+    can.transmit(frame(0x200, false, 0x22));
+    can.transmit(frame(0x300, false, 0x33));
+
+    CanMsg rx6a = {}, rx6b = {}, rx6c = {};
+    CHECK("0x100 passes after resetFilters", can.receive(rx6a, 50) && rx6a.id == 0x100);
+    CHECK("0x200 passes after resetFilters", can.receive(rx6b, 50) && rx6b.id == 0x200);
+    CHECK("0x300 passes after resetFilters", can.receive(rx6c, 50) && rx6c.id == 0x300);
+    CHECK("no extra frames in FIFO",         !can.available());
+
     Serial.println();
 }
 

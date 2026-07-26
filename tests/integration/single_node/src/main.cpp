@@ -427,6 +427,63 @@ void runTest()
     }
 
     // ------------------------------------------------------------------
+    // SPEC-007: stop() -> sleep() -> wake() restores original mode
+    // (exercises mStopPrevMode / mSleepPrevMode independence)
+    // ------------------------------------------------------------------
+    Serial.println("stop() -> sleep() -> wake() mode restore:");
+    can.configure(500000, 2000000, MODE_INTERNAL_LB);
+    {
+        can.stop();
+        CHECK("mode = CONFIG after stop", can.getMode() == MODE_CONFIG);
+        CHECK("sleep() returns OK", can.sleep() == CanStatus::OK);
+        CHECK("wake() returns OK", can.wake() == CanStatus::OK);
+        // wake() must restore the mode active before sleep() (MODE_CONFIG),
+        // not the mode active before stop() (MODE_INTERNAL_LB).
+        // restart() then restores the original running mode.
+        CHECK("mode = CONFIG after wake (sleep pair independent of stop)",
+              can.getMode() == MODE_CONFIG);
+        CHECK("restart() returns OK", can.restart() == CanStatus::OK);
+        CHECK("mode = INTERNAL_LB after restart", can.getMode() == MODE_INTERNAL_LB);
+    }
+
+    // ------------------------------------------------------------------
+    // SPEC-009: CLKO divider — configure with each valid value, verify
+    // CanStatus::OK and chip still functional (loopback frame passes).
+    // Register readback is not exposed publicly; functional verification
+    // (configure succeeds + loopback passes) is sufficient to confirm the
+    // OSC write did not corrupt the chip.
+    // ------------------------------------------------------------------
+    Serial.println("CLKO divider (clkoDivider=1/2/4/10):");
+    {
+        uint8_t dividers[] = { 1, 2, 4, 10 };
+        for (int d = 0; d < 4; d++)
+        {
+            char label[56];
+            CanStatus s = can.configure(125000, 2000000, MODE_INTERNAL_LB,
+                                        CanConfig{16, false, dividers[d]});
+            snprintf(label, sizeof(label), "configure() OK with clkoDivider=%d", dividers[d]);
+            CHECK(label, s == CanStatus::OK);
+            snprintf(label, sizeof(label), "mode = INTERNAL_LB with clkoDivider=%d", dividers[d]);
+            CHECK(label, can.getMode() == MODE_INTERNAL_LB);
+
+            CanMsg tf;
+            tf.id = 0x800 + d; tf.fdf = true; tf.brs = true; tf.dlc = 8;
+            for (int i = 0; i < 8; i++) tf.data[i] = (uint8_t)(0xD0 + i);
+            bool txOk = can.transmit(tf) == CanTxResult::OK;
+            CanMsg rf = {};
+            bool rxOk = can.receive(rf, 50) && rf.id == tf.id;
+            snprintf(label, sizeof(label), "loopback OK with clkoDivider=%d", dividers[d]);
+            CHECK(label, txOk && rxOk);
+        }
+
+        // Invalid divider must be rejected
+        CanStatus bad = can.configure(125000, 2000000, MODE_INTERNAL_LB,
+                                      CanConfig{16, false, 3});
+        CHECK("invalid clkoDivider=3 returns RATE_NOT_ACHIEVABLE",
+              bad == CanStatus::RATE_NOT_ACHIEVABLE);
+    }
+
+    // ------------------------------------------------------------------
     // SPEC-008: Classic CAN mode (MODE_CLASSIC)
     // ------------------------------------------------------------------
     Serial.println("classic CAN mode (MODE_CLASSIC):");

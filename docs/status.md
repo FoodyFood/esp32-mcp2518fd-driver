@@ -228,11 +228,20 @@ Run: `wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit &&
 - AC-4 (dual-chip T-2CAN FD board) not verified — hardware not available. Register readback confirms CLKODIV is set correctly.
 
 | Suite | Status | Notes |
-|---|---|
+|---|---|---|
 | single_node | ✅ Verified | All assertions OK; no regressions |
 | id_filter | ✅ Verified | No regressions |
 | two_node | ✅ Verified | No regressions |
 | unit tests | ✅ Verified | 100/100 passing, 100% lines/functions |
+
+## Harness coverage audit (post-SPEC-009)
+
+| Gap | Resolution |
+|---|---|
+| SPEC-007 `resetFilters()` uncalled | Added to `id_filter` harness — sets filters 0+1, calls `resetFilters()`, verifies all three IDs pass |
+| SPEC-007 stop→sleep→wake sequence | Added to `single_node` — verifies `mStopPrevMode`/`mSleepPrevMode` independence |
+| SPEC-009 CLKO register readback | Added to `single_node` — iterates dividers 1/2/4/10, verifies `CanStatus::OK` + loopback per divider, confirms invalid value 3 returns `RATE_NOT_ACHIEVABLE` |
+| SPEC-003 disconnected-bus TX error | Not automatable — requires physical bus disconnection. Accepted as manual-only gap. |
 
 
 
