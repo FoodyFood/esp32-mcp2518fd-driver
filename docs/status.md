@@ -210,7 +210,31 @@ Run: `wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit &&
 | id_filter        | ✅ Verified | All assertions OK on COM4; no regressions |
 | two_node         | ✅ Verified | All assertions OK on both nodes; listen-only A/B test |
 
-## SPEC-008 — Classic CAN Mode (MODE_CLASSIC)
+## SPEC-009 — CLKO Output Pin Configuration
+
+| Feature | Status | Notes |
+|---|---|---|
+| `CanConfig.clkoDivider` field | ✅ Verified | Default 0 = leave at reset default; 1/2/4/10 = active |
+| CLKODIV encoding (OSC bits 6:5) | ✅ Verified | 00=÷1, 01=÷2, 10=÷4, 11=÷10 (DS20006027B Register 3-1, page 16) |
+| Invalid divider returns RATE_NOT_ACHIEVABLE | ✅ Verified | clkoDivToReg() returns 0xFF for non-{1,2,4,10} values |
+| CLKODIV written after reset, before detectFsys() | ✅ Verified | OSC byte 0 read-modify-write in config mode |
+| No regression on existing callers | ✅ Verified | All three suites pass; clkoDivider=0 leaves OSC unchanged |
+| `configureRaw()` also accepts clkoDivider | ✅ Verified | Same write path |
+
+### Hardware observations
+- CLKO pin is always driven at reset (CLKODIV=11=÷10 by default). There is no CLKOEN bit.
+- CLKODIV is R/W with no config-mode restriction, but we write it in config mode for consistency.
+- OSCREADY (bit 10) is unaffected by CLKODIV — detectFsys() works correctly after CLKODIV write.
+- AC-4 (dual-chip T-2CAN FD board) not verified — hardware not available. Register readback confirms CLKODIV is set correctly.
+
+| Suite | Status | Notes |
+|---|---|
+| single_node | ✅ Verified | All assertions OK; no regressions |
+| id_filter | ✅ Verified | No regressions |
+| two_node | ✅ Verified | No regressions |
+| unit tests | ✅ Verified | 100/100 passing, 100% lines/functions |
+
+
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -235,4 +259,4 @@ Run: `wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit &&
 | single_node | ✅ Verified | MODE_CLASSIC entry, FD rejection, setDataRate guard, classic loopback |
 | id_filter | ✅ Verified | No regressions |
 | two_node | ✅ Verified | 10-frame classic exchange A↔B on real bus |
-| unit tests | ✅ Verified | 88/88 passing, 100% lines/functions |
+| unit tests | ✅ Verified | 100/100 passing, 100% lines/functions |

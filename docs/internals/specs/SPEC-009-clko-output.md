@@ -1,7 +1,7 @@
 # SPEC-009 — CLKO Output Pin Configuration
 
 ## Status
-In Progress
+Done
 
 ## Context
 Drawn from [`docs/use_cases/uc-dala-battery-emulator.md`](../use_cases/uc-dala-battery-emulator.md) IR-19.

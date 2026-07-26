@@ -83,7 +83,7 @@ is clocked from the first.
 | Spec | Title | IR closed | Status |
 |---|---|---|---|
 | [SPEC-008](SPEC-008-classic-can-mode.md) | Classic CAN Mode on FD Chip (Normal20B) | IR-18 | Pending |
-| [SPEC-009](SPEC-009-clko-output.md) | CLKO Output Pin Configuration | IR-19 | Pending |
+| [SPEC-009](SPEC-009-clko-output.md) | CLKO Output Pin Configuration | IR-19 | Done |
 | [SPEC-010](SPEC-010-dual-int-pins.md) | Dual INT Pin Support (INT0 / INT1) | IR-20 | Pending |
 
 ## Group G — Real-World Examples (consumes previous specs)
