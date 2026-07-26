@@ -99,7 +99,7 @@ struct CanConfig {
 |---|---|---|
 | `rxFifoDepth` | `16` | RX FIFO slot count. Range: 1–24 without timestamps, 1–23 with timestamps. Clamped automatically. |
 | `enableTimestamp` | `false` | Attach a 32-bit hardware timestamp to every received frame. Resolution: 1 FSYS clock (50 ns at 20 MHz). |
-| `clkoDivider` | `0` | CLKO output pin divisor. `0` = leave at reset default (÷10, pin not intentionally driven). `1`, `2`, `4`, or `10` = divide SYSCLK by that value and drive CLKO. Any other value returns `CanStatus::RATE_NOT_ACHIEVABLE`. |
+| `clkoDivider` | `0` | CLKO output pin divisor. `0` = leave at reset default (÷10). `1`, `2`, `4`, or `10` = divide SYSCLK by that value and drive CLKO at that frequency. Any other value returns `CanStatus::RATE_NOT_ACHIEVABLE`. The OSC register is written immediately after chip reset, before any other configuration — this is required by the MCP2518FD hardware and is handled automatically by the driver. |
 
 ---
 
