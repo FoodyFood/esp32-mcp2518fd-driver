@@ -34,7 +34,10 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
     if (mFsys == 0) return CanStatus::CLOCK_NOT_READY;
 
     uint32_t nbtcfg, dbtcfg, tdcfg;
-    if (!calcBitTiming(mFsys, nominalBps, dataBps, nbtcfg, dbtcfg, tdcfg))
+    // In MODE_CLASSIC the data phase is unused; pass nominal rate for both so
+    // calcBitTiming() succeeds and the data registers get a consistent value.
+    uint32_t effectiveDataBps = (mode == MODE_CLASSIC) ? nominalBps : dataBps;
+    if (!calcBitTiming(mFsys, nominalBps, effectiveDataBps, nbtcfg, dbtcfg, tdcfg))
         return CanStatus::RATE_NOT_ACHIEVABLE;
 
     applyTiming(nbtcfg, dbtcfg, tdcfg);
@@ -61,6 +64,8 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
 
 CanStatus MCP2518Driver::setDataRate(uint32_t dataBps)
 {
+    if (mSpi.getMode() == MODE_CLASSIC) return CanStatus::INVALID_MODE;
+
     uint8_t prevMode = mSpi.getMode();
 
     // Calculate before entering config mode — fail early without disturbing the chip
@@ -126,6 +131,8 @@ CanTxResult MCP2518Driver::transmit(const CanMsg& msg)
     // Listen Only mode: chip ignores TXREQ, no ACK sent — return immediately
     if (mSpi.getMode() == MODE_LISTEN) return CanTxResult::NoAck;
 
+    // Classic CAN mode: FD frames are not permitted
+    if (mSpi.getMode() == MODE_CLASSIC && msg.fdf) return CanTxResult::InvalidMode;
     if (!(mSpi.read32(FIFO_STA(1)) & FIFOSTA_TFNRFNIF))
         return CanTxResult::FifoFull;
 

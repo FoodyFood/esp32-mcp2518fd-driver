@@ -635,9 +635,30 @@ void test_fltmsk0_address()  { TEST_ASSERT_EQUAL_HEX16(0x1F4, FLTMSK(0)); }
 void test_fltcon0_address()  { TEST_ASSERT_EQUAL_HEX16(0x1D0, FLTCON_REG(0)); }
 
 // ============================================================================
+// SPEC-008 — calcBitTiming with nominal==data (classic mode substitution)
+// configure() passes nominalBps for both args when mode==MODE_CLASSIC
+// ============================================================================
 
-void setUp()    {}
-void tearDown() {}
+void test_calcBitTiming_classic_mode_nominal_equals_data_500k()
+{
+    // configure(500000, 0, MODE_CLASSIC) substitutes dataBps=nominalBps=500000
+    // 20MHz/500kbps=40TQ: tseg2=8, tseg1=31 — fits in both nominal (8-bit) and data (5-bit) fields
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    TEST_ASSERT_TRUE(calcBitTiming(20000000, 500000, 500000, nbtcfg, dbtcfg, tdcfg));
+    TEST_ASSERT_EQUAL_HEX32(NBTCFG_500K_20MHZ, nbtcfg);
+    TEST_ASSERT_EQUAL_HEX32(0x001F0808u, dbtcfg);  // same encoding: BRP=0 TSEG1=31 TSEG2=8 SJW=8
+    TEST_ASSERT_EQUAL_UINT32(0, tdcfg);             // 500 kbps < 1 Mbps — TDC disabled
+}
+
+void test_calcBitTiming_classic_mode_nominal_equals_data_125k()
+{
+    // 20MHz/125kbps=160TQ: tseg2=32, tseg1=127 — tseg1=127 exceeds 5-bit data field (max 31)
+    // calcBitTiming caps tseg1 to 31 then verifies rate: 20MHz/(1+31+32)=312500 ≠ 125000 → false
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    TEST_ASSERT_FALSE(calcBitTiming(20000000, 125000, 125000, nbtcfg, dbtcfg, tdcfg));
+}
+
+
 
 int main(int argc, char** argv)
 {
@@ -766,6 +787,10 @@ int main(int argc, char** argv)
     RUN_TEST(test_fltobj0_address);
     RUN_TEST(test_fltmsk0_address);
     RUN_TEST(test_fltcon0_address);
+
+    // SPEC-008 — calcBitTiming classic mode substitution (nominal==data)
+    RUN_TEST(test_calcBitTiming_classic_mode_nominal_equals_data_500k);
+    RUN_TEST(test_calcBitTiming_classic_mode_nominal_equals_data_125k);
 
     return UNITY_END();
 }

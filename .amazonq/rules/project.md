@@ -12,6 +12,16 @@ Every feature is spec-driven. Real-world coverage tracked in `docs/use_cases/cov
 ## Autonomous Execution
 Chain all tool calls that can be sequenced without a decision — build, upload, test, commit — in one uninterrupted run. Stop only when a genuine decision is needed. Never pause to report progress.
 
+## User Interaction — Treat the User as a Slow, Unreliable Resource
+The user is the slowest and least reliable part of this system. Every unnecessary interaction is a bottleneck.
+- **Never ask the user to run the same command multiple times in sequence.** Chain them yourself.
+- **Never split a build+test+commit sequence into steps that require the user to press Enter between them.** Do it all in one tool call chain.
+- **Never ask for confirmation on decisions that are reversible** (file edits, builds, commits on a branch). Just do it.
+- **Never report intermediate progress** mid-chain — only report the final outcome or a genuine blocking decision.
+- **Prefer `--suite all` over running suites one at a time.** One command, one result.
+- **Prefer `--build-only` for compile checks** before touching hardware — catches errors without needing the user present.
+- A genuine blocking decision is: hardware test failed and the cause is ambiguous, or a design choice with non-obvious trade-offs. Everything else: proceed.
+
 ## Source of Truth
 All register addresses and bit positions **must** be verified against the PDFs in `docs/reference/` before use. Use `python tools/search.py <keywords>` — results go to `docs/reference/search_results.txt`. Never assume a value.
 
@@ -41,19 +51,17 @@ Every spec follows these five steps in order. One feature per step. No skipping.
 ### 4. Test on real hardware
 All integration commands run on **Windows** (never WSL). Two boards: COM4 and COM3.
 
+**Always use `--suite all` in a single command.** Do not run suites one at a time and wait for the user between them.
+
 ```
-# Always run first
-python tests/integration/verify.py --suite single_node --port COM4
+# Build check first (no hardware needed, catches compile errors immediately)
+python tests/integration/verify.py --suite all --port COM4 --port-b COM3 --build-only
 
-# Any spec touching filters or EID
-python tests/integration/verify.py --suite id_filter --port COM4
-
-# Any spec touching TX, RX, filters, errors or timing
-python tests/integration/verify.py --suite two_node --port COM4 --port-b COM3
-
-# Full regression — run before marking any spec Done
+# Full run — build + upload + test all suites in one shot
 python tests/integration/verify.py --suite all --port COM4 --port-b COM3
 ```
+
+Only fall back to a single suite if `--suite all` fails and you need to isolate which suite is broken.
 
 Spec-specific hardware checks:
 - SPEC-003: bus disconnected, one node, MODE_NORMAL — verify NoAck + TEC increment
@@ -151,10 +159,11 @@ All spec work stays on the branch until hardware verification is complete. PR to
 | 0.4.0 | SPEC-004 (Interrupt RX + FIFO depth) |
 | 0.5.0 | SPEC-005 (RX timestamp + listen-only) |
 | 0.6.0 | SPEC-006 (Stop/restart/sleep) |
-| 0.7.0 | SPEC-008 (Classic CAN mode) |
-| 0.8.0 | SPEC-009 (CLKO output) |
-| 0.9.0 | SPEC-010 (Dual INT pins) |
-| 0.10.0 | SPEC-011 (Battery simulator example) |
+| 0.7.0 | SPEC-007 (API cleanup) |
+| 0.8.0 | SPEC-008 (Classic CAN mode) |
+| 0.9.0 | SPEC-009 (CLKO output) |
+| 0.10.0 | SPEC-010 (Dual INT pins) |
+| 0.11.0 | SPEC-011 (Battery simulator example) |
 
 Update this table when a new spec is added.
 
