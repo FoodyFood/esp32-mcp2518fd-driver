@@ -20,12 +20,13 @@ can.receive(rx, 500);  // blocking, 500 ms timeout
 
 ## Installation
 
-**PlatformIO** — add to `platformio.ini`:
+**PlatformIO** — [foodyfood/esp32-mcp2518fd-driver](https://registry.platformio.org/libraries/foodyfood/esp32-mcp2518fd-driver)
+
+Add to `platformio.ini`:
 ```ini
 lib_deps = foodyfood/esp32-mcp2518fd-driver
 ```
 
-**Arduino IDE** — search for `esp32-mcp2518fd-driver` in the Library Manager.
 
 ---
 
@@ -59,7 +60,7 @@ void loop() {
 }
 ```
 
-**[Full API reference →](docs/api.md)**
+**[Full API reference →](https://github.com/FoodyFood/esp32-mcp2518fd-driver/blob/main/docs/api.md)**
 
 ---
 
@@ -147,7 +148,7 @@ Every feature was developed and verified on real hardware — not simulated, not
 | SPI | VSPI — SCK=33, MISO=35, MOSI=32, CS=25 |
 | INT | GPIO 34 |
 
-Other ESP32 boards and MCP2518FD breakout variants should work provided the SPI pins are configured correctly. See [docs/hardware.md](docs/hardware.md) for wiring details.
+Other ESP32 boards and MCP2518FD breakout variants should work provided the SPI pins are configured correctly. See [docs/hardware.md](https://github.com/FoodyFood/esp32-mcp2518fd-driver/blob/main/docs/hardware.md) for wiring details.
 
 ---
 
@@ -169,9 +170,9 @@ The result is a driver you can ship in a product and stand behind.
 
 | Document | Description |
 |---|---|
-| [API reference](docs/api.md) | Every public type, method, parameter and return value |
-| [Hardware setup](docs/hardware.md) | Pin table, SPI config, INT pin wiring, bus termination |
-| [Use case coverage](docs/use_cases/coverage.md) | Feature-by-use-case coverage matrix |
+| [API reference](https://github.com/FoodyFood/esp32-mcp2518fd-driver/blob/main/docs/api.md) | Every public type, method, parameter and return value |
+| [Hardware setup](https://github.com/FoodyFood/esp32-mcp2518fd-driver/blob/main/docs/hardware.md) | Pin table, SPI config, INT pin wiring, bus termination |
+| [Use case coverage](https://github.com/FoodyFood/esp32-mcp2518fd-driver/blob/main/docs/use_cases/coverage.md) | Feature-by-use-case coverage matrix |
 
 ---
 
