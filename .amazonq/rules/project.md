@@ -45,6 +45,7 @@ Every spec follows these five steps in order. One feature per step. No skipping.
 - Layer ownership: `registers.h` → constants · `mcp2518fd_spi.*` → wire protocol · `mcp2518fd_can.*` → driver logic.
 - Update all affected call sites (examples + harnesses) in the same change.
 - **Do NOT use WSL or pio directly to build.** Use `verify.py` for integration builds. Unit tests are the only WSL exception.
+- **NEVER pipe or filter command output in any way.** No `findstr`, no `grep`, no `tail`, no `head`, no `| anything`. These hide errors and successes alike, cause silent failures, and always require a re-run. Always capture and display the full raw output directly.
 - Build must pass before testing.
 
 ### 4. Test on real hardware
@@ -104,11 +105,14 @@ These are distinct. Never mix them.
 
 ### `examples/` — user-facing only
 - `platformio.ini` uses `lib_deps = foodyfood/esp32-mcp2518fd-driver` (published package, never a local path).
-- First comment must be: `// Learning objective: <what the user will know how to do>`
-- Code flows in reading order: includes → pin constants → driver construction → setup → loop.
-- Comments explain *why*, not *what*.
-- No CHECK() macros, no pass/fail output, no SPEC-NNN references, no register names, no internal terminology.
-- Two-board examples must have a `README.md` with wiring, which binary goes where, and expected Serial output.
+- First comment block must open with `// Learning objective:` and state in plain language what the user will be able to do after working through the example. This is the promise to the reader — make it concrete.
+- Code flows in reading order: includes → pin constants → driver construction → setup → loop. No forward references, no helper functions defined after the call site that uses them.
+- Comments explain *why*, not *what*. A reader who knows C++ does not need `// transmit the frame` above `can.transmit(tx)`. They do need to know *why* a particular mode, rate, or ID was chosen.
+- **No SPEC-NNN references anywhere** — not in comments, not in variable names, not in Serial output. The user has never seen the spec. References to the development process are noise to them.
+- **No register names, register addresses, or internal field names** (e.g. TBCPRE, FIFO2, TXREQ, CiCON). Use plain descriptions: "hardware timestamp", "receive buffer", "transmit request".
+- **No internal driver terminology** that isn't part of the public API (e.g. "harness", "suite", "TEC", "REC", "FSYS" in explanatory prose — `getFsys()` in code is fine because it's the public API name).
+- No CHECK() macros, no pass/fail output.
+- Every example must have a `README.md` with: what you'll learn, hardware required, wiring table, setup steps (which binary goes where for two-board examples), and expected Serial output.
 - Added **after** the feature is published to the PlatformIO registry — not during spec work.
 - At spec close, explicitly assess whether a new example is warranted; note it as a follow-up if so.
 
@@ -217,7 +221,6 @@ A spec that passes hardware but has stale docs is NOT Done. New public API witho
 - `src/mcp2518fd_can.cpp` — driver implementation
 - `examples/walkie_talkie/` — send/receive variable-length messages, two nodes
 - `examples/scope_loopback/` — continuous TX in MODE_EXTERNAL_LB for scope measurements
-- `examples/bus_monitor/` — two nodes transmitting counters (node_a=COM4, node_b=COM3)
 - `examples/int_pin/` — interrupt-driven RX via INT pin
 - `tests/integration/verify.py` — integration test entry point
 - `tests/integration/mcp_test/` — runner, suites, upload, serial I/O

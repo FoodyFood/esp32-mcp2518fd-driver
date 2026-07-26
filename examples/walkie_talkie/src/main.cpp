@@ -66,6 +66,7 @@ void setup()
     Serial.println("==========================");
     Serial.printf("configure: %s\n", s == CanStatus::OK ? "OK" : "FAIL");
     Serial.println("Type a message and press Enter to send.\n");
+    while (Serial.available()) Serial.read();  // discard any bytes sent during flash/connect
 }
 
 void loop()

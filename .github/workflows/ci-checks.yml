@@ -45,8 +45,10 @@ jobs:
         example:
           - walkie_talkie
           - scope_loopback
-          - bus_monitor
           - int_pin
+          - uds_filter
+          - can_logger
+          - classic_can
 
     steps:
       - uses: actions/checkout@v4
