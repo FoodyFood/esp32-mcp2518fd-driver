@@ -24,7 +24,7 @@ real Battery-Emulator node.
 ## Hardware required
 
 - 2 × ESP32 with MCP2518FD (e.g. the breakout described in
-  [docs/hardware.md](../../docs/hardware.md))
+  [docs/hardware.md](https://github.com/FoodyFood/esp32-mcp2518fd-driver/blob/main/docs/hardware.md))
 - CAN bus wiring between the two boards: CANH→CANH, CANL→CANL, GND→GND
 - 120 Ω termination resistor at each end of the bus
 
