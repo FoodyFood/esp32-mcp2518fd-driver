@@ -1,6 +1,6 @@
 # MCP2518FD CAN FD Driver for ESP32
 
-CAN FD on ESP32 in three lines. No third-party CAN library, no magic numbers, no silent failures — every register write traces to a datasheet page and every feature is verified on real hardware before it ships.
+CAN FD and Classic CAN 2.0B on ESP32 in three lines. The same chip and wiring works on legacy CAN buses and modern FD buses — no hardware changes needed. No third-party CAN library, no magic numbers, no silent failures — every register write traces to a datasheet page and every feature is verified on real hardware before it ships.
 
 ```cpp
 MCP2518Driver can(spi, PIN_CS);
@@ -85,7 +85,8 @@ void loop() {
 - Per-frame hardware timestamps at 50 ns resolution
 
 **Modes**
-- Normal, listen-only, classic CAN 2.0B, internal loopback, external loopback, sleep
+- Normal, listen-only, internal loopback, external loopback, sleep
+- **Classic CAN 2.0B** — the same chip and wiring works on legacy CAN buses, no hardware changes needed. OBD-II, older ECUs, industrial sensors and PLCs all see it as a normal CAN node
 - `stop()` / `restart()` / `sleep()` / `wake()` lifecycle control
 - CLKO output pin configurable for clocking a second MCP2518FD chip
 
