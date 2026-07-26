@@ -38,29 +38,30 @@ See [`docs/use_cases/coverage.md`](docs/use_cases/coverage.md) for the full feat
 
 ## Features
 
-| Feature | Status |
-|---|---|
-| Auto-detect oscillator frequency (20 MHz / 40 MHz) from OSC register | ✅ |
-| Calculate all bit timing registers from target rates — no presets required | ✅ |
-| Transmitter delay compensation (TDC) auto-configured at ≥ 1 Mbps | ✅ |
-| Transmit CAN FD frames up to 64 bytes (DLC 0–15) | ✅ |
-| Receive CAN FD frames, non-blocking and blocking with timeout | ✅ |
-| Data rates 1 / 2 / 4 / 5 Mbps at 20 MHz; up to 8 Mbps at 40 MHz | ✅ |
-| Runtime data rate switch without losing nominal configuration | ✅ |
-| Internal loopback mode (no bus required) | ✅ |
-| External loopback mode (real bus signals, self-ACK) | ✅ |
-| Listen-only mode (passive, no ACK) | ✅ |
-| Two-node normal mode — verified on real hardware | ✅ |
-| Raw / advanced API for non-standard rates and custom oscillators | ✅ |
-| 29-bit extended ID (EID) — 11-bit and 29-bit on the same bus | ✅ |
-| Acceptance filter API — per-SID, per-range, per-mask | ✅ |
-| Bus error detection — TEC/REC counters, bus-off flag | ✅ |
-| TX error detail — distinguish no-ACK, bus error, FIFO full | ✅ |
-| Interrupt-driven RX via INT pin — frame arrival wakes ISR, no polling | ✅ |
-| Configurable RX FIFO depth (1–24 slots at 64-byte payload) | ✅ |
-| Per-frame RX timestamp from hardware time base counter | ✅ |
-| Listen-only mode (passive, no ACK) — validated on real bus | ✅ |
-| stop() / restart() / sleep() / wake() lifecycle control | ✅ |
+**Framing**
+- CAN FD frames up to 64 bytes, Classic CAN frames, 11-bit and 29-bit IDs on the same bus
+- Non-blocking and blocking receive with timeout
+- Transmit result tells you exactly what went wrong — no ACK, bus error, or FIFO full
+
+**Bit rates**
+- One call sets nominal and data rates — no register maths, no presets to look up
+- 125 kbps – 1 Mbps nominal / 1 – 5 Mbps data at 20 MHz; up to 8 Mbps at 40 MHz
+- Switch data rate at runtime without losing the nominal configuration
+
+**Filtering**
+- Up to 32 acceptance filters — exact ID, masked range, SID or EID
+- Catch-all filter active by default; narrow it down when you need to
+
+**Reliability**
+- Interrupt-driven RX via INT pin — frame arrival wakes an ISR, no polling required
+- Bus error detection with TEC/REC counters, error-passive and bus-off flags
+- Per-frame hardware timestamps at 50 ns resolution
+
+**Modes**
+- Normal, listen-only, internal loopback, external loopback, sleep
+- `stop()` / `restart()` / `sleep()` / `wake()` lifecycle control
+
+See the [full API reference](docs/api.md) for every method, parameter and return value.
 
 ---
 
