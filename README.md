@@ -128,6 +128,7 @@ Each example is a self-contained PlatformIO project — open, build and flash di
 | [`uds_filter`](examples/uds_filter/) | Set an acceptance filter so your board only wakes up for the frames it cares about — demonstrated with a UDS request/response pattern |
 | [`can_logger`](examples/can_logger/) | Passively monitor a CAN bus in listen-only mode with per-frame hardware timestamps — pair with `scope_loopback` on a second board for a self-contained test |
 | [`classic_can`](examples/classic_can/) | Use the MCP2518FD as a plain CAN 2.0B controller to talk to legacy devices — demonstrated with a vehicle ECU and dashboard simulation |
+| [`meb_battery_sim`](examples/meb_battery_sim/) | Impersonate a VW MEB battery on a CAN FD bus — transmit the full keepalive schedule with VAG CRC so a Battery-Emulator node sees a healthy, contactors-closed pack |
 
 ---
 
