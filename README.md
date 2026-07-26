@@ -85,8 +85,9 @@ void loop() {
 - Per-frame hardware timestamps at 50 ns resolution
 
 **Modes**
-- Normal, listen-only, internal loopback, external loopback, sleep
+- Normal, listen-only, classic CAN 2.0B, internal loopback, external loopback, sleep
 - `stop()` / `restart()` / `sleep()` / `wake()` lifecycle control
+- CLKO output pin configurable for clocking a second MCP2518FD chip
 
 ---
 
@@ -102,6 +103,8 @@ void loop() {
 | **Peer-to-peer telemetry** | Two ESP32 boards talking directly over CAN FD — sensor nodes, drone ESCs, data concentrators |
 | **Scope / analyser stimulus** | Drive known CAN FD frames onto the bus for oscilloscope or protocol analyser capture |
 | **Production self-test** | Verify chip and transceiver wiring at factory or field bring-up — no second node required |
+| **Classic CAN gateway** | Bridge a legacy CAN 2.0B bus to a CAN FD network — receive classic frames and re-transmit as FD, or vice versa |
+| **Dual-chip board (T-2CAN FD)** | Drive two MCP2518FD chips from one ESP32 — configure the first chip's CLKO pin to clock the second |
 
 ---
 

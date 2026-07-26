@@ -245,6 +245,48 @@ Two batteries are targeted, drawn directly from the
 
 ---
 
+## UC-9 — Classic CAN 2.0B Gateway
+
+**Description**  
+An ESP32 bridges a legacy CAN 2.0B bus (classic-only nodes, no FD capability) to a CAN FD
+network, or acts as a node on a mixed bus where some devices are classic-only. The driver
+must transmit and receive classic frames without triggering error frames on classic nodes.
+
+**Typical bus parameters**  
+- Nominal: 125 kbps – 1 Mbps (no data phase)  
+- Direction: bidirectional
+
+| Feature required | Status | Evidence |
+|---|---|---|
+| Classic CAN mode | ✅ | `configure(nominalBps, 0, MODE_CLASSIC)` — REQOP=110 |
+| Classic frame TX (fdf=false) | ✅ | `transmit(msg)` with `msg.fdf=false` |
+| Classic frame RX | ✅ | `receive(msg)` — `msg.fdf=false` on received classic frames |
+| FD frame rejected in classic mode | ✅ | `transmit()` returns `CanTxResult::InvalidMode` if `msg.fdf=true` |
+| `setDataRate()` rejected in classic mode | ✅ | Returns `CanStatus::INVALID_MODE` |
+| Two-node classic exchange | ✅ | Verified on real bus at 500 kbps |
+
+---
+
+## UC-10 — Dual-Chip Board (LilyGo T-2CAN FD)
+
+**Description**  
+Boards like the LilyGo T-2CAN FD carry two MCP2518FD chips driven by one ESP32. The second
+chip has no crystal of its own — it is clocked from the first chip's CLKO output pin. The
+first chip must be configured to output a clock on CLKO before the second chip can initialise.
+
+**Typical configuration**  
+- First chip: 40 MHz crystal, `clkoDivider=10` → CLKO = 4 MHz  
+- Second chip: no crystal, `PLLEN=1` → FSYS = 40 MHz from 4 MHz PLL input
+
+| Feature required | Status | Evidence |
+|---|---|---|
+| CLKO output pin configuration | ✅ | `CanConfig.clkoDivider` — 1/2/4/10 or 0 (leave default) |
+| CLKODIV encoding (OSC bits 6:5) | ✅ | `clkoDivToReg()` — 00=÷1, 01=÷2, 10=÷4, 11=÷10 |
+| Invalid divider rejected | ✅ | Returns `CanStatus::RATE_NOT_ACHIEVABLE` |
+| Second chip clocked from first | ⚠️ | Register readback confirms CLKODIV set; T-2CAN FD hardware not available for end-to-end test |
+
+---
+
 ## Gap Summary
 
 Consolidated list of every gap across all use cases, ordered by impact.
@@ -261,6 +303,8 @@ Consolidated list of every gap across all use cases, ordered by impact.
 | G8 | **Configurable RX FIFO depth** | UC-2 | ✅ Closed (SPEC-004) |
 | G9 | **TX error distinction** | UC-3, UC-4 | ✅ Closed (SPEC-003) |
 | G10 | **Listen-only mode validation** | UC-1, UC-2 | ✅ Closed (SPEC-005) |
+| IR-18 | **Classic CAN mode** | UC-9 | ✅ Closed (SPEC-008) |
+| IR-19 | **CLKO output configuration** | UC-10 | ✅ Closed (SPEC-009) |
 
 ---
 
