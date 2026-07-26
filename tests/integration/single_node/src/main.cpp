@@ -545,6 +545,42 @@ void runTest()
         CHECK("all 8 bytes match", dataOk);
     }
 
+    // ------------------------------------------------------------------
+    // configureRaw() with rxFifoDepth and enableTimestamp
+    // Exercises the CanConfig paths via the raw API (separate code path
+    // from configure() — both must honour the same CanConfig fields).
+    // ------------------------------------------------------------------
+    Serial.println("configureRaw() with rxFifoDepth=8 and enableTimestamp=true:");
+    {
+        CanStatus s = can.configureRaw(
+            NBTCFG_125K_20MHZ, DBTCFG_2M_20MHZ, TDC_2M_20MHZ,
+            MODE_INTERNAL_LB, CanConfig{8, true});
+        CHECK("configureRaw() returned OK", s == CanStatus::OK);
+        CHECK("mode = INTERNAL_LB", can.getMode() == MODE_INTERNAL_LB);
+
+        // Burst 8 frames — verifies rxFifoDepth=8 is applied
+        CanMsg tf;
+        tf.fdf = true; tf.brs = true; tf.dlc = 8;
+        bool allTx = true;
+        for (int i = 0; i < 8; i++)
+        {
+            tf.id = 0x800 + i;
+            for (int j = 0; j < 8; j++) tf.data[j] = (uint8_t)(i * 8 + j);
+            if (can.transmit(tf) != CanTxResult::OK) { allTx = false; break; }
+        }
+        CHECK("8 frames transmitted into depth-8 FIFO", allTx);
+        CHECK("no overflow at depth-8", !can.readAndClearErrors().rxOverflow);
+
+        // Verify timestamp is populated on received frames
+        CanMsg rf = {};
+        bool got = can.receive(rf, 50);
+        CHECK("receive() returns true", got);
+        CHECK("timestamp > 0 (enableTimestamp via configureRaw)", rf.timestamp > 0);
+
+        // Drain remaining frames
+        while (can.receive(rf, 5)) {}
+    }
+
     Serial.println();
 }
 
