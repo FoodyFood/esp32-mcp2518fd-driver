@@ -1,8 +1,7 @@
 # Use Case Coverage
 
 Real-world scenarios for the MCP2518FD driver, assessed against the current API.
-**Scope: CAN FD only.** All use cases assume CAN FD frames (fdf=true, brs=true) throughout.
-Battery-Emulator evidence is drawn from the cloned source at `../Battery-Emulator/`.
+Covers CAN FD and Classic CAN 2.0B. Battery-Emulator evidence is drawn from the cloned source at `../Battery-Emulator/`.
 
 Coverage key: ✅ Covered — ⚠️ Partial — ❌ Gap
 
@@ -42,8 +41,9 @@ re-publishes them on a second bus or over WiFi/MQTT. This is the core use case o
 | 29-bit extended ID (EID) | ✅ | `CanMsg.ext=true`, `CanMsg.id` carries full 29-bit EID |
 | Filter to specific SIDs | ✅ | `setFilter(index, id, mask, ext)` — up to 32 filter slots |
 | Mixed 11-bit + 29-bit on same bus | ✅ | Verified in id_filter harness |
-| Bus error / bus-off detection | ✅ | `getErrors()`, `hasErrors()`, `CanError` struct |
-| RX overflow detection | ✅ | `getErrors().rxOverflow`, cleared on read |
+| Bus error / bus-off detection | ✅ | `readAndClearErrors()`, `hasErrors()`, `CanError` struct |
+| RX overflow detection | ✅ | `readAndClearErrors().rxOverflow`, cleared on read |
+| sleep() / wake() | ✅ | `sleep()` disables oscillator; `wake()` restores previous mode |
 | Interrupt-driven RX | ✅ | `MCP2518Driver(spi, cs, intPin)` — ISR sets flag, `available()` returns immediately |
 | stop() / restart() | ✅ | `stop()` enters config mode, `restart()` restores previous mode |
 | Runtime nominal rate change | ❌ | `setDataRate()` changes data phase only; full reconfigure needed for nominal rate |
@@ -113,7 +113,7 @@ voltages, SOC, SOH and DTCs.
 | 29-bit extended IDs (ISO-TP functional/physical addresses) | ✅ | `CanMsg.ext=true`, `CanMsg.id` carries full 29-bit EID |
 | Filter to specific SID (0x7EC response only) | ✅ | `setFilter(index, id, mask, ext)` |
 | TX error distinction (no ECU vs bus error) | ✅ | `CanTxResult` enum: OK / NoAck / BusError / FifoFull |
-| Low-latency TX for ISO-TP flow control | ⚠️ | Polling-only; flow-control frame may be delayed if main loop is busy |
+| Low-latency TX for ISO-TP flow control | ✅ | INT pin ISR (`MCP2518Driver(spi, cs, intPin)`) wakes on incoming frame — flow-control TX can be issued immediately from the receive handler |
 
 ---
 
@@ -137,7 +137,7 @@ every 10–100 ms and checks for bus errors after each receive batch.
 | Non-blocking receive | ✅ | `available()` + `receive(msg)` |
 | Runtime data rate switch | ✅ | `setDataRate(dataBps)` |
 | TX error feedback (no ACK vs bus error) | ✅ | `CanTxResult` enum: OK / NoAck / BusError / FifoFull |
-| Bus error counters (TEC/REC) | ✅ | `getErrors()` returns `CanError` with tec, rec, busOff |
+| Bus error counters (TEC/REC) | ✅ | `readAndClearErrors()` returns `CanError` with tec, rec, busOff |
 | Interrupt-driven RX for low latency | ✅ | `MCP2518Driver(spi, cs, intPin)` — ISR wakes on frame arrival |
 
 ---
@@ -162,7 +162,7 @@ Covered by the existing `two_node` and `walkie_talkie` examples.
 | Runtime data rate switch | ✅ | `setDataRate(dataBps)` |
 | 64-byte payload (DLC=15) | ✅ | Verified in loopback and two_node |
 | No-ACK retry at application level | ✅ | `txWithRetry()` pattern in two_node example |
-| Detect other node absent | ⚠️ | `transmit()` returns false after 3 chip retries; no explicit bus-off event |
+| Detect other node absent | ✅ | `transmit()` returns `CanTxResult::NoAck` after 3 chip retries — explicit, not just a bool |
 
 ---
 
@@ -198,7 +198,7 @@ before shipping. Covered by the existing `loopback` example.
 | External loopback (transceiver check) | ✅ | `MODE_EXTERNAL_LB` |
 | OSC frequency readback | ✅ | `getFsys()` / `readOsc()` |
 | RATE_NOT_ACHIEVABLE detection | ✅ | `CanStatus::RATE_NOT_ACHIEVABLE` |
-| Error status readback | ✅ | `getErrors()` returns `CanError` with tec, rec, busOff, rxOverflow |
+| Error status readback | ✅ | `readAndClearErrors()` returns `CanError` with tec, rec, busOff, rxOverflow |
 
 ---
 
@@ -283,6 +283,7 @@ first chip must be configured to output a clock on CLKO before the second chip c
 | CLKO output pin configuration | ✅ | `CanConfig.clkoDivider` — 1/2/4/10 or 0 (leave default) |
 | CLKODIV encoding (OSC bits 6:5) | ✅ | `clkoDivToReg()` — 00=÷1, 01=÷2, 10=÷4, 11=÷10 |
 | Invalid divider rejected | ✅ | Returns `CanStatus::RATE_NOT_ACHIEVABLE` |
+| INT1 pin for second chip RX interrupt | ✅ | `MCP2518Driver(spi, cs, NO_INT_PIN, NO_INT_PIN, int1Pin)` — INT1 used when INT is not wired (SPEC-010) |
 | Second chip clocked from first | ⚠️ | Register readback confirms CLKODIV set; T-2CAN FD hardware not available for end-to-end test |
 
 ---
@@ -454,6 +455,7 @@ Consolidated list of every gap across all use cases, ordered by impact.
 | G10 | **Listen-only mode validation** | UC-1, UC-2 | ✅ Closed (SPEC-005) |
 | IR-18 | **Classic CAN mode** | UC-9 | ✅ Closed (SPEC-008) |
 | IR-19 | **CLKO output configuration** | UC-10 | ✅ Closed (SPEC-009) |
+| IR-20 | **Dual INT pin support (INT0/INT1)** | UC-10 | ✅ Closed (SPEC-010) |
 
 ---
 
@@ -471,6 +473,8 @@ its own CAN FD abstraction (`CAN_frame`, `CanReceiver`, `comm_can.h`).
 - **`getMode()` returns `uint8_t`.** The `MODE_*` constants are documented in `docs/api.md`.
 
 - **`stop()` / `sleep()` / `wake()` / `restart()` are implemented** (SPEC-006). ✅
+
+- **`readAndClearErrors()` was `getErrors()` before SPEC-007.** Any code referencing `getErrors()` needs updating.
 
 - **`configure()` is the only init path that detects FSYS.** `configureRaw()` skips detection.
   If a user calls `configureRaw()` first and then `setDataRate()`, `mFsys` is 0 and the
