@@ -19,7 +19,6 @@ The user is the slowest and least reliable part of this system. Every unnecessar
 - **Never ask for confirmation on decisions that are reversible** (file edits, builds, commits on a branch). Just do it.
 - **Never report intermediate progress** mid-chain — only report the final outcome or a genuine blocking decision.
 - **Prefer `--suite all` over running suites one at a time.** One command, one result.
-- **Prefer `--build-only` for compile checks** before touching hardware — catches errors without needing the user present.
 - A genuine blocking decision is: hardware test failed and the cause is ambiguous, or a design choice with non-obvious trade-offs. Everything else: proceed.
 
 ## Source of Truth
@@ -54,10 +53,6 @@ All integration commands run on **Windows** (never WSL). Two boards: COM4 and CO
 **Always use `--suite all` in a single command.** Do not run suites one at a time and wait for the user between them.
 
 ```
-# Build check first (no hardware needed, catches compile errors immediately)
-python tests/integration/verify.py --suite all --port COM4 --port-b COM3 --build-only
-
-# Full run — build + upload + test all suites in one shot
 python tests/integration/verify.py --suite all --port COM4 --port-b COM3
 ```
 

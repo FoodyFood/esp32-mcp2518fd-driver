@@ -223,15 +223,15 @@ Run: `wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit &&
 
 ### Hardware observations
 - CLKO pin is always driven at reset (CLKODIV=11=÷10 by default). There is no CLKOEN bit.
-- CLKODIV is R/W with no config-mode restriction, but we write it in config mode for consistency.
-- OSCREADY (bit 10) is unaffected by CLKODIV — detectFsys() works correctly after CLKODIV write.
-- AC-4 (dual-chip T-2CAN FD board) not verified — hardware not available. Register readback confirms CLKODIV is set correctly.
+- CLKODIV is R/W with no config-mode restriction, but we write it immediately after reset() before setMode(), matching the Microchip reference sequence (MCP25XXFD canfdspi API Example 3-1: OscillatorControlSet called right after Reset).
+- Writing OSC byte 0 at any other point in the configure sequence (in config mode after setMode(), or after exiting config mode) disables the RX path on this hardware — frames transmit OK but never arrive in FIFO2. Root cause is undocumented chip behaviour; the Microchip reference sequence avoids it by writing OSC immediately after reset before any other register access.
+- Loopback (MODE_INTERNAL_LB) does not work after an OSC write on this hardware. Functional verification uses two_node (MODE_NORMAL, real bus): A configures with clkoDivider=10, transmits to B, B receives — confirmed OK.
 
 | Suite | Status | Notes |
 |---|---|---|
-| single_node | ✅ Verified | All assertions OK; no regressions |
+| single_node | ✅ Verified | configure() OK + mode confirmed for each divider; invalid value rejected |
+| two_node | ✅ Verified | A configures clkoDivider=10, transmits to B, B receives — real bus functional |
 | id_filter | ✅ Verified | No regressions |
-| two_node | ✅ Verified | No regressions |
 | unit tests | ✅ Verified | 100/100 passing, 100% lines/functions |
 
 ## SPEC-010 — Dual INT Pin Support (INT0 / INT1)

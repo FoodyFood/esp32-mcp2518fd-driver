@@ -197,6 +197,17 @@ static void runNodeA()
         CHECK("A TEC=0 in MODE_LISTEN (no TX)", e.tec == 0);
     }
 
+    // SPEC-009: CLKO divider — A configures with clkoDivider=10, transmits
+    // to B. Verifies the chip is functional on a real bus after OSC write.
+    Serial.println("CLKO divider (A configures clkoDivider=10, sends to B):");
+    can.configure(125000, 2000000, MODE_NORMAL, CanConfig{16, false, 10});
+    CHECK("A mode = NORMAL with clkoDivider=10", can.getMode() == MODE_NORMAL);
+    txWithRetry("125k/2M 8B SID=0x10E clkoDivider=10", makeFrame(0x10E, 8, 0xCE));
+    // Receive B's acknowledgement frame
+    rxAndVerify("125k/2M 8B SID=0x20E clkoDivider=10", makeFrame(0x20E, 8, 0xDE));
+    // Restore normal config for remaining tests
+    can.configure(125000, 2000000, MODE_NORMAL);
+
     // SPEC-008: Classic CAN two-node exchange — A transmits, B receives
     Serial.println("classic CAN two-node (MODE_CLASSIC, 500 kbps):");
     can.configure(500000, 0, MODE_CLASSIC);
@@ -287,6 +298,12 @@ static void runNodeB()
     }
     CanError errB = can.readAndClearErrors();
     CHECK("B not bus-off after listen-only test", !errB.busOff);
+
+    // SPEC-009: CLKO divider — B receives A's CLKO frame, sends back.
+    Serial.println("CLKO divider (B receives from A with clkoDivider=10):");
+    can.configure(125000, 2000000, MODE_NORMAL);
+    rxAndVerify("125k/2M 8B SID=0x10E clkoDivider=10", makeFrame(0x10E, 8, 0xCE));
+    txWithRetry("125k/2M 8B SID=0x20E clkoDivider=10", makeFrame(0x20E, 8, 0xDE));
 
     // SPEC-008: Classic CAN two-node exchange — B receives, then transmits
     Serial.println("classic CAN two-node (MODE_CLASSIC, 500 kbps):");

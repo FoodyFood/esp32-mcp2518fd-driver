@@ -31,8 +31,13 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
     }
     mSpi.reset();
     delay(20);
-    mSpi.setMode(MODE_CONFIG);
 
+    // Write CLKODIV immediately after reset, before any other register access.
+    // Matches Microchip reference sequence (MCP25XXFD canfdspi API Example 3-1):
+    // OscillatorControlSet is called right after Reset, before Configure,
+    // BitTimeConfigure, or FIFO setup. The chip is already in config mode
+    // after reset — no mode transition occurs around this write.
+    // DS20006027B page 16: CLKODIV has no config-mode restriction.
     if (cfg.clkoDivider != 0)
     {
         uint8_t enc = clkoDivToReg(cfg.clkoDivider);
@@ -41,6 +46,8 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
         osc0 = (osc0 & ~(0x03u << OSC_CLKODIV_SHIFT)) | (enc << OSC_CLKODIV_SHIFT);
         mSpi.write8(REG_OSC, osc0);
     }
+
+    mSpi.setMode(MODE_CONFIG);
 
     mFsys = detectFsys();
     if (mFsys == 0) return CanStatus::CLOCK_NOT_READY;
@@ -74,6 +81,12 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
     {
         sIsrInstance = this;
         attachInterrupt(digitalPinToInterrupt(mInt1Pin), sIsrHandler, FALLING);
+    }
+    else
+    {
+        // No INT pin on this instance. Clear sIsrInstance so a stale ISR
+        // from a previous local driver instance cannot write to freed memory.
+        sIsrInstance = nullptr;
     }
 
     return CanStatus::OK;

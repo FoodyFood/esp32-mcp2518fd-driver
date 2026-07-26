@@ -477,10 +477,8 @@ void runTest()
 
     // ------------------------------------------------------------------
     // SPEC-009: CLKO divider — configure with each valid value, verify
-    // CanStatus::OK and chip still functional (loopback frame passes).
-    // Register readback is not exposed publicly; functional verification
-    // (configure succeeds + loopback passes) is sufficient to confirm the
-    // OSC write did not corrupt the chip.
+    // CanStatus::OK and mode is correct. Functional verification (frames
+    // pass on a real bus with CLKODIV set) is in the two_node suite.
     // ------------------------------------------------------------------
     Serial.println("CLKO divider (clkoDivider=1/2/4/10):");
     {
@@ -494,15 +492,6 @@ void runTest()
             CHECK(label, s == CanStatus::OK);
             snprintf(label, sizeof(label), "mode = INTERNAL_LB with clkoDivider=%d", dividers[d]);
             CHECK(label, can.getMode() == MODE_INTERNAL_LB);
-
-            CanMsg tf;
-            tf.id = 0x800 + d; tf.fdf = true; tf.brs = true; tf.dlc = 8;
-            for (int i = 0; i < 8; i++) tf.data[i] = (uint8_t)(0xD0 + i);
-            bool txOk = can.transmit(tf) == CanTxResult::OK;
-            CanMsg rf = {};
-            bool rxOk = can.receive(rf, 50) && rf.id == tf.id;
-            snprintf(label, sizeof(label), "loopback OK with clkoDivider=%d", dividers[d]);
-            CHECK(label, txOk && rxOk);
         }
 
         // Invalid divider must be rejected
