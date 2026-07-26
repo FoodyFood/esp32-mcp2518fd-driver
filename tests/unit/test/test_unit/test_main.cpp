@@ -3,19 +3,6 @@
 #include "mcp2518fd_timing.h"
 #include "mcp2518fd_presets.h"
 
-// dlcToLen moves to mcp2518fd_timing.h in SPEC-007 Task 1.
-// Until then, redeclare here — pure logic, no hardware dependency.
-inline constexpr uint8_t dlcToLen(uint8_t dlc)
-{
-    return (dlc <=  8) ? dlc
-         : (dlc ==  9) ? 12
-         : (dlc == 10) ? 16
-         : (dlc == 11) ? 20
-         : (dlc == 12) ? 24
-         : (dlc == 13) ? 32
-         : (dlc == 14) ? 48 : 64;
-}
-
 // ============================================================================
 // dlcToLen — DLC 0-15 → byte length  (DS20006027B Table 3-3)
 // ============================================================================

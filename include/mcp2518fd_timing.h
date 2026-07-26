@@ -96,6 +96,19 @@ inline uint32_t calcTxTimeout(uint32_t fsys, uint32_t nbtcfg, uint32_t dbtcfg)
     return ms < 2 ? 2 : ms;
 }
 
+// CAN FD DLC → byte length (DS20006027B Table 3-3)
+// DLC 0-8 map 1:1; DLC 9=12, 10=16, 11=20, 12=24, 13=32, 14=48, 15=64
+inline constexpr uint8_t dlcToLen(uint8_t dlc)
+{
+    return (dlc <=  8) ? dlc
+         : (dlc ==  9) ? 12
+         : (dlc == 10) ? 16
+         : (dlc == 11) ? 20
+         : (dlc == 12) ? 24
+         : (dlc == 13) ? 32
+         : (dlc == 14) ? 48 : 64;
+}
+
 // EID T0 word encode: SID[10:0]=id>>18, EID[17:0]=id&0x3FFFF packed into T0
 // (DS20006027B Table 3-5)
 inline uint32_t encodeEidT0(uint32_t id29)

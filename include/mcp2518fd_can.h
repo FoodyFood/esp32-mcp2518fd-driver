@@ -19,30 +19,13 @@ enum class CanStatus : uint8_t
 };
 
 // ----------------------------------------------------------------------------
-// CAN message
-//
-// Used for both transmit and receive. On transmit, populate all fields.
-// On receive, all fields are filled in by receive().
-//
-// CAN FD DLC → byte length (DS20006027B Table 3-3)
-// DLC 0-8 map 1:1; DLC 9=12, 10=16, 11=20, 12=24, 13=32, 14=48, 15=64
-inline constexpr uint8_t dlcToLen(uint8_t dlc)
-{
-    return (dlc <=  8) ? dlc
-         : (dlc ==  9) ? 12
-         : (dlc == 10) ? 16
-         : (dlc == 11) ? 20
-         : (dlc == 12) ? 24
-         : (dlc == 13) ? 32
-         : (dlc == 14) ? 48 : 64;
-}
-
+// CAN message — used for both transmit and receive.
 struct CanMsg
 {
     uint32_t id        = 0;     // Frame identifier: 11-bit SID (ext=false) or 29-bit EID (ext=true)
     bool     ext       = false; // false = standard 11-bit frame, true = extended 29-bit frame
     bool     fdf       = false; // true = CAN FD frame, false = Classic CAN
-    bool     brs       = false; // true = switch to data bit rate in payload phase
+    bool     brs       = false; // true = switch to data bit rate in payload phase (only meaningful when fdf=true)
     uint8_t  dlc       = 0;     // Data Length Code (0–15)
     uint32_t timestamp = 0;     // RX hardware timestamp (TBC counts); 0 when timestamping not enabled
     uint8_t  data[64]  = {};    // Payload bytes (up to 64 for CAN FD)
@@ -59,7 +42,7 @@ enum class CanTxResult : uint8_t
 };
 
 // ----------------------------------------------------------------------------
-// CanError — returned by getErrors()
+// CanError — returned by readAndClearErrors()
 struct CanError
 {
     uint8_t tec;        // transmit error counter (CiTREC bits 15:8)
@@ -72,154 +55,118 @@ struct CanError
     bool    rxOverflow; // at least one RX FIFO overflowed since last call
 };
 
-
-// Typical usage — just specify the rates you want, the driver handles the rest:
+// ----------------------------------------------------------------------------
+// CanConfig — optional settings for configure() and configureRaw()
 //
+// Pass as the fourth argument when you need non-default FIFO depth or
+// hardware timestamps. All fields have safe defaults so omitting it gives
+// the same behaviour as the 3-argument form.
+struct CanConfig
+{
+    uint8_t rxFifoDepth     = 16;    // RX FIFO slot count (1–23 with timestamp, 1–24 without)
+    bool    enableTimestamp = false; // enable 32-bit hardware timestamp on each received frame
+
+    CanConfig() = default;
+    explicit CanConfig(uint8_t depth, bool ts = false) : rxFifoDepth(depth), enableTimestamp(ts) {}
+};
+
+// GPIO sentinel — pass as intPin when no interrupt pin is connected
+constexpr int8_t NO_INT_PIN = -1;
+
+// Typical usage:
 //   MCP2518Driver can(spi, PIN_CS);
-//   can.configure(125000, 2000000, MODE_NORMAL);   // 125 kbps nominal, 2 Mbps data
+//   can.configure(500000, 2000000, MODE_NORMAL);
 //
 //   CanMsg tx = { .id=0x123, .fdf=true, .brs=true, .dlc=8 };
-//   for (int i = 0; i < 8; i++) tx.data[i] = i;
 //   can.transmit(tx);
 //
 //   CanMsg rx;
-//   can.receive(rx, 500);  // blocking, 500ms timeout
+//   can.receive(rx, 500);  // blocking, 500 ms timeout
 //
 class MCP2518Driver
 {
 public:
-    // intPin — GPIO pin connected to MCP2518FD INT (active-low). Pass -1 (default)
-    //          to use polling-only mode. When >= 0, an ISR is attached in configure()
-    //          and available() returns true immediately on frame arrival.
-    MCP2518Driver(SPIClass& spi, uint8_t csPin, int8_t intPin = -1);
+    // intPin — GPIO connected to MCP2518FD INT (active-low).
+    //          Pass NO_INT_PIN (default) for polling-only mode.
+    MCP2518Driver(SPIClass& spi, uint8_t csPin, int8_t intPin = NO_INT_PIN);
 
-    // Reset the chip, auto-detect oscillator frequency, calculate and apply
-    // bit timing for the requested nominal and data rates, configure
-    // FIFO1=TX / FIFO2=RX, enable a catch-all acceptance filter, then enter
-    // the requested mode.
-    //
-    // nominalBps  — arbitration phase rate in bps (e.g. 125000, 250000, 500000, 1000000)
-    // dataBps     — data phase rate in bps       (e.g. 1000000, 2000000, 4000000, 5000000)
-    // mode        — MODE_NORMAL, MODE_INTERNAL_LB, MODE_EXTERNAL_LB, etc.
-    // rxFifoDepth — RX FIFO slot count (1–23 at PLSIZE_64 with timestamp, 1–24 without).
-    //               Default 16. Clamped to max.
-    //               RAM budget: FIFO1 (TX, depth=4) = 288 bytes; remaining = 1760 bytes.
-    //               Without timestamp: slot = 72 bytes → max 24. With: slot = 76 bytes → max 23.
-    // enableTimestamp — when true, enables the free-running CiTBC counter and sets RXTSEN in
-    //               FIFO2 so each received message object includes a 32-bit hardware timestamp.
-    //               The timestamp is captured at SOF (TSEOF=0, TSRES=0). Resolution: 1 FSYS clock
-    //               (50 ns at 20 MHz). Populated in msg.timestamp after receive().
-    //
-    // Returns CanStatus::OK when the chip confirms the requested mode.
-    CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode,
-                        uint8_t rxFifoDepth = 16, bool enableTimestamp = false);
+    // Reset, auto-detect oscillator, calculate bit timing, configure FIFOs and
+    // catch-all filter, then enter the requested mode.
+    // cfg is optional — omit for default FIFO depth (16) and no timestamps.
+    CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode);
+    CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode, const CanConfig& cfg);
 
     // Change the data bit rate at runtime without disturbing the nominal rate.
-    // Performs a config-mode round-trip and returns to the previous mode.
     CanStatus setDataRate(uint32_t dataBps);
 
-    // Write one CAN FD frame into the TX FIFO and request transmission.
-    // Returns CanTxResult::OK when the frame is transmitted and ACKed.
-    // Returns NoAck if all retransmission attempts exhausted with no ACK.
-    // Returns BusError if a bus error was detected during transmission.
-    // Returns FifoFull if the TX FIFO had no space.
+    // Transmit one frame. Returns OK when ACKed, NoAck/BusError/FifoFull otherwise.
     CanTxResult transmit(const CanMsg& msg);
 
-    // Read TEC/REC counters and error flags from CiTREC and CiRXOVIF.
-    // Clears the rxOverflow flag after reading.
-    CanError getErrors();
+    // Read TEC/REC counters and error flags. Clears rxOverflow as a side effect.
+    CanError readAndClearErrors();
 
-    // Returns true if TEC or REC >= 96, or busOff, or rxOverflow.
-    // Cheaper than getErrors() — suitable for polling in a loop.
+    // Returns true if TEC or REC >= 96, busOff, or rxOverflow — cheaper than readAndClearErrors().
     bool hasErrors();
 
-    // Returns true if at least one frame is waiting in the RX FIFO (non-blocking).
+    // Returns true if at least one frame is waiting in the RX FIFO.
     bool available();
 
-    // Non-blocking receive — returns true immediately if a frame is waiting.
-    bool receive(CanMsg& msg);
+    // Receive a frame. timeoutMs=0 (default): non-blocking. timeoutMs>0: blocks until frame or timeout.
+    bool receive(CanMsg& msg, uint32_t timeoutMs = 0);
 
-    // Blocking receive with explicit timeout in milliseconds.
-    bool receive(CanMsg& msg, uint32_t timeoutMs);
-
-    // Configure an acceptance filter.
-    // index  0–31 selects the filter slot.
-    // id     identifier to match (11-bit SID or 29-bit EID depending on ext).
-    // mask   bits set to 1 are compared; bits 0 are don’t-care.
-    // ext    false = match standard frames (MIDE=1, EXIDE=0 not set)
-    //        true  = match extended frames only (MIDE=1, EXIDE=1)
-    //        Pass ext=false with mask=0 to match all frame types (catch-all).
-    // All matched frames route to FIFO2.
-    // Safe to call in normal mode — disables filter, updates, re-enables.
+    // Configure an acceptance filter (index 0–31). All matched frames route to FIFO2.
+    // ext=false matches standard frames; ext=true matches extended frames only.
+    // Safe to call in normal mode.
     void setFilter(uint8_t index, uint32_t id, uint32_t mask, bool ext);
 
-    // Disable a filter slot without changing its OBJ/MASK registers.
+    // Disable a filter slot.
     void clearFilter(uint8_t index);
 
-    // Pause the driver — enters Configuration mode, halting TX and RX.
-    // Timing and FIFO configuration are preserved. Safe to call at any time.
-    // Call restart() to resume. transmit() is invalid while stopped.
+    // Restore catch-all filter on slot 0 and disable filters 1–31.
+    void resetFilters();
+
+    // Enter Configuration mode, halting TX/RX. Call restart() to resume.
     CanStatus stop();
 
-    // Resume after stop() — returns to the mode that was active before stop().
-    // Does not re-run configure(); all timing and filter state is preserved.
+    // Return to the mode active before stop().
     CanStatus restart();
 
-    // Enter low-power Sleep mode (REQOP=001, LPMEN=0).
-    // The chip halts the clock and preserves register/RAM contents.
-    // Wake-up requires bus activity on RXCAN or a call to wake().
-    // Returns CanStatus::OK when OPMOD confirms sleep (OPMOD=CONFIG, OSCDIS=1).
+    // Enter low-power Sleep mode. Wake-up via bus activity or wake().
     CanStatus sleep();
 
-    // Exit Sleep mode and restore the mode that was active before sleep().
-    // Waits for OSCREADY before restoring the previous mode.
-    // Note: on ESP32, GPIO 34 (INT) can be used as a deep-sleep wake source —
-    // configure esp_sleep_enable_ext0_wakeup() in your application if needed.
+    // Exit Sleep mode and restore the mode active before sleep().
     CanStatus wake();
 
-    // Return the current operating mode (OPMOD field of CiCON).
-    // Compare against MODE_* constants from mcp2518fd_registers.h.
+    // Return the current operating mode (compare against MODE_* constants).
     uint8_t getMode();
 
-    // Return the detected oscillator frequency in Hz (typically 20000000 or 40000000).
-    // Valid after configure() has been called.
+    // Return the detected oscillator frequency in Hz. Valid after configure().
     uint32_t getFsys() const { return mFsys; }
 
-    // Read the raw OSC register — useful for diagnostics.
-    uint32_t readOsc();
-
     // ------------------------------------------------------------------------
-    // Raw / advanced API
-    //
-    // Use these only if you need direct control over register values, e.g. for
-    // non-standard rates or oscillator frequencies not covered by the auto-
-    // calculation. Presets for common rates are defined below.
-    //
-    // configureRaw() and setDataBitTimingRaw() bypass auto-detection and
-    // accept pre-computed register words directly.
-    CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode,
-                            uint8_t rxFifoDepth = 16, bool enableTimestamp = false);
+    // Raw / advanced API — direct register control for non-standard rates.
+    // Presets for common rates are in mcp2518fd_presets.h.
+    CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode);
+    CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode, const CanConfig& cfg);
     CanStatus setDataBitTimingRaw(uint32_t dbtcfg, uint32_t tdcfg);
 
 private:
     MCP2518SPI mSpi;
-    uint32_t   mFsys        = 0;
-    uint32_t   mTxTimeoutMs = 10;
-    uint32_t   mNbtcfg      = 0;
-    int8_t     mIntPin      = -1;
-    bool       mTimestamp   = false;  // true when RXTSEN + CiTBC are enabled
-    uint8_t    mPrevMode    = MODE_CONFIG;  // saved by stop() and sleep()
-    volatile bool mRxPending = false;
+    uint32_t   mFsys          = 0;
+    uint32_t   mTxTimeoutMs   = 10;
+    uint32_t   mNbtcfg        = 0;
+    int8_t     mIntPin        = NO_INT_PIN;
+    bool       mTimestamp     = false;
+    uint8_t    mStopPrevMode  = MODE_CONFIG;
+    uint8_t    mSleepPrevMode = MODE_CONFIG;
+    volatile bool mRxPending  = false;
 
-    static MCP2518Driver* sIsrInstance;  // single-instance ISR trampoline
+    static MCP2518Driver* sIsrInstance;
     static void IRAM_ATTR sIsrHandler();
 
-    // Detect FSYS from the OSC register after reset.
-    // Returns frequency in Hz, or 0 if the clock is not ready.
     uint32_t detectFsys();
-
     void configFifos(uint8_t rxFifoDepth, bool enableTimestamp);
-    void configFilter();  // installs catch-all filter 0 → FIFO2
+    void configFilter();
     void applyTiming(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg);
     uint16_t txRamAddr();
     uint16_t rxRamAddr();

@@ -224,7 +224,7 @@ void runTest()
           can.transmit(txE) == CanTxResult::OK);
     CHECK("hasErrors() false after clean loopback TX", !can.hasErrors());
 
-    CanError e = can.getErrors();
+    CanError e = can.readAndClearErrors();
     CHECK("getErrors() tec=0 after clean loopback", e.tec == 0);
     CHECK("getErrors() busOff=false after clean loopback", !e.busOff);
 
@@ -232,7 +232,7 @@ void runTest()
     // Configurable RX FIFO depth
     // ------------------------------------------------------------------
     Serial.println("configurable FIFO depth (depth=16):");
-    can.configure(125000, 2000000, MODE_INTERNAL_LB, 16);
+    can.configure(125000, 2000000, MODE_INTERNAL_LB, CanConfig{16});
 
     {
         CanMsg tf;
@@ -253,13 +253,13 @@ void runTest()
             if (can.receive(rf, 50)) rxCount++;
         }
         CHECK("all 16 frames received without overflow", rxCount == 16);
-        CHECK("no overflow after 16 frames", !can.getErrors().rxOverflow);
+        CHECK("no overflow after 16 frames", !can.readAndClearErrors().rxOverflow);
     }
 
     // Overflow: use depth=4, send 5 frames without draining, verify rxOverflow,
     // then drain and verify recovery (rxOverflow clears after getErrors())
     Serial.println("RX FIFO overflow + recovery (depth=4):");
-    can.configure(125000, 2000000, MODE_INTERNAL_LB, 4);
+    can.configure(125000, 2000000, MODE_INTERNAL_LB, CanConfig{4});
     {
         CanMsg tf;
         tf.fdf = true; tf.brs = true; tf.dlc = 8;
@@ -269,9 +269,9 @@ void runTest()
             can.transmit(tf);  // blocking — each frame lands in RX FIFO before next TX
         }
         // FIFO holds 4; 5th frame is discarded and the overflow flag is set
-        CHECK("rxOverflow set after 5th frame", can.getErrors().rxOverflow);
+        CHECK("rxOverflow set after 5th frame", can.readAndClearErrors().rxOverflow);
         // getErrors() clears the flag — verify recovery
-        CHECK("rxOverflow cleared after getErrors()", !can.getErrors().rxOverflow);
+        CHECK("rxOverflow cleared after getErrors()", !can.readAndClearErrors().rxOverflow);
         // Drain remaining frames
         CanMsg rf = {};
         while (can.receive(rf, 5)) {}
@@ -306,7 +306,7 @@ void runTest()
     // SPEC-005: RX timestamp
     // ------------------------------------------------------------------
     Serial.println("RX timestamp (enableTimestamp=true):");
-    can.configure(125000, 2000000, MODE_INTERNAL_LB, 16, true);
+    can.configure(125000, 2000000, MODE_INTERNAL_LB, CanConfig{16, true});
     {
         CanMsg tf;
         tf.id = 0x700; tf.fdf = true; tf.brs = true; tf.dlc = 8;
