@@ -45,7 +45,7 @@ re-publishes them on a second bus or over WiFi/MQTT. This is the core use case o
 | Bus error / bus-off detection | ✅ | `getErrors()`, `hasErrors()`, `CanError` struct |
 | RX overflow detection | ✅ | `getErrors().rxOverflow`, cleared on read |
 | Interrupt-driven RX | ✅ | `MCP2518Driver(spi, cs, intPin)` — ISR sets flag, `available()` returns immediately |
-| stop() / restart() | ❌ | No equivalent yet (SPEC-006) |
+| stop() / restart() | ✅ | `stop()` enters config mode, `restart()` restores previous mode |
 | Runtime nominal rate change | ❌ | `setDataRate()` changes data phase only; full reconfigure needed for nominal rate |
 
 ---
@@ -257,7 +257,7 @@ Consolidated list of every gap across all use cases, ordered by impact.
 | G4 | **Interrupt-driven RX** | UC-1, UC-2, UC-4 | ✅ Closed (SPEC-004) |
 | G5 | **RX overflow detection** | UC-1, UC-2 | ✅ Closed (SPEC-003) |
 | G6 | **Per-frame RX timestamp** | UC-1, UC-2 | ✅ Closed (SPEC-005) |
-| G7 | **stop() / restart()** | UC-1 | ❌ Open (SPEC-006) |
+| G7 | **stop() / restart()** | UC-1 | ✅ Closed (SPEC-006) |
 | G8 | **Configurable RX FIFO depth** | UC-2 | ✅ Closed (SPEC-004) |
 | G9 | **TX error distinction** | UC-3, UC-4 | ✅ Closed (SPEC-003) |
 | G10 | **Listen-only mode validation** | UC-1, UC-2 | ✅ Closed (SPEC-005) |
@@ -275,13 +275,10 @@ its own CAN FD abstraction (`CAN_frame`, `CanReceiver`, `comm_can.h`).
 - **No `lenToDlc()` inverse of `dlcToLen()`.** Users building frames from a byte buffer (e.g.
   assembling an ISO-TP payload) have to implement this themselves.
 
-- **`getMode()` returns `uint8_t`.** Returning a named enum or at least documenting the
-  `MODE_*` constants in the return-value doc comment would reduce look-up friction.
+- **`getMode()` returns `uint8_t`.** The `MODE_*` constants are documented in `docs/api.md`.
 
-- **No `stop()` / `sleep()`.** Battery-Emulator calls `canfd->end()` to stop the chip during
-  BMS reset sequences. `MODE_SLEEP` exists as a constant but is not documented or tested.
-  Tracked as G7 / SPEC-006.
+- **`stop()` / `sleep()` / `wake()` / `restart()` are implemented** (SPEC-006). ✅
 
 - **`configure()` is the only init path that detects FSYS.** `configureRaw()` skips detection.
   If a user calls `configureRaw()` first and then `setDataRate()`, `mFsys` is 0 and the
-  calculation silently falls back to 20 MHz. This should be documented or guarded.
+  calculation silently falls back to 20 MHz. Documented in `docs/api.md` under `configureRaw()`.

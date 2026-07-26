@@ -3,8 +3,8 @@
 ## Project Goal
 Clean-room direct register-level CAN FD driver for MCP2518FD on ESP32.
 No third-party CAN library. Target: full real-world CAN FD coverage across EV battery,
-inverter, logger and diagnostic use cases — tracked in `docs/use_case_coverage.md`.
-Every feature is driven by a spec in `docs/specs/` before any code is written.
+inverter, logger and diagnostic use cases — tracked in `docs/use_cases/coverage.md`.
+Every feature is driven by a spec in `docs/internals/specs/` before any code is written.
 
 ## Hardware
 - MCU: ESP32-D0WD-V3 (rev 3.1)
@@ -38,7 +38,7 @@ Every feature must follow this exact sequence. Do not skip or reorder steps.
 One feature per step. Do not combine multiple unverified features in one step.
 
 ### 1. Read the spec
-- Open the relevant spec from `docs/specs/`
+- Open the relevant spec from `docs/internals/specs/`
 - Confirm all acceptance criteria are understood before writing any code
 - Verify every register address, bit position and field definition against the PDFs
 - **Record all findings** — any register layout detail, constraint, gotcha or non-obvious
@@ -91,7 +91,7 @@ python tests/integration/verify.py --suite two_node --port COM4 --port-b COM3
 git add . && git commit -m "SPEC-NNN step N: short description"
 ```
 - Only after all hardware assertions pass — no exceptions
-- Update `docs/specs/README.md` status: Pending → In Progress → Done
+- Update `docs/internals/specs/README.md` status: Pending → In Progress → Done
 - Update `docs/status.md` with observed hardware values
 - Code and docs in the same commit. Never commit unverified code.
 
@@ -316,15 +316,31 @@ Update this table when a new spec is added.
 
 ---
 
+## Documentation Gate
+
+Before a spec is marked Done, ALL of the following documentation must be updated in the same commit as the code:
+
+- **`docs/api.md`** — if any public type, method, parameter or return value was added or changed
+- **README.md API tables** — if any public type or method was added or changed (CanStatus, CanTxResult, CanError, CanConfig, mode constants)
+- **`docs/status.md`** — mark the step complete with observed hardware values
+- **`docs/use_cases/coverage.md`** — if the feature closes a gap or changes a coverage status
+- **`docs/internals/context.md`** — if any new hardware discovery, gotcha or architectural decision was made
+
+A spec that passes hardware verification but has stale or missing documentation is NOT Done.
+
+New public API without a corresponding `docs/api.md` entry will not be merged.
+
+---
+
 ## Commit and Documentation
 - Commit after every verified step — no exceptions
 - Commit message format: `SPEC-NNN step N: short description`
 - Code and docs always in the same commit
 - After every verified step update:
   - `docs/status.md` — mark step complete with observed hardware values
-  - `docs/registers.md` — if any new register fields were used or clarified
-  - `docs/context.md` — if any new decisions, discoveries or gotchas were made
-- If a register behaves unexpectedly, document it in `docs/context.md` immediately
+  - `docs/internals/registers.md` — if any new register fields were used or clarified
+  - `docs/internals/context.md` — if any new decisions, discoveries or gotchas were made
+- If a register behaves unexpectedly, document it in `docs/internals/context.md` immediately
 - End every verified step with one plain-English sentence summarising what was achieved
   and how it moves closer to the goal
 
@@ -350,10 +366,13 @@ Update this table when a new spec is added.
 - `tests/unit/test/test_unit/test_main.cpp` — 88 unit tests: dlcToLen, calcBitTiming, calcTxTimeout, EID encode/decode, filter encoding, register addresses, bit constants, mode values
 - `tests/unit/README.md` — unit test coverage summary and run instructions
 - `tools/search.py` — PDF search tool for datasheet verification
+- `docs/api.md` — full public API reference (user-facing)
+- `docs/hardware.md` — hardware setup, pin table, SPI config, bus wiring
 - `docs/status.md` — milestone tracker
-- `docs/context.md` — hardware and architecture context
-- `docs/registers.md` — register field reference
+- `docs/internals/context.md` — hardware and architecture context
+- `docs/internals/registers.md` — register field reference
 - `docs/use_cases/coverage.md` — real-world use case coverage and gap analysis
 - `docs/use_cases/uc-dala-battery-emulator.md` — Battery-Emulator integration requirements
-- `docs/specs/README.md` — spec index and implementation status
-- `docs/specs/SPEC-NNN-*.md` — individual feature specs
+- `docs/internals/specs/README.md` — spec index and implementation status
+- `docs/internals/specs/SPEC-NNN-*.md` — individual feature specs
+- `CONTRIBUTING.md` — how to contribute

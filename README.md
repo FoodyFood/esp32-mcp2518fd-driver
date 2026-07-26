@@ -32,6 +32,8 @@ can.receive(rx, 500);  // blocking, 500 ms timeout
 
 See [`docs/use_cases/coverage.md`](docs/use_cases/coverage.md) for the full feature-by-use-case coverage matrix and gap tracking.
 
+**[Full API reference →](docs/api.md)**
+
 ---
 
 ## Features
@@ -183,12 +185,49 @@ Serial.printf("ts=%lu\n", rx.timestamp);  // TBC counts since configure()
 
 ### CanStatus
 
+Returned by `configure()`, `setDataRate()`, `stop()`, `restart()`, `sleep()`, `wake()`.
+
 | Value | Meaning |
 |---|---|
 | `CanStatus::OK` | Success |
 | `CanStatus::MODE_TIMEOUT` | Chip did not confirm the requested mode |
-| `CanStatus::RATE_NOT_ACHIEVABLE` | Target rate cannot be reached at the detected FSYS |
+| `CanStatus::RATE_NOT_ACHIEVABLE` | Target rate cannot be reached at the detected FSYS. Chip state unchanged. |
 | `CanStatus::CLOCK_NOT_READY` | OSC register shows clock not stable after reset |
+
+### CanTxResult
+
+Returned by `transmit()`.
+
+| Value | Meaning |
+|---|---|
+| `CanTxResult::OK` | Frame transmitted and ACKed |
+| `CanTxResult::NoAck` | No ACK received after 3 retries — other node absent or bus disconnected |
+| `CanTxResult::BusError` | Bit error, stuff error, or floating bus |
+| `CanTxResult::FifoFull` | TX FIFO had no space |
+
+### CanError
+
+Returned by `readAndClearErrors()`. Use `hasErrors()` for a cheaper yes/no check.
+
+| Field | Description |
+|---|---|
+| `tec` | Transmit error counter (0–255) |
+| `rec` | Receive error counter (0–255) |
+| `txWarning` | TEC ≥ 96 |
+| `rxWarning` | REC ≥ 96 |
+| `txPassive` | TEC ≥ 128 |
+| `rxPassive` | REC ≥ 128 |
+| `busOff` | TEC > 255 — node is bus-off |
+| `rxOverflow` | RX FIFO overflowed since last call. Cleared on read. |
+
+### CanConfig
+
+Optional fourth argument to `configure()`. All fields have safe defaults.
+
+| Field | Default | Description |
+|---|---|---|
+| `rxFifoDepth` | `16` | RX FIFO slot count (1–24 without timestamps, 1–23 with) |
+| `enableTimestamp` | `false` | Attach a 32-bit hardware timestamp to every received frame |
 
 ### Supported rates
 
@@ -306,22 +345,25 @@ tests/
   unit/
     platformio.ini          # Native PlatformIO env — runs on host, no hardware required
     test/test_unit/
-      test_main.cpp         # 50 unit tests: dlcToLen, calcBitTiming, calcTxTimeout, EID/filter encode, register addresses
+      test_main.cpp         # 50+ unit tests: dlcToLen, calcBitTiming, calcTxTimeout, EID/filter encode, register addresses
 
 tools/
   search.py                 # PDF search tool — queries both datasheets
 
 docs/
+  api.md                    # Full public API reference
+  hardware.md               # Hardware setup, pin table, SPI config, bus wiring
   status.md                 # Verified milestone tracker
-  context.md                # Hardware decisions and discoveries
-  registers.md              # Register field reference
-  use_cases/               # Use case coverage matrix and integration assessments
+  use_cases/
     coverage.md             # Feature-by-use-case coverage and gap tracking
     uc-dala-battery-emulator.md  # Battery-Emulator integration requirements
-  specs/                    # One spec per feature — read before implementing
-    README.md               # Spec index and implementation order
-    SPEC-NNN-*.md           # Individual feature specs
+  internals/                # Development documentation — not required to use the driver
+    context.md              # Architecture decisions, key discoveries, hardware gotchas
+    registers.md            # Register field reference
+    specs/                  # One spec per feature — acceptance criteria and implementation notes
   reference/                # Place downloaded PDFs here (see reference/README.md)
+
+CONTRIBUTING.md             # How to contribute
 
 .github/
   workflows/
@@ -362,6 +404,10 @@ Optional (integration test runner and PDF search tool):
 ```bash
 pip install -r requirements.txt
 ```
+
+## Contributing
+
+Bug reports, hardware compatibility reports and PRs are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
