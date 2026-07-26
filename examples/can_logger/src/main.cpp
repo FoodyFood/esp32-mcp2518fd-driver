@@ -25,8 +25,7 @@ constexpr uint8_t PIN_CS   = 25;
 SPIClass      spi(VSPI);
 MCP2518Driver can(spi, PIN_CS);
 
-// Convert a raw TBC timestamp to milliseconds.
-// TBC increments every 50 ns at 20 MHz (TBCPRE=0).
+// The hardware timestamp counter increments every 50 ns — multiply to get milliseconds.
 static float tbcToMs(uint32_t tbc) { return tbc * 0.00005f; }
 
 static void printFrame(const CanMsg& msg)
