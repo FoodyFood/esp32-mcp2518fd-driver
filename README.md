@@ -58,7 +58,7 @@ See [`docs/use_case_coverage.md`](docs/use_case_coverage.md) for the full featur
 | Configurable RX FIFO depth (1–24 slots at 64-byte payload) | ✅ |
 | Per-frame RX timestamp from hardware time base counter | ✅ |
 | Listen-only mode (passive, no ACK) — validated on real bus | ✅ |
-| stop() / restart() / sleep() lifecycle control | 🔜 |
+| stop() / restart() / sleep() / wake() lifecycle control | ✅ |
 
 ---
 
@@ -155,6 +155,14 @@ void loop() {
 
     // Detected oscillator frequency
     Serial.printf("FSYS: %lu Hz\n", can.getFsys());
+
+    // Pause TX/RX without losing timing config, then resume
+    can.stop();
+    can.restart();
+
+    // Low-power sleep — wake on bus activity or software call
+    can.sleep();
+    can.wake();
 }
 ```
 
