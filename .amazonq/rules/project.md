@@ -181,6 +181,7 @@ A spec that passes hardware but has stale docs is NOT Done. New public API witho
 - NEVER 32-bit read-modify-write CiCON — use `write8()` to CiCON+3 for REQOP.
 - NEVER read CiFIFOUAm in Configuration mode — UA is only valid outside config mode.
 - NEVER enter config mode before `calcBitTiming()` confirms the rate is achievable.
+- NEVER write REG_OSC after `mSpi.setMode()` has been called — write it between `mSpi.reset()` and `mSpi.setMode(MODE_CONFIG)`. Writing OSC at any other point disables the RX path on this hardware (frames transmit OK but never arrive in FIFO2). Matches Microchip reference sequence: OscillatorControlSet is called immediately after Reset, before any other configuration.
 - Always check TFNRFNIF before writing a TX message to RAM.
 - Always set UINC and TXREQ in the same `write32()` call.
 - FRESET is auto-set in config mode and cleared on exit — do not poll it in config mode.

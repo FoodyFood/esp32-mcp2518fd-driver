@@ -130,3 +130,10 @@ calcBitTiming() requires dataBps != 0. In configure(), when mode == MODE_CLASSIC
 
 ### Chip ignores FDF/BRS/ESI in Normal CAN 2.0 mode
 Per REFMANUAL page 10: "The FDF, BRS and ESI bits in the TX Objects will be ignored and transmitted as '0'." The API guard in transmit() (returning InvalidMode for fdf=true) prevents callers from relying on this silent coercion.
+
+### OSC register must be written immediately after reset(), before any other register access
+Writing OSC byte 0 (CLKODIV, SCLKDIV, PLLEN, etc.) at any other point in the configure sequence — including in config mode after setMode(MODE_CONFIG), or after exiting config mode — disables the RX path on this hardware. Frames transmit successfully (TXREQ clears, no error flags) but never arrive in FIFO2. The root cause is undocumented chip behaviour not described in DS20006027B.
+
+The Microchip reference implementation (MCP25XXFD canfdspi API, Example 3-1) avoids this by calling OscillatorControlSet immediately after Reset, before Configure, BitTimeConfigure, or any FIFO setup. The chip is already in Configuration mode after reset — no mode transition occurs around the write.
+
+Rule: any write to REG_OSC must happen between `mSpi.reset()` and `mSpi.setMode(MODE_CONFIG)`. Never write OSC after setMode() has been called.
