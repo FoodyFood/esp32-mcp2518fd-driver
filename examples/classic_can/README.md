@@ -30,9 +30,7 @@ pio run -e dashboard --target upload
 
 Open a Serial monitor (115200 baud) on each board.
 
-## What to expect
-
-The ECU simulates an engine slowly accelerating and warming up. The dashboard prints a live readout every 100 ms.
+> **Two-board tip:** After flashing both boards, press reset on each board. Both need to boot fresh after being connected to the bus. an engine slowly accelerating and warming up. The dashboard prints a live readout every 100 ms.
 
 **ECU serial output:**
 ```

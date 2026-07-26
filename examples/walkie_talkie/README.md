@@ -23,6 +23,8 @@ Flash this same binary to both boards — no configuration needed, both nodes ar
 
 Open a Serial monitor (115200 baud) on each board.
 
+> **Two-board tip:** After flashing both boards, press reset on one board, then the other. Both boards need to boot fresh after being connected to the bus.
+
 ## What to expect
 
 Type a message on one board and press Enter. It appears on the other board's Serial monitor prefixed with `THEM:`. Both boards can send and receive simultaneously.

@@ -1,14 +1,16 @@
 # can_logger
 
-Passively monitor a CAN bus with per-frame hardware timestamps — completely invisible to other nodes.
+Passively monitor a CAN FD bus — every frame captured with a hardware timestamp, completely invisible to other nodes.
 
 ## What you'll learn
 
-How to put the MCP2518FD into listen-only mode so it captures every frame without transmitting ACK bits or error frames. Each received frame carries a hardware timestamp accurate to 50 ns, captured at the start of frame.
+How to put the MCP2518FD into listen-only mode so it receives every frame on the bus without transmitting anything — no ACK bits, no error frames. Other nodes cannot tell it is there. Every received frame is printed to Serial with a hardware timestamp accurate to 50 ns.
 
 ## Hardware
 
-One ESP32 board wired to an MCP2518FD, connected to any active CAN bus.
+One ESP32 board wired to an MCP2518FD and connected to any active CAN FD bus running at 125 kbps nominal / 2 Mbps data.
+
+To test without a live bus, run `scope_loopback` on a second board connected to the same bus — it transmits continuously at the matching rate.
 
 | Pin | GPIO |
 |-----|------|
@@ -17,23 +19,21 @@ One ESP32 board wired to an MCP2518FD, connected to any active CAN bus.
 | MOSI | 32 |
 | CS | 25 |
 
-Connect CANH and CANL to the bus you want to monitor. No termination resistor is needed if the bus already has one at each end.
-
 ## Setup
 
-Flash the single `can_logger` environment:
+Flash `can_logger` to one board. If using `scope_loopback` as a traffic source, flash it to a second board on the same bus.
 
 ```
 pio run -e can_logger --target upload
 ```
 
-Open a Serial monitor at 115200 baud. Frames appear as they arrive.
+Open a Serial monitor (115200 baud) on the logger board.
 
-To test without a live bus, change `MODE_LISTEN` to `MODE_INTERNAL_LB` in `setup()` and add a transmit call in `loop()`.
+> **Two-board tip:** Flash the logger first, then the transmitter. After both are flashed, press reset on the transmitter first, then the logger — this ensures the logger is listening before traffic starts.
 
 ## What to expect
 
-Every frame on the bus is printed in candump-style format with a hardware timestamp:
+Every frame on the bus is printed as it arrives. Timestamps increment continuously from power-on.
 
 ```
 ==========================
@@ -42,9 +42,12 @@ Every frame on the bus is printed in candump-style format with a hardware timest
 configure: OK  FSYS: 20000000 Hz
 Listening — all frames printed below
 
-t=  1250.700 ms  ID=0x100       FD BRS  DLC=8  01 02 03 04 05 06 07 08
-t=  1300.750 ms  ID=0x200       FD BRS  DLC=8  00 00 00 01 00 00 00 00
-t=  1350.800 ms  ID=0x18DAF110(E)  FD BRS  DLC=8  03 22 F4 05 00 00 00 00
+t=  1234.567 ms  ID=0x123       FD BRS  DLC=8  01 02 03 04 05 06 07 08
+t=  1245.563 ms  ID=0x123       FD BRS  DLC=8  01 02 03 04 05 06 07 08
+t=  1256.559 ms  ID=0x123       FD BRS  DLC=8  01 02 03 04 05 06 07 08
 ```
 
-The timestamp is the raw TBC counter value converted to milliseconds. The counter runs from power-on and wraps after ~214 seconds.
+Extended IDs are marked with `(E)`:
+```
+t=  5000.000 ms  ID=0x1C42017B(E)  FD BRS  DLC=8  01 02 03 04 05 06 07 08
+```

@@ -28,9 +28,7 @@ pio run -e ecu    --target upload
 
 Open a Serial monitor (115200 baud) on each board.
 
-## What to expect
-
-The tester sends a ReadDataByIdentifier request every second. The ECU responds with a simulated engine temperature that slowly climbs. The tester prints only the response — all other traffic is discarded in hardware.
+> **Two-board tip:** After flashing both boards, press reset on each board. Both need to boot fresh after being connected to the bus. a ReadDataByIdentifier request every second. The ECU responds with a simulated engine temperature that slowly climbs. The tester prints only the response — all other traffic is discarded in hardware.
 
 **Tester serial output:**
 ```
