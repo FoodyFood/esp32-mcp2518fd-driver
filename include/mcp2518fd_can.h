@@ -16,6 +16,7 @@ enum class CanStatus : uint8_t
     MODE_TIMEOUT,         // chip did not confirm the requested mode
     RATE_NOT_ACHIEVABLE,  // target bit rate cannot be reached at the detected FSYS
     CLOCK_NOT_READY,      // OSC register shows clock not stable after reset
+    INVALID_MODE,         // operation not valid in the current mode (e.g. FD frame in MODE_CLASSIC)
 };
 
 // ----------------------------------------------------------------------------
@@ -35,10 +36,11 @@ struct CanMsg
 // CanTxResult — returned by transmit()
 enum class CanTxResult : uint8_t
 {
-    OK,       // frame transmitted and ACKed
-    NoAck,    // chip retried 3x, no ACK received (other node absent or bus disconnected)
-    BusError, // TXERR set — bit error, stuff error, etc.
-    FifoFull, // TX FIFO had no space (TFNRFNIF was clear)
+    OK,          // frame transmitted and ACKed
+    NoAck,       // chip retried 3x, no ACK received (other node absent or bus disconnected)
+    BusError,    // TXERR set — bit error, stuff error, etc.
+    FifoFull,    // TX FIFO had no space (TFNRFNIF was clear)
+    InvalidMode, // operation not valid in the current mode (e.g. FD frame in MODE_CLASSIC)
 };
 
 // ----------------------------------------------------------------------------
@@ -97,6 +99,7 @@ public:
     CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode, const CanConfig& cfg);
 
     // Change the data bit rate at runtime without disturbing the nominal rate.
+    // Returns INVALID_MODE if the driver is in MODE_CLASSIC (no data phase).
     CanStatus setDataRate(uint32_t dataBps);
 
     // Transmit one frame. Returns OK when ACKed, NoAck/BusError/FifoFull otherwise.

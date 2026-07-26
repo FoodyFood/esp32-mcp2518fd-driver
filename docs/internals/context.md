@@ -121,3 +121,12 @@ Sleep handshake: poll OPMOD==CONFIG (4) AND OSC.OSCDIS==1 to confirm sleep enter
 Wake: clear OSCDIS (bit 2 of OSC byte 0) — chip re-enables oscillator and transitions to CONFIG.
 Writing REQOP=CONFIG does NOT exit sleep; only clearing OSCDIS or RXCAN activity does.
 configure() must clear OSCDIS before reset() if the chip is sleeping, otherwise detectFsys() fails.
+
+### MODE_CLASSIC is a real-bus mode — no loopback equivalent
+Normal CAN 2.0 mode (REQOP=110) puts the chip on the bus. There is no "classic + internal loopback" combined mode. Single-node verification of classic frame handling uses MODE_INTERNAL_LB with fdf=false frames (the chip accepts them). Two-node real-bus exchange is the only way to verify MODE_CLASSIC end-to-end.
+
+### configure() in MODE_CLASSIC: pass nominalBps for dataBps
+calcBitTiming() requires dataBps != 0. In configure(), when mode == MODE_CLASSIC, effectiveDataBps is set to nominalBps before calling calcBitTiming(). This keeps the data timing registers consistent without adding a special-case path inside the timing function. The data registers are irrelevant in Normal CAN 2.0 mode.
+
+### Chip ignores FDF/BRS/ESI in Normal CAN 2.0 mode
+Per REFMANUAL page 10: "The FDF, BRS and ESI bits in the TX Objects will be ignored and transmitted as '0'." The API guard in transmit() (returning InvalidMode for fdf=true) prevents callers from relying on this silent coercion.

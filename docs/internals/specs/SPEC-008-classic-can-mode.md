@@ -1,7 +1,7 @@
 # SPEC-008 — Classic CAN Mode on FD Chip (Normal20B)
 
 ## Status
-Pending
+Done
 
 ## Context
 Drawn from [`docs/use_cases/uc-dala-battery-emulator.md`](../use_cases/uc-dala-battery-emulator.md) IR-18.
@@ -15,7 +15,17 @@ Our driver currently has no equivalent. `MODE_NORMAL` always enables FD. This sp
 `MODE_CLASSIC` that configures the chip as a plain CAN 2.0B controller.
 
 ## Datasheet findings
-_To be filled in during implementation after PDF verification._
+- REQOP=110 (0x06) = Normal CAN 2.0 mode — confirmed DS20006027B page 27, REFMANUAL page 10.
+- OPMOD=110 is the readback value when the chip is in Normal CAN 2.0 mode — same encoding.
+- The chip ignores FDF, BRS and ESI bits in TX objects and transmits them as '0' (REFMANUAL page 10).
+  The chip itself will not send FD frames in this mode, but we guard at the API level (AC-5) to
+  prevent the caller from relying on silent coercion.
+- The chip will send error frames if CAN FD frames are detected on the bus (REFMANUAL page 10).
+- Data phase bit timing registers (CiDBTCFG, CiTDC) are irrelevant in Normal CAN 2.0 mode;
+  we write nominal timing to both to keep the register state consistent.
+- MODE_CLASSIC = 6 was already defined in registers.h — value confirmed correct.
+- calcBitTiming() requires dataBps != 0; in classic mode we pass nominalBps for both to satisfy
+  the function without adding a special-case path inside it.
 
 ## Acceptance criteria
 

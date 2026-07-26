@@ -426,6 +426,50 @@ void runTest()
         CHECK("all 8 bytes match after wake", dataOk);
     }
 
+    // ------------------------------------------------------------------
+    // SPEC-008: Classic CAN mode (MODE_CLASSIC)
+    // ------------------------------------------------------------------
+    Serial.println("classic CAN mode (MODE_CLASSIC):");
+    {
+        // MODE_CLASSIC is a real-bus mode — verify mode entry, guard checks,
+        // and API rejections. Loopback of classic frames is done in MODE_INTERNAL_LB
+        // (the chip accepts fdf=false frames there) and two-node real-bus exchange
+        // is verified in the two_node suite.
+        can.configure(500000, 0, MODE_CLASSIC);
+        CHECK("mode = CLASSIC after configure", can.getMode() == MODE_CLASSIC);
+
+        // FD frame must be rejected before touching the chip
+        CanMsg fdMsg;
+        fdMsg.id = 0x7A1; fdMsg.fdf = true; fdMsg.brs = true; fdMsg.dlc = 8;
+        CHECK("transmit() FD frame in MODE_CLASSIC = InvalidMode",
+              can.transmit(fdMsg) == CanTxResult::InvalidMode);
+
+        // setDataRate() must return INVALID_MODE in classic mode
+        CHECK("setDataRate() in MODE_CLASSIC = INVALID_MODE",
+              can.setDataRate(1000000) == CanStatus::INVALID_MODE);
+
+        // getMode() returns MODE_CLASSIC
+        CHECK("getMode() = MODE_CLASSIC", can.getMode() == MODE_CLASSIC);
+    }
+
+    // Classic frame loopback — use MODE_INTERNAL_LB with fdf=false
+    Serial.println("classic frame loopback (MODE_INTERNAL_LB, fdf=false):");
+    can.configure(500000, 500000, MODE_INTERNAL_LB);
+    {
+        CanMsg tf;
+        tf.id = 0x7A0; tf.fdf = false; tf.brs = false; tf.dlc = 8;
+        for (int i = 0; i < 8; i++) tf.data[i] = (uint8_t)(0xC0 + i);
+        CHECK("transmit() classic frame returns OK", can.transmit(tf) == CanTxResult::OK);
+        CanMsg rf = {};
+        bool got = can.receive(rf, 50);
+        CHECK("receive() classic frame", got);
+        CHECK("fdf=false on received classic frame", !rf.fdf);
+        CHECK("ID matches", rf.id == tf.id);
+        bool dataOk = got && rf.dlc == 8;
+        for (int i = 0; i < 8 && dataOk; i++) dataOk &= (rf.data[i] == tf.data[i]);
+        CHECK("all 8 bytes match", dataOk);
+    }
+
     Serial.println();
 }
 

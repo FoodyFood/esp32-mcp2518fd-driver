@@ -50,6 +50,17 @@ static CanMsg makeFrame(uint32_t id, uint8_t dlc, uint8_t seed)
     return msg;
 }
 
+static CanMsg makeClassicFrame(uint32_t id, uint8_t seed)
+{
+    CanMsg msg;
+    msg.id  = id;
+    msg.fdf = false;
+    msg.brs = false;
+    msg.dlc = 8;
+    for (int i = 0; i < 8; i++) msg.data[i] = (uint8_t)(seed + i);
+    return msg;
+}
+
 // Transmit with retry — if no ACK (other node not ready), wait and retry.
 static bool txWithRetry(const char* label, const CanMsg& msg)
 {
@@ -186,6 +197,22 @@ static void runNodeA()
         CHECK("A TEC=0 in MODE_LISTEN (no TX)", e.tec == 0);
     }
 
+    // SPEC-008: Classic CAN two-node exchange — A transmits, B receives
+    Serial.println("classic CAN two-node (MODE_CLASSIC, 500 kbps):");
+    can.configure(500000, 0, MODE_CLASSIC);
+    CHECK("A mode = CLASSIC", can.getMode() == MODE_CLASSIC);
+    for (int i = 0; i < 10; i++)
+        txWithRetry("classic 8B", makeClassicFrame(0x1A0 + i, (uint8_t)(0xA0 + i)));
+    {
+        int rxCount = 0;
+        for (int i = 0; i < 10; i++)
+        {
+            CanMsg r = {};
+            if (can.receive(r, RX_TIMEOUT_MS)) rxCount++;
+        }
+        CHECK("A received 10 classic frames from B", rxCount == 10);
+    }
+
     Serial.println();
 }
 
@@ -260,6 +287,22 @@ static void runNodeB()
     }
     CanError errB = can.readAndClearErrors();
     CHECK("B not bus-off after listen-only test", !errB.busOff);
+
+    // SPEC-008: Classic CAN two-node exchange — B receives, then transmits
+    Serial.println("classic CAN two-node (MODE_CLASSIC, 500 kbps):");
+    can.configure(500000, 0, MODE_CLASSIC);
+    CHECK("B mode = CLASSIC", can.getMode() == MODE_CLASSIC);
+    {
+        int rxCount = 0;
+        for (int i = 0; i < 10; i++)
+        {
+            CanMsg r = {};
+            if (can.receive(r, RX_TIMEOUT_MS)) rxCount++;
+        }
+        CHECK("B received 10 classic frames from A", rxCount == 10);
+    }
+    for (int i = 0; i < 10; i++)
+        txWithRetry("classic 8B", makeClassicFrame(0x2A0 + i, (uint8_t)(0xB0 + i)));
 
     Serial.println();
 }

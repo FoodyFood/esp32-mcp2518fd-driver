@@ -209,3 +209,30 @@ Run: `wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit &&
 | single_node      | ✅ Verified | All assertions OK on COM4; timestamp, payload, delta, listen-only |
 | id_filter        | ✅ Verified | All assertions OK on COM4; no regressions |
 | two_node         | ✅ Verified | All assertions OK on both nodes; listen-only A/B test |
+
+## SPEC-008 — Classic CAN Mode (MODE_CLASSIC)
+
+| Feature | Status | Notes |
+|---|---|---|
+| `MODE_CLASSIC` constant | ✅ Verified | REQOP=110 (0x06) — confirmed DS20006027B page 27 |
+| `configure(nominal, 0, MODE_CLASSIC)` | ✅ Verified | Chip enters Normal CAN 2.0 mode; OPMOD=6 confirmed |
+| Data rate parameter ignored | ✅ Verified | `dataBps=0` passes nominal rate to calcBitTiming(); no RATE_NOT_ACHIEVABLE |
+| `transmit()` FD frame rejected | ✅ Verified | Returns `CanTxResult::InvalidMode` before touching chip |
+| `setDataRate()` in classic mode | ✅ Verified | Returns `CanStatus::INVALID_MODE` immediately |
+| Classic frame loopback (MODE_INTERNAL_LB, fdf=false) | ✅ Verified | fdf=false received intact; all 8 bytes match |
+| Two-node classic CAN (500 kbps) | ✅ Verified | A↔B exchange 10 frames each; all received |
+| `CanStatus::INVALID_MODE` | ✅ Verified | New enum value; returned by `setDataRate()` in classic mode |
+| `CanTxResult::InvalidMode` | ✅ Verified | New enum value; returned by `transmit()` with fdf=true in classic mode |
+
+### Hardware observations
+- MODE_CLASSIC is a real-bus mode — no internal loopback equivalent. Single-node tests use MODE_INTERNAL_LB with fdf=false frames to verify classic frame handling.
+- The chip ignores FDF/BRS/ESI bits in TX objects in Normal CAN 2.0 mode (REFMANUAL page 10) — the API guard at transmit() prevents silent coercion.
+- Two-node classic exchange at 500 kbps: 10 frames A→B and 10 frames B→A, all received correctly.
+- `configure(500000, 0, MODE_CLASSIC)` works cleanly — 0 is substituted with nominalBps inside configure() before calling calcBitTiming().
+
+| Suite | Status | Notes |
+|---|---|---|
+| single_node | ✅ Verified | MODE_CLASSIC entry, FD rejection, setDataRate guard, classic loopback |
+| id_filter | ✅ Verified | No regressions |
+| two_node | ✅ Verified | 10-frame classic exchange A↔B on real bus |
+| unit tests | ✅ Verified | 88/88 passing, 100% lines/functions |

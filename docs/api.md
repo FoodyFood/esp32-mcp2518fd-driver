@@ -46,6 +46,7 @@ Returned by `configure()`, `configureRaw()`, `setDataRate()`, `stop()`, `restart
 | `CanStatus::MODE_TIMEOUT` | Chip did not confirm the requested mode within the timeout. |
 | `CanStatus::RATE_NOT_ACHIEVABLE` | Target bit rate cannot be reached at the detected oscillator frequency. Chip state is unchanged. |
 | `CanStatus::CLOCK_NOT_READY` | OSC register shows clock not stable after reset. |
+| `CanStatus::INVALID_MODE` | Operation not valid in the current mode (e.g. `setDataRate()` in `MODE_CLASSIC`). |
 
 Always check for `CanStatus::OK` before transmitting. Any other value means the chip is not in the requested mode.
 
@@ -61,6 +62,7 @@ Returned by `transmit()`.
 | `CanTxResult::NoAck` | Chip retried 3 times, no ACK received. Other node absent or bus disconnected. |
 | `CanTxResult::BusError` | TXERR set — bit error, stuff error, or floating bus. |
 | `CanTxResult::FifoFull` | TX FIFO had no space (TFNRFNIF was clear). |
+| `CanTxResult::InvalidMode` | Operation not valid in the current mode (e.g. FD frame in `MODE_CLASSIC`). |
 
 ---
 
@@ -145,6 +147,8 @@ CanStatus setDataRate(uint32_t dataBps);
 
 Changes the data bit rate at runtime without disturbing the nominal rate or current mode. Calculates timing before touching the chip — if the rate is not achievable the chip state is completely unchanged.
 
+Returns `CanStatus::INVALID_MODE` immediately if the driver is in `MODE_CLASSIC` — there is no data phase in classic CAN.
+
 | Parameter | Description |
 |---|---|
 | `dataBps` | New data bit rate in bits per second. |
@@ -160,6 +164,8 @@ CanTxResult transmit(const CanMsg& msg);
 Transmits one frame. Blocks until the chip confirms transmission or reports an error (typically < 1 ms at 500 kbps nominal). Returns `CanTxResult::OK` when the frame was ACKed.
 
 In `MODE_LISTEN` returns `CanTxResult::NoAck` immediately without accessing the FIFO.
+
+In `MODE_CLASSIC` returns `CanTxResult::InvalidMode` immediately if `msg.fdf=true`. Classic CAN frames (`fdf=false`) transmit normally.
 
 ---
 
@@ -346,7 +352,7 @@ Defined in `mcp2518fd_registers.h`, included automatically via `mcp2518fd_can.h`
 | `MODE_LISTEN` | 3 | Listen-only. Receives all frames, sends no ACK. Does not affect bus error counters on other nodes. |
 | `MODE_CONFIG` | 4 | Configuration mode. Used internally by the driver. |
 | `MODE_EXTERNAL_LB` | 5 | External loopback. Drives real signals on CANH/CANL via the transceiver and self-ACKs. No second node required. Useful for oscilloscope measurements. |
-| `MODE_CLASSIC` | 6 | Classic CAN 2.0B mode. No CAN FD frames, no BRS. Use when the bus has classic-only nodes. |
+| `MODE_CLASSIC` | 6 | Classic CAN 2.0B mode. No CAN FD frames, no BRS. Use when the bus has classic-only nodes. `transmit()` with `fdf=true` returns `CanTxResult::InvalidMode`. `setDataRate()` returns `CanStatus::INVALID_MODE`. Pass `0` or any value for `dataBps` — it is ignored. |
 | `MODE_RESTRICTED` | 7 | Restricted operation mode. |
 
 ---
