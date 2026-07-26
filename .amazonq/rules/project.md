@@ -140,7 +140,9 @@ Every PR runs `.github/workflows/ci-checks.yml` which:
 - Builds every example for ESP32 without uploading (catches compile errors on all examples)
 - Builds every integration harness without uploading
 
-All examples use `lib_deps = file://../..` which works identically on Windows locally and on Linux in CI.
+All examples use `lib_deps = foodyfood/esp32-mcp2518fd-driver` — the published package name, exactly as a user would write it. This is intentional: examples are user-facing and must be directly copyable into a new project without modification.
+
+CI builds examples by pulling the published package. If a spec changes the public API, the published package must be updated (version bumped and published) before CI will pass for examples.
 
 To add a new example to CI: add its directory name to the `matrix.example` list in `ci-checks.yml`.
 To add a new harness to CI: add its directory name to the `matrix.suite` list in `ci-checks.yml`.
@@ -174,6 +176,11 @@ Before starting a new spec, verify all existing examples in this order:
 4. `examples/bus_monitor` — both nodes, COM4 (node_a) + COM3 (node_b)
 
 ## Adding New Examples
+- Examples are added **after** a feature is published to the PlatformIO registry — not during
+  spec implementation. Because examples consume the published package, they cannot be written
+  or built until the version containing the feature is live.
+- At the end of every spec, before closing it out, assess whether the new feature warrants a
+  new example. If it does, note it explicitly as a follow-up task so it is not forgotten.
 - Create a new example when a feature does not fit cleanly into an existing one, or would
   make it too large or unfocused
 - Each example is a self-contained PlatformIO project under `examples/<name>/`
@@ -190,6 +197,9 @@ These are two different things and must be kept separate.
 
 **`examples/`** — pure user-facing code. A library user reads these to learn how to use the
 driver in their own project. Rules:
+- `platformio.ini` must use `lib_deps = foodyfood/esp32-mcp2518fd-driver` — the published package
+  name, never a local symlink or path. A user must be able to copy the entire example directory
+  and build it without any modification.
 - No CHECK() macros, no pass/fail output, no assertion loops
 - No SPEC-NNN references or internal development terminology — the user does not care how the
   driver was built, only how to use it
