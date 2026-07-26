@@ -294,3 +294,23 @@ Run: `wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit &&
 | id_filter | ✅ Verified | No regressions |
 | two_node | ✅ Verified | 10-frame classic exchange A↔B on real bus |
 | unit tests | ✅ Verified | 100/100 passing, 100% lines/functions |
+
+## SPEC-011 — VW MEB Battery Simulator Example
+
+| Feature | Status | Notes |
+|---|---|---|
+| `configure(500000, 2000000, MODE_NORMAL)` | ✅ Verified | Returns OK on boot |
+| BMS_20 10 ms schedule | ✅ Verified | Rolling counter 0→15→0, VAG CRC correct on every counter value |
+| BMS_22 / BMS_21 / BMS_04 100 ms schedule | ✅ Verified | All received by monitor node with correct IDs and DLCs |
+| NMH_Hybrid_01 200 ms classic CAN frame | ✅ Verified | Received as `CAN` (not FD) — mixed-mode confirmed |
+| BMS_07 / KN_Hybrid_01 500 ms schedule | ✅ Verified | Both received at correct interval |
+| VAG CRC (0x2F polynomial) | ✅ Verified | BMS_20 byte 0 repeats identically on each 16-counter cycle |
+| BMS_mode=1 (HV_ACTIVE) in BMS_20 byte 2 | ✅ Verified | byte 2 = 0x09 → bits[2:0] = 001 |
+| Monitor role ACKs and prints all frames | ✅ Verified | No TX FAILs on simulator when monitor is connected |
+
+### Hardware observations
+- BMS_20 byte 2 = `0x09`: bits[4:3] = `01` (HVIL_status=1, seated), bits[2:0] = `001` (BMS_mode=1, HV_ACTIVE)
+- VAG CRC cycle verified: counter 0x07→0x08→...→0x0F→0x00→...→0x06→0x07, CRC sequence `8B CA 31 D0 DF 0A D6 2F 92 5E 1A 75 62 29 A1 F9` repeats exactly
+- NMH_Hybrid_01 (0x1B00007B) received as classic CAN 2.0B — `fdf=false` path through SPEC-008 confirmed on real bus
+- BMS_04 byte 0 (CRC) changes each 100 ms as counter increments — rolling counter and CRC both correct
+- Monitor role at 500k/2M MODE_NORMAL ACKs all frame types including 29-bit EID and 48-byte FD frames

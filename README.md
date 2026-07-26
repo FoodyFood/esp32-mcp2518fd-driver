@@ -20,12 +20,13 @@ can.receive(rx, 500);  // blocking, 500 ms timeout
 
 ## Installation
 
-**PlatformIO** — add to `platformio.ini`:
+**PlatformIO** — [foodyfood/esp32-mcp2518fd-driver](https://registry.platformio.org/libraries/foodyfood/esp32-mcp2518fd-driver)
+
+Add to `platformio.ini`:
 ```ini
 lib_deps = foodyfood/esp32-mcp2518fd-driver
 ```
 
-**Arduino IDE** — search for `esp32-mcp2518fd-driver` in the Library Manager.
 
 ---
 
@@ -59,7 +60,7 @@ void loop() {
 }
 ```
 
-**[Full API reference →](docs/api.md)**
+**[Full API reference →](https://github.com/FoodyFood/esp32-mcp2518fd-driver/blob/main/docs/api.md)**
 
 ---
 
@@ -127,6 +128,7 @@ Each example is a self-contained PlatformIO project — open, build and flash di
 | [`uds_filter`](examples/uds_filter/) | Set an acceptance filter so your board only wakes up for the frames it cares about — demonstrated with a UDS request/response pattern |
 | [`can_logger`](examples/can_logger/) | Passively monitor a CAN bus in listen-only mode with per-frame hardware timestamps — pair with `scope_loopback` on a second board for a self-contained test |
 | [`classic_can`](examples/classic_can/) | Use the MCP2518FD as a plain CAN 2.0B controller to talk to legacy devices — demonstrated with a vehicle ECU and dashboard simulation |
+| [`meb_battery_sim`](examples/meb_battery_sim/) | Impersonate a VW MEB battery on a CAN FD bus — transmit the full keepalive schedule with VAG CRC so a Battery-Emulator node sees a healthy, contactors-closed pack |
 
 ---
 
@@ -147,7 +149,7 @@ Every feature was developed and verified on real hardware — not simulated, not
 | SPI | VSPI — SCK=33, MISO=35, MOSI=32, CS=25 |
 | INT | GPIO 34 |
 
-Other ESP32 boards and MCP2518FD breakout variants should work provided the SPI pins are configured correctly. See [docs/hardware.md](docs/hardware.md) for wiring details.
+Other ESP32 boards and MCP2518FD breakout variants should work provided the SPI pins are configured correctly. See [docs/hardware.md](https://github.com/FoodyFood/esp32-mcp2518fd-driver/blob/main/docs/hardware.md) for wiring details.
 
 ---
 
@@ -169,9 +171,9 @@ The result is a driver you can ship in a product and stand behind.
 
 | Document | Description |
 |---|---|
-| [API reference](docs/api.md) | Every public type, method, parameter and return value |
-| [Hardware setup](docs/hardware.md) | Pin table, SPI config, INT pin wiring, bus termination |
-| [Use case coverage](docs/use_cases/coverage.md) | Feature-by-use-case coverage matrix |
+| [API reference](https://github.com/FoodyFood/esp32-mcp2518fd-driver/blob/main/docs/api.md) | Every public type, method, parameter and return value |
+| [Hardware setup](https://github.com/FoodyFood/esp32-mcp2518fd-driver/blob/main/docs/hardware.md) | Pin table, SPI config, INT pin wiring, bus termination |
+| [Use case coverage](https://github.com/FoodyFood/esp32-mcp2518fd-driver/blob/main/docs/use_cases/coverage.md) | Feature-by-use-case coverage matrix |
 
 ---
 

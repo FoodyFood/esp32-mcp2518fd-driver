@@ -94,7 +94,7 @@ Frame content must be sourced from external reference implementations — do not
 
 | Spec | Title | Depends on | Blocked on | Status |
 |---|---|---|---|---|
-| [SPEC-011](SPEC-011-battery-simulator-example.md) | CAN FD Battery Simulator Example (Kia 64 FD + VW MEB) | SPEC-001, SPEC-002, SPEC-003 | Battery-Emulator source files in repo | Pending |
+| [SPEC-011](SPEC-011-battery-simulator-example.md) | VW MEB Battery Simulator Example | SPEC-001, SPEC-002, SPEC-003, SPEC-008 | — | Done |
 
 ---
 

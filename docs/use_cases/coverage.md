@@ -242,6 +242,9 @@ Two batteries are targeted, drawn directly from the
 | 29-bit extended ID TX and RX (MEB) | ✅ | `CanMsg.ext=true`, `CanMsg.id` carries full 29-bit EID |
 | Acceptance filter for response SIDs | ✅ | `setFilter(index, id, mask, ext)` — up to 32 slots |
 | TX error feedback | ✅ | `CanTxResult` enum: OK / NoAck / BusError / FifoFull |
+| Mixed FD + classic CAN on same bus | ✅ | `MODE_NORMAL` + `fdf=false` for NMH_Hybrid_01 (SPEC-008) |
+| VAG CRC (0x2F polynomial) | ✅ | Ported from Battery-Emulator MEB-BATTERY.cpp, verified on hardware |
+| Example: `meb_battery_sim` | ✅ | Hardware-verified — all 7 frame types received correctly by monitor node |
 
 ---
 

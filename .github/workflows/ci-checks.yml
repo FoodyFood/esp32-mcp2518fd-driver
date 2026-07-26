@@ -49,6 +49,7 @@ jobs:
           - uds_filter
           - can_logger
           - classic_can
+          - meb_battery_sim
 
     steps:
       - uses: actions/checkout@v4
