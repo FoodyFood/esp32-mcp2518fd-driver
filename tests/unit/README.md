@@ -22,9 +22,9 @@ HTML report is written to `tests/unit/coverage/html/index.html`.
 
 | Metric | Rate |
 |---|---|
-| Lines | 100% (63/63) |
-| Functions | 100% (13/13) |
-| Branches | 67.6% (23/34) |
+| Lines | 100% (65/65) |
+| Functions | 100% (14/14) |
+| Branches | 77.1% (37/48) |
 
 Branch coverage is below 100% because gcc instruments every arm of the `constexpr`
 ternary chains in `dlcToLen` and `calcBitTiming`. Each call exercises one path through
