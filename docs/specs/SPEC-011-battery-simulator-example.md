@@ -1,4 +1,4 @@
-# SPEC-007 — CAN FD Battery Simulator Example (Kia 64 FD + VW MEB)
+# SPEC-011 — CAN FD Battery Simulator Example (Kia 64 FD + VW MEB)
 
 ## Status
 Pending

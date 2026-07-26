@@ -104,6 +104,15 @@ They run on the host via WSL — no hardware required.
 wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit && ~/.local/bin/pio test -e native"
 ```
 
+After running tests, generate the coverage report:
+
+```bash
+wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit && python3 coverage.py"
+```
+
+Coverage baseline: **100% lines, 100% functions, ~68% branches** (branch ceiling is a
+property of `constexpr` ternary chains — not a gap to close).
+
 **When to add unit tests:**
 - Any pure-logic function with no hardware dependency is a unit test candidate.
 - If a function can be extracted into `mcp2518fd_timing.h`, `mcp2518fd_presets.h`, or a similar
@@ -111,20 +120,30 @@ wsl -d Ubuntu -- bash -c "cd /mnt/c/Users/d1/repos/mcp2518fd/tests/unit && ~/.lo
 - New bit-packing logic (T0/R0 encode/decode, filter OBJ/MASK encoding) must have roundtrip tests.
 - New register address helpers (inline constexpr address calculations) must have address value tests.
 - New rejection/guard logic in calculation functions must have negative-case tests.
-- Unit tests must pass (`50 succeeded` or equivalent) before committing any spec step that adds
-  or modifies testable logic. Run them as part of the pre-commit check alongside the integration suite.
+- New register bit constants must have a position/value test.
+- Unit tests must pass and coverage must not regress before committing any spec step that adds
+  or modifies testable logic. Run both as part of the pre-commit check.
 - Never remove or weaken an existing unit test assertion.
+
+**Design for testability:**
+- Pure logic belongs in hardware-free headers (`mcp2518fd_timing.h`, `mcp2518fd_presets.h`).
+  If you find yourself wanting to test something that lives in `mcp2518fd_can.cpp`, extract
+  the logic into a free function in a hardware-free header first.
+- Hardware-dependent code (`mcp2518fd_can.cpp`, `mcp2518fd_spi.cpp`) is verified by integration
+  tests only — do not attempt to mock or stub the SPI layer for unit tests.
 
 ## CI (GitHub Actions)
 
-Every PR runs `.github/workflows/ci.yml` which:
-- Runs all 50 unit tests on `ubuntu-24.04` (native PlatformIO env, no hardware)
+Every PR runs `.github/workflows/ci-checks.yml` which:
+- Runs all unit tests on `ubuntu-24.04` (native PlatformIO env, no hardware)
+- Generates a coverage report and uploads it as a build artefact (`unit-test-coverage`)
 - Builds every example for ESP32 without uploading (catches compile errors on all examples)
-- Auto-merges the PR via squash if all jobs pass
+- Builds every integration harness without uploading
 
-All examples use `lib_deps = file://../..` which works identically on Windows locally and on Linux in CI. No patching or symlinks required.
+All examples use `lib_deps = file://../..` which works identically on Windows locally and on Linux in CI.
 
-To add a new example to CI: add its directory name to the `matrix.example` list in `ci.yml`.
+To add a new example to CI: add its directory name to the `matrix.example` list in `ci-checks.yml`.
+To add a new harness to CI: add its directory name to the `matrix.suite` list in `ci-checks.yml`.
 
 ## Regression Testing
 Run the full suite after every spec before marking it Done:
@@ -278,7 +297,10 @@ Version → spec alignment:
 | 0.4.0 | SPEC-004 (Interrupt RX + FIFO depth) |
 | 0.5.0 | SPEC-005 (RX timestamp + listen-only) |
 | 0.6.0 | SPEC-006 (Stop/restart/sleep) |
-| 0.7.0 | SPEC-007 (Battery simulator example) |
+| 0.7.0 | SPEC-008 (Classic CAN mode) |
+| 0.8.0 | SPEC-009 (CLKO output) |
+| 0.9.0 | SPEC-010 (Dual INT pins) |
+| 0.10.0 | SPEC-011 (Battery simulator example) |
 
 Update this table when a new spec is added.
 
@@ -313,13 +335,15 @@ Update this table when a new spec is added.
 - `src/mcp2518fd_can.cpp` — driver implementation
 - `tests/integration/verify.py` — integration test entry point (upload + verify, single suite or all)
 - `tests/integration/mcp_test/` — runner, suites, upload, serial I/O modules
-- `tests/unit/platformio.ini` — native PlatformIO env for host-side unit tests
-- `tests/unit/test/test_unit/test_main.cpp` — 50 unit tests: dlcToLen, calcBitTiming, calcTxTimeout, EID encode/decode, filter encoding, register addresses, bit constants
+- `tests/unit/platformio.ini` — native PlatformIO env for host-side unit tests (coverage instrumented)
+- `tests/unit/coverage.py` — standalone script: runs lcov + genhtml after `pio test`, prints summary
+- `tests/unit/test/test_unit/test_main.cpp` — 88 unit tests: dlcToLen, calcBitTiming, calcTxTimeout, EID encode/decode, filter encoding, register addresses, bit constants, mode values
 - `tests/unit/README.md` — unit test coverage summary and run instructions
 - `tools/search.py` — PDF search tool for datasheet verification
 - `docs/status.md` — milestone tracker
 - `docs/context.md` — hardware and architecture context
 - `docs/registers.md` — register field reference
-- `docs/use_case_coverage.md` — real-world use case coverage and gap analysis
+- `docs/use_cases/coverage.md` — real-world use case coverage and gap analysis
+- `docs/use_cases/uc-dala-battery-emulator.md` — Battery-Emulator integration requirements
 - `docs/specs/README.md` — spec index and implementation status
 - `docs/specs/SPEC-NNN-*.md` — individual feature specs

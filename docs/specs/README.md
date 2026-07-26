@@ -1,6 +1,6 @@
 # Spec Index
 
-Each spec closes one or more gaps from [`docs/use_case_coverage.md`](../use_case_coverage.md).
+Each spec closes one or more gaps from [`docs/use_cases/coverage.md`](../use_cases/coverage.md).
 Specs are ordered by priority and grouped by theme.
 Implement in order — later specs may depend on earlier ones (noted below).
 
@@ -63,14 +63,39 @@ Stop/restart and sleep/wake. Self-contained, no dependencies.
 |---|---|---|---|
 | [SPEC-006](SPEC-006-stop-restart-sleep.md) | Stop, Restart and Sleep/Wake Lifecycle | G7 | Done |
 
-## Group F — Real-World Examples (consumes previous specs)
+## Group F — API Cleanup (do before new features)
+
+Resolves structural API issues identified in the pre-SPEC-008 audit.
+No hardware changes. Must be done before SPEC-008 to avoid compounding the issues.
+
+| Spec | Title | Status |
+|---|---|---|
+| [SPEC-007](SPEC-007-api-review.md) | Public API Review and Cleanup | Pending |
+
+## Group G — Battery-Emulator Integration
+
+These three specs close the gaps identified in
+[`docs/use_cases/uc-dala-battery-emulator.md`](../use_cases/uc-dala-battery-emulator.md)
+that block a clean drop-in replacement of ACAN2517FD. Implement in order — SPEC-009
+(CLKO) must come before SPEC-010 (dual INT) on dual-chip boards where the second chip
+is clocked from the first.
+
+| Spec | Title | IR closed | Status |
+|---|---|---|---|
+| [SPEC-008](SPEC-008-classic-can-mode.md) | Classic CAN Mode on FD Chip (Normal20B) | IR-18 | Pending |
+| [SPEC-009](SPEC-009-clko-output.md) | CLKO Output Pin Configuration | IR-19 | Pending |
+| [SPEC-010](SPEC-010-dual-int-pins.md) | Dual INT Pin Support (INT0 / INT1) | IR-20 | Pending |
+
+## Group G — Real-World Examples (consumes previous specs)
 
 End-to-end examples that exercise the full driver API against real-world protocols.
 Each spec in this group depends on the feature specs listed against it being Done first.
 
 | Spec | Title | Depends on | Status |
 |---|---|---|---|
-| [SPEC-007](SPEC-007-battery-simulator-example.md) | CAN FD Battery Simulator Example (Kia 64 FD + VW MEB) | SPEC-001, SPEC-002, SPEC-003 | Pending |
+| [SPEC-011](SPEC-011-battery-simulator-example.md) | CAN FD Battery Simulator Example (Kia 64 FD + VW MEB) | SPEC-001, SPEC-002, SPEC-003 | Pending |
+
+---
 
 ## Coverage map
 
@@ -86,3 +111,6 @@ Each spec in this group depends on the feature specs listed against it being Don
 | G8 | Configurable RX FIFO depth | SPEC-004 |
 | G9 | TX error distinction | SPEC-003 |
 | G10 | Listen-only mode validation | SPEC-005 |
+| IR-18 | Classic CAN mode on FD chip | SPEC-008 |
+| IR-19 | CLKO output configuration | SPEC-009 |
+| IR-20 | Dual INT pin support | SPEC-010 |

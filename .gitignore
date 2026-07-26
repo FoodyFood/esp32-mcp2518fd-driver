@@ -13,5 +13,8 @@ __pycache__/
 docs/reference/*.pdf
 docs/reference/*.txt
 
+# Coverage reports
+tests/unit/coverage/
+
 # Local
 next_steps.md

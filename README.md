@@ -30,7 +30,7 @@ can.receive(rx, 500);  // blocking, 500 ms timeout
 | **Scope / analyser stimulus** | Drive known CAN FD frames onto the bus for oscilloscope or protocol analyser capture |
 | **Production self-test** | Verify chip and transceiver wiring at factory or field bring-up — no second node required |
 
-See [`docs/use_case_coverage.md`](docs/use_case_coverage.md) for the full feature-by-use-case coverage matrix and gap tracking.
+See [`docs/use_cases/coverage.md`](docs/use_cases/coverage.md) for the full feature-by-use-case coverage matrix and gap tracking.
 
 ---
 
@@ -313,7 +313,9 @@ docs/
   status.md                 # Verified milestone tracker
   context.md                # Hardware decisions and discoveries
   registers.md              # Register field reference
-  use_case_coverage.md      # Real-world use case analysis and gap tracking
+  use_cases/               # Use case coverage matrix and integration assessments
+    coverage.md             # Feature-by-use-case coverage and gap tracking
+    uc-dala-battery-emulator.md  # Battery-Emulator integration requirements
   specs/                    # One spec per feature — read before implementing
     README.md               # Spec index and implementation order
     SPEC-NNN-*.md           # Individual feature specs

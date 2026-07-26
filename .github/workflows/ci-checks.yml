@@ -21,11 +21,20 @@ jobs:
           path: ~/.platformio
           key: pio-native-${{ hashFiles('tests/unit/platformio.ini') }}
 
-      - name: Install PlatformIO
-        run: pip install platformio
+      - name: Install PlatformIO and lcov
+        run: pip install platformio && sudo apt-get install -y lcov
 
       - name: Run unit tests
         run: cd tests/unit && pio test -e native
+
+      - name: Generate coverage report
+        run: cd tests/unit && python3 coverage.py
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-coverage
+          path: tests/unit/coverage/html/
 
   build-examples:
     name: Build example/${{ matrix.example }}

@@ -3,8 +3,8 @@
 #include "mcp2518fd_timing.h"
 #include "mcp2518fd_presets.h"
 
-// dlcToLen is defined in mcp2518fd_can.h which pulls Arduino.h.
-// Redeclare here — pure logic, no hardware dependency.
+// dlcToLen moves to mcp2518fd_timing.h in SPEC-007 Task 1.
+// Until then, redeclare here — pure logic, no hardware dependency.
 inline constexpr uint8_t dlcToLen(uint8_t dlc)
 {
     return (dlc <=  8) ? dlc
@@ -422,6 +422,232 @@ void test_fifosta_txabt_bit7()
 }
 
 // ============================================================================
+// calcBitTiming — remaining 20 MHz preset coverage
+// ============================================================================
+
+void test_calcBitTiming_20mhz_125k_nominal()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    TEST_ASSERT_TRUE(calcBitTiming(20000000, 125000, 2000000, nbtcfg, dbtcfg, tdcfg));
+    TEST_ASSERT_EQUAL_HEX32(NBTCFG_125K_20MHZ, nbtcfg);
+}
+
+void test_calcBitTiming_20mhz_250k_nominal()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    TEST_ASSERT_TRUE(calcBitTiming(20000000, 250000, 2000000, nbtcfg, dbtcfg, tdcfg));
+    TEST_ASSERT_EQUAL_HEX32(NBTCFG_250K_20MHZ, nbtcfg);
+}
+
+void test_calcBitTiming_20mhz_1m_nominal()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    TEST_ASSERT_TRUE(calcBitTiming(20000000, 1000000, 2000000, nbtcfg, dbtcfg, tdcfg));
+    TEST_ASSERT_EQUAL_HEX32(NBTCFG_1M_20MHZ, nbtcfg);
+}
+
+void test_calcBitTiming_20mhz_tdc_1m()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    calcBitTiming(20000000, 500000, 1000000, nbtcfg, dbtcfg, tdcfg);
+    TEST_ASSERT_EQUAL_HEX32(TDC_1M_20MHZ, tdcfg);
+}
+
+void test_calcBitTiming_20mhz_tdc_5m()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    calcBitTiming(20000000, 500000, 5000000, nbtcfg, dbtcfg, tdcfg);
+    TEST_ASSERT_EQUAL_HEX32(TDC_5M_20MHZ, tdcfg);
+}
+
+void test_calcBitTiming_brp_always_zero()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    calcBitTiming(20000000, 500000, 2000000, nbtcfg, dbtcfg, tdcfg);
+    TEST_ASSERT_EQUAL_UINT32(0, (nbtcfg >> 24) & 0xFF);  // nominal BRP
+    TEST_ASSERT_EQUAL_UINT32(0, (dbtcfg >> 24) & 0xFF);  // data BRP
+}
+
+void test_calcBitTiming_data_sjw_equals_tseg2()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    calcBitTiming(20000000, 500000, 2000000, nbtcfg, dbtcfg, tdcfg);
+    uint32_t tseg2 = (dbtcfg >> 8) & 0x0F;
+    uint32_t sjw   =  dbtcfg       & 0x0F;
+    TEST_ASSERT_EQUAL_UINT32(tseg2, sjw);
+}
+
+void test_calcBitTiming_data_sample_point_2m_20mhz()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    calcBitTiming(20000000, 500000, 2000000, nbtcfg, dbtcfg, tdcfg);
+    uint32_t tseg1 = (dbtcfg >> 16) & 0x1F;
+    uint32_t tseg2 = (dbtcfg >>  8) & 0x0F;
+    uint32_t sp_pct = (1 + tseg1) * 100 / (1 + tseg1 + tseg2);
+    TEST_ASSERT_GREATER_OR_EQUAL_UINT32(75, sp_pct);
+    TEST_ASSERT_LESS_OR_EQUAL_UINT32(85, sp_pct);
+}
+
+// ============================================================================
+// calcBitTiming — 40 MHz full preset coverage
+// ============================================================================
+
+void test_calcBitTiming_40mhz_125k_nominal()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    TEST_ASSERT_TRUE(calcBitTiming(40000000, 125000, 2000000, nbtcfg, dbtcfg, tdcfg));
+    TEST_ASSERT_EQUAL_HEX32(NBTCFG_125K_40MHZ, nbtcfg);
+}
+
+void test_calcBitTiming_40mhz_250k_nominal()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    TEST_ASSERT_TRUE(calcBitTiming(40000000, 250000, 2000000, nbtcfg, dbtcfg, tdcfg));
+    TEST_ASSERT_EQUAL_HEX32(NBTCFG_250K_40MHZ, nbtcfg);
+}
+
+void test_calcBitTiming_40mhz_1m_nominal()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    TEST_ASSERT_TRUE(calcBitTiming(40000000, 1000000, 2000000, nbtcfg, dbtcfg, tdcfg));
+    TEST_ASSERT_EQUAL_HEX32(NBTCFG_1M_40MHZ, nbtcfg);
+}
+
+void test_calcBitTiming_40mhz_data_1m()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    TEST_ASSERT_TRUE(calcBitTiming(40000000, 500000, 1000000, nbtcfg, dbtcfg, tdcfg));
+    TEST_ASSERT_EQUAL_HEX32(DBTCFG_1M_40MHZ, dbtcfg);
+    TEST_ASSERT_EQUAL_HEX32(TDC_1M_40MHZ,    tdcfg);
+}
+
+void test_calcBitTiming_40mhz_data_4m()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    TEST_ASSERT_TRUE(calcBitTiming(40000000, 500000, 4000000, nbtcfg, dbtcfg, tdcfg));
+    TEST_ASSERT_EQUAL_HEX32(DBTCFG_4M_40MHZ, dbtcfg);
+    TEST_ASSERT_EQUAL_HEX32(TDC_4M_40MHZ,    tdcfg);
+}
+
+void test_calcBitTiming_40mhz_data_5m()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    TEST_ASSERT_TRUE(calcBitTiming(40000000, 500000, 5000000, nbtcfg, dbtcfg, tdcfg));
+    // 40 MHz / 5 Mbps = 8 TQ: TSEG2=1, TSEG1=6 — verify rate is exact
+    uint32_t tseg1 = (dbtcfg >> 16) & 0x1F;
+    uint32_t tseg2 = (dbtcfg >>  8) & 0x0F;
+    TEST_ASSERT_EQUAL_UINT32(5000000, 40000000 / (1 + tseg1 + tseg2));
+}
+
+void test_calcBitTiming_40mhz_tdc_8m()
+{
+    uint32_t nbtcfg, dbtcfg, tdcfg;
+    calcBitTiming(40000000, 1000000, 8000000, nbtcfg, dbtcfg, tdcfg);
+    TEST_ASSERT_EQUAL_HEX32(TDC_8M_40MHZ, tdcfg);
+}
+
+// ============================================================================
+// calcTxTimeout — additional coverage
+// ============================================================================
+
+void test_calcTxTimeout_fsys_zero_uses_fallback()
+{
+    // fsys=0 must not divide-by-zero; falls back to 20 MHz internally
+    uint32_t ms = calcTxTimeout(0, NBTCFG_500K_20MHZ, DBTCFG_2M_20MHZ);
+    TEST_ASSERT_GREATER_OR_EQUAL_UINT32(2, ms);
+    TEST_ASSERT_LESS_OR_EQUAL_UINT32(50, ms);
+}
+
+void test_calcTxTimeout_40mhz_reasonable()
+{
+    uint32_t ms = calcTxTimeout(40000000, NBTCFG_500K_40MHZ, DBTCFG_2M_40MHZ);
+    TEST_ASSERT_GREATER_OR_EQUAL_UINT32(2,  ms);
+    TEST_ASSERT_LESS_OR_EQUAL_UINT32(50, ms);
+}
+
+void test_calcTxTimeout_slower_nominal_longer()
+{
+    uint32_t fast = calcTxTimeout(20000000, NBTCFG_1M_20MHZ,   DBTCFG_2M_20MHZ);
+    uint32_t slow = calcTxTimeout(20000000, NBTCFG_125K_20MHZ, DBTCFG_2M_20MHZ);
+    TEST_ASSERT_GREATER_THAN_UINT32(fast, slow);
+}
+
+// ============================================================================
+// Filter mask EID roundtrip
+// ============================================================================
+
+void test_filter_msk_eid_roundtrip_known()
+{
+    // Encode a 29-bit mask, verify SID and EID portions survive the encoding
+    uint32_t mask = 0x1FFFFFFFu;
+    uint32_t msk  = encodeFilterMskEid(mask);
+    uint32_t t0   = msk & ~(1u << 30);  // strip MIDE
+    // SID portion: mask>>18 = 0x7FF
+    TEST_ASSERT_EQUAL_HEX32(0x7FFu, t0 & 0x7FFu);
+    // EID portion: mask&0x3FFFF = 0x3FFFF
+    TEST_ASSERT_EQUAL_HEX32(0x3FFFFu, (t0 >> 11) & 0x3FFFFu);
+}
+
+// ============================================================================
+// Register constants — TREC, TSCON, OSC, RXOVIF, CiCON, CiINT
+// ============================================================================
+
+void test_trec_ewarn_bit16()  { TEST_ASSERT_EQUAL_HEX32(1u << 16, TREC_EWARN);  }
+void test_trec_rxwarn_bit17() { TEST_ASSERT_EQUAL_HEX32(1u << 17, TREC_RXWARN); }
+void test_trec_txwarn_bit18() { TEST_ASSERT_EQUAL_HEX32(1u << 18, TREC_TXWARN); }
+void test_trec_rxbp_bit19()   { TEST_ASSERT_EQUAL_HEX32(1u << 19, TREC_RXBP);   }
+void test_trec_txbp_bit20()   { TEST_ASSERT_EQUAL_HEX32(1u << 20, TREC_TXBP);   }
+void test_trec_txbo_bit21()   { TEST_ASSERT_EQUAL_HEX32(1u << 21, TREC_TXBO);   }
+
+void test_tscon_tbcen_bit16() { TEST_ASSERT_EQUAL_HEX32(1u << 16, TSCON_TBCEN); }
+void test_osc_oscdis_bit2()   { TEST_ASSERT_EQUAL_HEX32(1u <<  2, OSC_OSCDIS);  }
+void test_rxovif_fifo2_bit2() { TEST_ASSERT_EQUAL_HEX32(1u <<  2, RXOVIF_FIFO2); }
+void test_con2_rtxat_bit0()   { TEST_ASSERT_EQUAL_HEX8 (1u,       CON2_RTXAT);  }
+void test_cint2_rxie_bit1()   { TEST_ASSERT_EQUAL_HEX8 (1u << 1,  CINT2_RXIE);  }
+
+void test_fifosta_rxovif_bit3()  { TEST_ASSERT_EQUAL_HEX32(1u << 3, FIFOSTA_RXOVIF);   }
+void test_fifosta_txlarb_bit6()  { TEST_ASSERT_EQUAL_HEX32(1u << 6, FIFOSTA_TXLARB);   }
+void test_fifosta_txatif_bit4()  { TEST_ASSERT_EQUAL_HEX32(1u << 4, FIFOSTA_TXATIF);   }
+
+// ============================================================================
+// Operating mode constants
+// ============================================================================
+
+void test_mode_values()
+{
+    TEST_ASSERT_EQUAL_UINT8(0, MODE_NORMAL);
+    TEST_ASSERT_EQUAL_UINT8(1, MODE_SLEEP);
+    TEST_ASSERT_EQUAL_UINT8(2, MODE_INTERNAL_LB);
+    TEST_ASSERT_EQUAL_UINT8(3, MODE_LISTEN);
+    TEST_ASSERT_EQUAL_UINT8(4, MODE_CONFIG);
+    TEST_ASSERT_EQUAL_UINT8(5, MODE_EXTERNAL_LB);
+    TEST_ASSERT_EQUAL_UINT8(6, MODE_CLASSIC);
+    TEST_ASSERT_EQUAL_UINT8(7, MODE_RESTRICTED);
+}
+
+// ============================================================================
+// Key SFR addresses and RAM_BASE
+// ============================================================================
+
+void test_sfr_addresses()
+{
+    TEST_ASSERT_EQUAL_HEX16(0x000, REG_CiCON);
+    TEST_ASSERT_EQUAL_HEX16(0x004, REG_CiNBTCFG);
+    TEST_ASSERT_EQUAL_HEX16(0x008, REG_CiDBTCFG);
+    TEST_ASSERT_EQUAL_HEX16(0x00C, REG_CiTDC);
+    TEST_ASSERT_EQUAL_HEX16(0x014, REG_CiTSCON);
+    TEST_ASSERT_EQUAL_HEX16(0x01C, REG_CiINT);
+    TEST_ASSERT_EQUAL_HEX16(0x028, REG_CiRXOVIF);
+    TEST_ASSERT_EQUAL_HEX16(0x034, REG_CiTREC);
+    TEST_ASSERT_EQUAL_HEX16(0xE00, REG_OSC);
+    TEST_ASSERT_EQUAL_HEX16(0x400, RAM_BASE);
+}
+
+void test_fltobj0_address()  { TEST_ASSERT_EQUAL_HEX16(0x1F0, FLTOBJ(0)); }
+void test_fltmsk0_address()  { TEST_ASSERT_EQUAL_HEX16(0x1F4, FLTMSK(0)); }
+void test_fltcon0_address()  { TEST_ASSERT_EQUAL_HEX16(0x1D0, FLTCON_REG(0)); }
+
+// ============================================================================
 
 void setUp()    {}
 void tearDown() {}
@@ -501,6 +727,58 @@ int main(int argc, char** argv)
     RUN_TEST(test_fifosta_tfnrfnif_bit0);
     RUN_TEST(test_fifosta_txerr_bit5);
     RUN_TEST(test_fifosta_txabt_bit7);
+
+    // calcBitTiming — remaining 20 MHz presets
+    RUN_TEST(test_calcBitTiming_20mhz_125k_nominal);
+    RUN_TEST(test_calcBitTiming_20mhz_250k_nominal);
+    RUN_TEST(test_calcBitTiming_20mhz_1m_nominal);
+    RUN_TEST(test_calcBitTiming_20mhz_tdc_1m);
+    RUN_TEST(test_calcBitTiming_20mhz_tdc_5m);
+    RUN_TEST(test_calcBitTiming_brp_always_zero);
+    RUN_TEST(test_calcBitTiming_data_sjw_equals_tseg2);
+    RUN_TEST(test_calcBitTiming_data_sample_point_2m_20mhz);
+
+    // calcBitTiming — 40 MHz full preset coverage
+    RUN_TEST(test_calcBitTiming_40mhz_125k_nominal);
+    RUN_TEST(test_calcBitTiming_40mhz_250k_nominal);
+    RUN_TEST(test_calcBitTiming_40mhz_1m_nominal);
+    RUN_TEST(test_calcBitTiming_40mhz_data_1m);
+    RUN_TEST(test_calcBitTiming_40mhz_data_4m);
+    RUN_TEST(test_calcBitTiming_40mhz_data_5m);
+    RUN_TEST(test_calcBitTiming_40mhz_tdc_8m);
+
+    // calcTxTimeout — additional
+    RUN_TEST(test_calcTxTimeout_fsys_zero_uses_fallback);
+    RUN_TEST(test_calcTxTimeout_40mhz_reasonable);
+    RUN_TEST(test_calcTxTimeout_slower_nominal_longer);
+
+    // Filter mask EID roundtrip
+    RUN_TEST(test_filter_msk_eid_roundtrip_known);
+
+    // Register constants
+    RUN_TEST(test_trec_ewarn_bit16);
+    RUN_TEST(test_trec_rxwarn_bit17);
+    RUN_TEST(test_trec_txwarn_bit18);
+    RUN_TEST(test_trec_rxbp_bit19);
+    RUN_TEST(test_trec_txbp_bit20);
+    RUN_TEST(test_trec_txbo_bit21);
+    RUN_TEST(test_tscon_tbcen_bit16);
+    RUN_TEST(test_osc_oscdis_bit2);
+    RUN_TEST(test_rxovif_fifo2_bit2);
+    RUN_TEST(test_con2_rtxat_bit0);
+    RUN_TEST(test_cint2_rxie_bit1);
+    RUN_TEST(test_fifosta_rxovif_bit3);
+    RUN_TEST(test_fifosta_txlarb_bit6);
+    RUN_TEST(test_fifosta_txatif_bit4);
+
+    // Mode constants
+    RUN_TEST(test_mode_values);
+
+    // SFR addresses
+    RUN_TEST(test_sfr_addresses);
+    RUN_TEST(test_fltobj0_address);
+    RUN_TEST(test_fltmsk0_address);
+    RUN_TEST(test_fltcon0_address);
 
     return UNITY_END();
 }
