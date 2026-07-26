@@ -106,6 +106,12 @@ void loop() {
 | **Production self-test** | Verify chip and transceiver wiring at factory or field bring-up — no second node required |
 | **Classic CAN gateway** | Bridge a legacy CAN 2.0B bus to a CAN FD network — receive classic frames and re-transmit as FD, or vice versa |
 | **Dual-chip board (T-2CAN FD)** | Drive two MCP2518FD chips from one ESP32 — configure the first chip's CLKO pin to clock the second |
+| **ISOBUS / precision agriculture** | Silently tap a tractor's ISOBUS backbone in listen-only mode — decode engine load, fuel rate, GPS and implement status without touching the machine |
+| **Low-power sleep/wake node** | Battery-powered sensor that sleeps between readings, wakes on a specific CAN frame via the INT pin, transmits one frame, and sleeps again |
+| **OBD-FD live data** | Read OBD-II PIDs from post-2023 vehicles that have moved their powertrain bus to CAN FD — DIY dashboards, track loggers, emissions monitors |
+| **Robotics actuator bus** | USB↔CAN FD bridge between a ROS 2 host and CAN FD servo drives (Moteus, ODrive) — 1 ms control loop, interrupt-driven RX, per-frame timestamps |
+| **Marine NMEA 2000 monitor** | Decode GPS, depth, wind and AIS from a boat's N2K backbone in listen-only mode — re-publish over WiFi to a phone or chart plotter |
+| **DC fast charger bench test** | Simulate a CCS/CHAdeMO power module on the bench — test a charger controller without live high-voltage hardware |
 
 ---
 

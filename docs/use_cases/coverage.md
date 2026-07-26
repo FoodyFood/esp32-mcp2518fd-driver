@@ -287,6 +287,155 @@ first chip must be configured to output a clock on CLKO before the second chip c
 
 ---
 
+## UC-11 — ISOBUS / Precision Agriculture Monitor
+
+**Description**  
+ISO 11783 (ISOBUS) is the agricultural machinery standard built on classic CAN at 250 kbps.
+An ESP32 in listen-only mode can silently tap a tractor's ISOBUS backbone and decode PGNs:
+engine load, fuel consumption rate, GPS position, implement status, and section control.
+No risk of disrupting the machine — the node never transmits. Useful for precision agriculture
+data collection, fleet telematics, and yield mapping without modifying the tractor's ECU.
+
+**Typical bus parameters**  
+- Nominal: 250 kbps (ISOBUS mandated)  
+- No data phase (classic CAN only)  
+- Direction: RX only (passive tap)
+
+| Feature required | Status | Evidence |
+|---|---|---|
+| Classic CAN mode at 250 kbps | ✅ | `configure(250000, 0, MODE_CLASSIC)` |
+| Listen-only mode (no ACK, no disruption) | ✅ | `MODE_LISTEN` — validated on real bus |
+| Receive classic frames, all IDs | ✅ | Catch-all filter, `msg.fdf=false` on receive |
+| 29-bit extended IDs (ISOBUS PGNs use EID) | ✅ | `CanMsg.ext=true`, `CanMsg.id` carries full 29-bit EID |
+| Per-frame RX timestamp | ✅ | `msg.timestamp` at 50 ns resolution |
+| Deep RX FIFO for burst traffic | ✅ | `configure(..., rxFifoDepth=N)` |
+| RX overflow detection | ✅ | `getErrors().rxOverflow` |
+
+---
+
+## UC-12 — Low-Power Sleep/Wake Sensor Node
+
+**Description**  
+A battery-powered sensor node (e.g. tyre pressure, temperature, or door status in a vehicle)
+spends most of its time in deep sleep. On a scheduled interval or when a specific CAN frame
+arrives on the INT pin, it wakes, reads its sensor, transmits one frame, and returns to sleep.
+Directly enabled by `sleep()` / `wake()` (SPEC-006) and interrupt-driven RX (SPEC-004).
+
+**Typical bus parameters**  
+- Nominal: 125–500 kbps  
+- Data: 2 Mbps CAN FD  
+- Direction: TX-dominant, brief RX on wake trigger
+
+| Feature required | Status | Evidence |
+|---|---|---|
+| sleep() / wake() | ✅ | `sleep()` puts chip in low-power mode; `wake()` restores |
+| Interrupt-driven wake on frame arrival | ✅ | `MCP2518Driver(spi, cs, intPin)` — INT pin wakes ISR |
+| Filter to wake-trigger frame only | ✅ | `setFilter(index, id, mask, ext)` — ignore all other traffic |
+| Transmit one frame and return to sleep | ✅ | `transmit(msg)` then `sleep()` |
+| TX error feedback | ✅ | `CanTxResult` — detect bus absent before sleeping again |
+
+---
+
+## UC-13 — OBD-FD Live Data Reader
+
+**Description**  
+Post-2023 vehicle platforms (e.g. GM VCSII, Ford, Stellantis) have migrated powertrain buses
+to CAN FD. Classic OBD-II PIDs (mode 0x01) are still supported but now carried over CAN FD
+frames. An ESP32 can send OBD-II requests on 0x7DF (functional) and receive responses on
+0x7E8–0x7EF, enabling a DIY dashboard, track data logger, or emissions monitor without a
+commercial scan tool.
+
+**Typical bus parameters**  
+- Nominal: 500 kbps  
+- Data: 2 Mbps CAN FD  
+- Direction: bidirectional request/response
+
+| Feature required | Status | Evidence |
+|---|---|---|
+| Configure 500 kbps / 2 Mbps | ✅ | `configure(500000, 2000000, MODE_NORMAL)` |
+| Transmit 11-bit SID request (0x7DF) | ✅ | `transmit(msg)` with `msg.fdf=true` |
+| Receive response with timeout | ✅ | `receive(msg, timeoutMs)` |
+| Filter to response SID range (0x7E8–0x7EF) | ✅ | `setFilter(index, 0x7E8, 0x7F8, false)` — mask covers 8 IDs |
+| TX error distinction (no ECU present) | ✅ | `CanTxResult::NoAck` |
+
+---
+
+## UC-14 — Robotics CAN FD Actuator Bus
+
+**Description**  
+Modern robot joints and servo drives (e.g. Moteus, ODrive, Unitree) communicate over CAN FD
+at 1 Mbps nominal / 5 Mbps data. An ESP32 acts as a USB↔CAN FD bridge: a ROS 2 node on a
+Linux host sends setpoints over USB Serial; the ESP32 forwards them as CAN FD frames to
+actuators and streams telemetry back. Useful for mobile robots, cobots, and drone ESC buses
+where a full Linux SBC is too heavy or power-hungry for the CAN interface role.
+
+**Typical bus parameters**  
+- Nominal: 1 Mbps  
+- Data: 5 Mbps CAN FD  
+- Direction: bidirectional, 1 ms control loop
+
+| Feature required | Status | Evidence |
+|---|---|---|
+| Configure 1 Mbps nominal / 5 Mbps data | ✅ | `configure(1000000, 5000000, MODE_NORMAL)` |
+| Transmit CAN FD frame | ✅ | `transmit(msg)` |
+| Interrupt-driven RX for 1 ms latency | ✅ | `MCP2518Driver(spi, cs, intPin)` |
+| Per-frame timestamp for control loop timing | ✅ | `msg.timestamp` at 50 ns resolution |
+| Runtime data rate switch (actuator negotiation) | ✅ | `setDataRate(dataBps)` |
+| Bus error detection | ✅ | `getErrors()` — detect actuator fault or wiring issue |
+
+---
+
+## UC-15 — Marine NMEA 2000 Monitor
+
+**Description**  
+NMEA 2000 is the marine electronics network standard — classic CAN at 250 kbps with a
+specific PGN framing. An ESP32 in listen-only mode can decode GPS position, depth, wind speed,
+AIS targets, and engine data from a boat's N2K backbone and re-publish over WiFi to a phone
+app or chart plotter. The node is completely invisible to other N2K devices — it never
+transmits and cannot cause a bus fault.
+
+**Typical bus parameters**  
+- Nominal: 250 kbps (N2K mandated)  
+- No data phase (classic CAN only)  
+- Direction: RX only
+
+| Feature required | Status | Evidence |
+|---|---|---|
+| Classic CAN mode at 250 kbps | ✅ | `configure(250000, 0, MODE_CLASSIC)` |
+| Listen-only mode | ✅ | `MODE_LISTEN` |
+| Receive classic frames, all IDs | ✅ | Catch-all filter |
+| 29-bit extended IDs (N2K PGNs use EID) | ✅ | `CanMsg.ext=true` |
+| Deep RX FIFO for burst traffic | ✅ | `configure(..., rxFifoDepth=N)` |
+| Per-frame timestamp | ✅ | `msg.timestamp` |
+
+---
+
+## UC-16 — DC Fast Charger Power Module Interface
+
+**Description**  
+DC fast chargers (CCS, CHAdeMO) use CAN FD internally between the charger controller and
+power modules (e.g. Delta, Brusa, Elcon). An ESP32 can monitor or simulate the power module
+side of this bus for bench-testing a charger controller without live high-voltage hardware.
+Useful for EVSE manufacturers, EV conversion builders, and anyone developing a custom
+charging solution.
+
+**Typical bus parameters**  
+- Nominal: 250–500 kbps  
+- Data: 2 Mbps CAN FD  
+- Direction: bidirectional (controller ↔ power module)
+
+| Feature required | Status | Evidence |
+|---|---|---|
+| Configure 250–500 kbps / 2 Mbps | ✅ | `configure(500000, 2000000, MODE_NORMAL)` |
+| Transmit CAN FD frames (power module simulation) | ✅ | `transmit(msg)` |
+| Receive controller commands with timeout | ✅ | `receive(msg, timeoutMs)` |
+| Listen-only mode (passive monitor) | ✅ | `MODE_LISTEN` |
+| Filter to specific command IDs | ✅ | `setFilter(index, id, mask, ext)` |
+| TX error feedback (controller absent) | ✅ | `CanTxResult::NoAck` |
+| stop() / restart() for safe HV sequencing | ✅ | `stop()` / `restart()` |
+
+---
+
 ## Gap Summary
 
 Consolidated list of every gap across all use cases, ordered by impact.
