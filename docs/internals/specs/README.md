@@ -82,18 +82,19 @@ is clocked from the first.
 
 | Spec | Title | IR closed | Status |
 |---|---|---|---|
-| [SPEC-008](SPEC-008-classic-can-mode.md) | Classic CAN Mode on FD Chip (Normal20B) | IR-18 | Pending |
+| [SPEC-008](SPEC-008-classic-can-mode.md) | Classic CAN Mode on FD Chip (Normal20B) | IR-18 | Done |
 | [SPEC-009](SPEC-009-clko-output.md) | CLKO Output Pin Configuration | IR-19 | Done |
 | [SPEC-010](SPEC-010-dual-int-pins.md) | Dual INT Pin Support (INT0 / INT1) | IR-20 | Done |
 
-## Group G — Real-World Examples (consumes previous specs)
+## Group H — Real-World Examples
 
 End-to-end examples that exercise the full driver API against real-world protocols.
-Each spec in this group depends on the feature specs listed against it being Done first.
+All feature specs they depend on must be Done and the package published before work starts.
+Frame content must be sourced from external reference implementations — do not invent payloads.
 
-| Spec | Title | Depends on | Status |
-|---|---|---|---|
-| [SPEC-011](SPEC-011-battery-simulator-example.md) | CAN FD Battery Simulator Example (Kia 64 FD + VW MEB) | SPEC-001, SPEC-002, SPEC-003 | Pending |
+| Spec | Title | Depends on | Blocked on | Status |
+|---|---|---|---|---|
+| [SPEC-011](SPEC-011-battery-simulator-example.md) | CAN FD Battery Simulator Example (Kia 64 FD + VW MEB) | SPEC-001, SPEC-002, SPEC-003 | Battery-Emulator source files in repo | Pending |
 
 ---
 
