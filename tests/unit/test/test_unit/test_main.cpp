@@ -658,6 +658,26 @@ void test_calcBitTiming_classic_mode_nominal_equals_data_125k()
     TEST_ASSERT_FALSE(calcBitTiming(20000000, 125000, 125000, nbtcfg, dbtcfg, tdcfg));
 }
 
+// ============================================================================
+// SPEC-009 — clkoDivToReg: divisor value → 2-bit CLKODIV field
+// Encoding: 00=÷1, 01=÷2, 10=÷4, 11=÷10 (DS20006027B Register 3-1, page 16)
+// ============================================================================
+
+void test_clkodiv_div1()    { TEST_ASSERT_EQUAL_HEX8(0x00u, clkoDivToReg(1));  }
+void test_clkodiv_div2()    { TEST_ASSERT_EQUAL_HEX8(0x01u, clkoDivToReg(2));  }
+void test_clkodiv_div4()    { TEST_ASSERT_EQUAL_HEX8(0x02u, clkoDivToReg(4));  }
+void test_clkodiv_div10()   { TEST_ASSERT_EQUAL_HEX8(0x03u, clkoDivToReg(10)); }
+void test_clkodiv_invalid() { TEST_ASSERT_EQUAL_HEX8(0xFFu, clkoDivToReg(5));  }
+void test_clkodiv_zero_invalid() { TEST_ASSERT_EQUAL_HEX8(0xFFu, clkoDivToReg(0)); }
+void test_clkodiv_3_invalid()    { TEST_ASSERT_EQUAL_HEX8(0xFFu, clkoDivToReg(3)); }
+void test_clkodiv_255_invalid()  { TEST_ASSERT_EQUAL_HEX8(0xFFu, clkoDivToReg(255)); }
+
+void test_osc_clkodiv_shift_is_5() { TEST_ASSERT_EQUAL_UINT8(5, OSC_CLKODIV_SHIFT); }
+void test_osc_clkodiv_div10_reset_default()
+{
+    // Reset default: CLKODIV[1:0] = 11 = 0x03 = ÷10
+    TEST_ASSERT_EQUAL_HEX8(OSC_CLKODIV_DIV10, clkoDivToReg(10));
+}
 
 
 int main(int argc, char** argv)
@@ -791,6 +811,18 @@ int main(int argc, char** argv)
     // SPEC-008 — calcBitTiming classic mode substitution (nominal==data)
     RUN_TEST(test_calcBitTiming_classic_mode_nominal_equals_data_500k);
     RUN_TEST(test_calcBitTiming_classic_mode_nominal_equals_data_125k);
+
+    // SPEC-009 — clkoDivToReg encoding
+    RUN_TEST(test_clkodiv_div1);
+    RUN_TEST(test_clkodiv_div2);
+    RUN_TEST(test_clkodiv_div4);
+    RUN_TEST(test_clkodiv_div10);
+    RUN_TEST(test_clkodiv_invalid);
+    RUN_TEST(test_clkodiv_zero_invalid);
+    RUN_TEST(test_clkodiv_3_invalid);
+    RUN_TEST(test_clkodiv_255_invalid);
+    RUN_TEST(test_osc_clkodiv_shift_is_5);
+    RUN_TEST(test_osc_clkodiv_div10_reset_default);
 
     return UNITY_END();
 }
