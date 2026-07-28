@@ -6,7 +6,8 @@ CAN FD and Classic CAN 2.0B on ESP32 in three lines. The same chip and wiring wo
 MCP2518Driver can(spi, PIN_CS);
 can.configure(500000, 2000000, MODE_NORMAL);  // 500 kbps nominal, 2 Mbps data
 
-CanMsg tx = { .id=0x123, .fdf=true, .brs=true, .dlc=8 };
+CanMsg tx;
+tx.id = 0x123; tx.fdf = true; tx.brs = true; tx.dlc = 8;
 can.transmit(tx);
 
 CanMsg rx;
@@ -47,7 +48,8 @@ void setup() {
 
 void loop() {
     // Transmit
-    CanMsg tx = { .id=0x123, .fdf=true, .brs=true, .dlc=8 };
+    CanMsg tx;
+    tx.id = 0x123; tx.fdf = true; tx.brs = true; tx.dlc = 8;
     for (int i = 0; i < 8; i++) tx.data[i] = i;
     can.transmit(tx);
 
