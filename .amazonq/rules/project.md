@@ -164,6 +164,7 @@ All spec work stays on the branch until hardware verification is complete. PR to
 | 0.10.0 | SPEC-010 (Dual INT pins) |
 | 1.0.0 | Examples + v1.0 release |
 | 0.11.0 | SPEC-011 (Battery simulator example) |
+| 1.1.3 | lenToDlc() utility — inverse of dlcToLen() |
 
 Update this table when a new spec is added.
 
