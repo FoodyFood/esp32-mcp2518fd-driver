@@ -121,6 +121,19 @@ inline constexpr uint8_t dlcToLen(uint8_t dlc)
          : (dlc == 14) ? 48 : 64;
 }
 
+// Byte length → CAN FD DLC code (inverse of dlcToLen)
+// Rounds up to the next valid CAN FD payload size.
+inline constexpr uint8_t lenToDlc(uint8_t len)
+{
+    return (len <=  8) ? len
+         : (len <= 12) ? 9
+         : (len <= 16) ? 10
+         : (len <= 20) ? 11
+         : (len <= 24) ? 12
+         : (len <= 32) ? 13
+         : (len <= 48) ? 14 : 15;
+}
+
 // EID T0 word encode: SID[10:0]=id>>18, EID[17:0]=id&0x3FFFF packed into T0
 // (DS20006027B Table 3-5)
 inline uint32_t encodeEidT0(uint32_t id29)
