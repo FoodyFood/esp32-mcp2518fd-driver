@@ -21,6 +21,9 @@ struct CanMsg {
     uint8_t  dlc       = 0;
     uint32_t timestamp = 0;
     uint8_t  data[64]  = {};
+
+    CanMsg() = default;
+    CanMsg(uint32_t id, bool fdf, bool brs, uint8_t dlc);
 };
 ```
 
@@ -33,6 +36,24 @@ struct CanMsg {
 | `dlc` | `uint8_t` | Data Length Code (0–15). Use `dlcToLen(dlc)` to get the byte count. |
 | `timestamp` | `uint32_t` | Hardware timestamp on received frames (TBC counter counts, 50 ns per count at 20 MHz). Zero when timestamping is not enabled. |
 | `data[64]` | `uint8_t[]` | Payload bytes. Valid bytes are `data[0]` through `data[dlcToLen(dlc)-1]`. |
+
+The convenience constructor sets `id`, `fdf`, `brs`, and `dlc`; all other fields are zero-initialised. Arduino's C++ dialect (GCC 8, `-std=gnu++11`) does not support designated initialisers, so this constructor is the idiomatic alternative:
+
+```cpp
+// Arduino-compatible (all C++ versions):
+CanMsg tx(0x123, true, true, 8);
+for (int i = 0; i < 8; i++) tx.data[i] = i;
+
+// C++20 only — does not compile under Arduino:
+// CanMsg tx = { .id=0x123, .fdf=true, .brs=true, .dlc=8 };
+```
+
+For receive, use the default constructor:
+
+```cpp
+CanMsg rx;
+can.receive(rx, 500);
+```
 
 ---
 
@@ -131,16 +152,21 @@ ISR priority: `intPin` is used first. If `intPin` is `NO_INT_PIN`, `int1Pin` is 
 ```cpp
 CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode);
 CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode, const CanConfig& cfg);
+CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode, uint32_t fsysHz);
+CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode, const CanConfig& cfg, uint32_t fsysHz);
 ```
 
-Resets the chip, auto-detects the oscillator frequency, calculates all bit timing registers from the target rates, configures FIFOs and a catch-all acceptance filter, then enters the requested mode.
+Resets the chip, calculates all bit timing registers from the target rates, configures FIFOs and a catch-all acceptance filter, then enters the requested mode.
+
+The two-argument and three-argument forms auto-detect the oscillator frequency by reading the OSC register. The `fsysHz` overloads skip auto-detection and use the supplied frequency directly — required on boards with a 40 MHz crystal and PLL disabled (e.g. LilyGo T-2CAN FD) where auto-detection returns 20 MHz incorrectly.
 
 | Parameter | Description |
 |---|---|
 | `nominalBps` | Nominal (arbitration) bit rate in bits per second. E.g. `500000` for 500 kbps. |
 | `dataBps` | Data bit rate in bits per second. E.g. `2000000` for 2 Mbps. Must be ≥ `nominalBps`. |
 | `mode` | Operating mode. See [Mode constants](#mode-constants). |
-| `cfg` | Optional. FIFO depth and timestamp settings. |
+| `cfg` | Optional. FIFO depth, timestamp, and CLKO settings. |
+| `fsysHz` | Oscillator frequency in Hz. Use when auto-detection is unreliable (e.g. `40000000` for a 40 MHz crystal with PLL disabled). Passing `0` returns `CanStatus::CLOCK_NOT_READY`. |
 
 Returns `CanStatus::OK` on success. Returns `CanStatus::RATE_NOT_ACHIEVABLE` if either rate cannot be achieved at the detected oscillator frequency — the chip is left in reset in this case.
 
@@ -322,20 +348,36 @@ Returns the current operating mode. Compare against the `MODE_*` constants below
 uint32_t getFsys() const;
 ```
 
-Returns the oscillator frequency in Hz as detected by `configure()`. Returns `0` if `configure()` has not been called. Typical values: `20000000` or `40000000`.
+Returns the oscillator frequency in Hz. Set by `configure()` via auto-detection, or by `configureRaw()` when `fsysHz` is supplied. Returns `0` if neither has been called, or if `configureRaw()` was called without `fsysHz`. Typical values: `20000000` or `40000000`.
 
 ---
 
 ### configureRaw()
 
 ```cpp
-CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode);
-CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode, const CanConfig& cfg);
+CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode,
+                       uint32_t fsysHz = 0);
+CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode,
+                       const CanConfig& cfg, uint32_t fsysHz = 0);
 ```
 
 Direct register control for non-standard rates or custom oscillators. Bypasses auto-detection and timing calculation — you supply the raw register words. Preset constants for common rates are in `mcp2518fd_presets.h`.
 
-Note: `mFsys` is not set by this path. If you subsequently call `setDataRate()`, it will use 20 MHz as a fallback. Call `configure()` first if you need FSYS detection, then switch to raw timing.
+| Parameter | Description |
+|---|---|
+| `nbtcfg` | Raw value for CiNBTCFG (nominal bit timing). |
+| `dbtcfg` | Raw value for CiDBTCFG (data bit timing). |
+| `tdcfg` | Raw value for CiTDC (transmitter delay compensation). |
+| `mode` | Operating mode. See [Mode constants](#mode-constants). |
+| `cfg` | Optional. FIFO depth, timestamp, and CLKO settings. |
+| `fsysHz` | Optional. Oscillator frequency in Hz (e.g. `40000000`). When non-zero, `getFsys()` returns this value after the call. When zero (default), `getFsys()` returns `0` (unknown). |
+
+Example — 40 MHz crystal, 500 kbps / 2 Mbps:
+
+```cpp
+can.configureRaw(NBTCFG_500K_40MHZ, DBTCFG_2M_40MHZ, TDC_2M_40MHZ, MODE_NORMAL, 40000000);
+Serial.println(can.getFsys());  // 40000000
+```
 
 ---
 

@@ -163,6 +163,63 @@ void runTest()
     }
 
     // ------------------------------------------------------------------
+    // Issue 3: CanMsg convenience constructor
+    // ------------------------------------------------------------------
+    Serial.println("CanMsg convenience constructor:");
+    {
+        CanMsg tx(0x123, true, true, 8);
+        CHECK("constructor: id=0x123",  tx.id  == 0x123);
+        CHECK("constructor: fdf=true",  tx.fdf == true);
+        CHECK("constructor: brs=true",  tx.brs == true);
+        CHECK("constructor: dlc=8",     tx.dlc == 8);
+        CHECK("constructor: ext=false", tx.ext == false);
+        CHECK("constructor: timestamp=0", tx.timestamp == 0);
+        bool dataZero = true;
+        for (int i = 0; i < 64; i++) dataZero &= (tx.data[i] == 0);
+        CHECK("constructor: data[] zeroed", dataZero);
+
+        // Transmit a frame built with the constructor to verify it works end-to-end
+        can.configure(125000, 2000000, MODE_INTERNAL_LB);
+        for (int i = 0; i < 8; i++) tx.data[i] = (uint8_t)(0xC0 + i);
+        CHECK("constructor frame transmits OK", can.transmit(tx) == CanTxResult::OK);
+        CanMsg rx;
+        bool got = can.receive(rx, 50);
+        CHECK("constructor frame received", got);
+        CHECK("constructor frame ID matches", got && rx.id == 0x123);
+    }
+
+    // ------------------------------------------------------------------
+    // configure() with explicit fsysHz=20000000:
+    // Verifies that the fsysHz overload bypasses detectFsys() and uses
+    // the supplied frequency. On 20 MHz hardware, passing 20000000
+    // must produce the same result as auto-detection.
+    // ------------------------------------------------------------------
+    Serial.println("configure() with explicit fsysHz=20000000:");
+    {
+        CanStatus s = can.configure(125000, 2000000, MODE_INTERNAL_LB, 20000000UL);
+        CHECK("configure(fsysHz) returned OK", s == CanStatus::OK);
+        CHECK("getFsys() = 20000000 after configure(fsysHz)", can.getFsys() == 20000000UL);
+        CHECK("mode = INTERNAL_LB", can.getMode() == MODE_INTERNAL_LB);
+
+        CanMsg tf;
+        tf.id = 0x7B0; tf.fdf = true; tf.brs = true; tf.dlc = 8;
+        for (int i = 0; i < 8; i++) tf.data[i] = (uint8_t)(0xB0 + i);
+        CHECK("transmit() OK with explicit fsysHz", can.transmit(tf) == CanTxResult::OK);
+        CanMsg rf = {};
+        bool got = can.receive(rf, 50);
+        CHECK("receive() OK with explicit fsysHz", got);
+        bool dataOk = got && rf.id == tf.id && rf.dlc == 8;
+        for (int i = 0; i < 8 && dataOk; i++) dataOk &= (rf.data[i] == tf.data[i]);
+        CHECK("all 8 bytes match", dataOk);
+
+        // Passing fsysHz=0 must return CLOCK_NOT_READY
+        CanStatus bad = can.configure(125000, 2000000, MODE_INTERNAL_LB, 0UL);
+        CHECK("configure(fsysHz=0) = CLOCK_NOT_READY", bad == CanStatus::CLOCK_NOT_READY);
+        // Restore for remaining tests
+        can.configure(125000, 2000000, MODE_INTERNAL_LB);
+    }
+
+    // ------------------------------------------------------------------
     // 8 Mbps not achievable at 20 MHz — verify RATE_NOT_ACHIEVABLE
     // ------------------------------------------------------------------
     Serial.println("setDataRate(8 Mbps) on 20 MHz — expect RATE_NOT_ACHIEVABLE:");
@@ -179,9 +236,11 @@ void runTest()
     // ------------------------------------------------------------------
     Serial.println("configureRaw() with 40 MHz presets (raw API path):");
     CanStatus rawOk = can.configureRaw(
-        NBTCFG_125K_40MHZ, DBTCFG_2M_40MHZ, TDC_2M_40MHZ, MODE_INTERNAL_LB);
+        NBTCFG_125K_40MHZ, DBTCFG_2M_40MHZ, TDC_2M_40MHZ, MODE_INTERNAL_LB,
+        40000000);
     CHECK("configureRaw() returned OK", rawOk == CanStatus::OK);
     CHECK("mode = INTERNAL_LB", can.getMode() == MODE_INTERNAL_LB);
+    CHECK("getFsys() = 40000000 after configureRaw with fsysHz", can.getFsys() == 40000000UL);
 
     struct { const char* label; uint32_t dbtcfg; uint32_t tdc; } rawRates[] = {
         { "40MHz/1M preset",  DBTCFG_1M_40MHZ,  TDC_1M_40MHZ  },

@@ -49,12 +49,57 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
 
     mSpi.setMode(MODE_CONFIG);
 
-    mFsys = detectFsys();
-    if (mFsys == 0) return CanStatus::CLOCK_NOT_READY;
+    uint32_t fsys = detectFsys();
+    if (fsys == 0) return CanStatus::CLOCK_NOT_READY;
+
+    return configureWithFsys(nominalBps, dataBps, mode, cfg, fsys);
+}
+
+CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode,
+                                    uint32_t fsysHz)
+{
+    return configure(nominalBps, dataBps, mode, CanConfig{}, fsysHz);
+}
+
+CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode,
+                                    const CanConfig& cfg, uint32_t fsysHz)
+{
+    mSpi.begin();
+    if (mSpi.read32(REG_OSC) & OSC_OSCDIS)
+    {
+        uint8_t osc0 = mSpi.read8(REG_OSC);
+        mSpi.write8(REG_OSC, osc0 & ~(uint8_t)OSC_OSCDIS);
+        delay(5);
+    }
+    mSpi.reset();
+    delay(20);
+
+    if (cfg.clkoDivider != 0)
+    {
+        uint8_t enc = clkoDivToReg(cfg.clkoDivider);
+        if (enc == 0xFF) return CanStatus::RATE_NOT_ACHIEVABLE;
+        uint8_t osc0 = mSpi.read8(REG_OSC);
+        osc0 = (osc0 & ~(0x03u << OSC_CLKODIV_SHIFT)) | (enc << OSC_CLKODIV_SHIFT);
+        mSpi.write8(REG_OSC, osc0);
+    }
+
+    mSpi.setMode(MODE_CONFIG);
+
+    // Skip detectFsys() — use the caller-supplied frequency directly.
+    // Required for boards with a 40 MHz crystal and PLL disabled (e.g. T-2CAN FD)
+    // where the PLLEN bit is 0 and detectFsys() would return 20 MHz incorrectly.
+    if (fsysHz == 0) return CanStatus::CLOCK_NOT_READY;
+
+    return configureWithFsys(nominalBps, dataBps, mode, cfg, fsysHz);
+}
+
+// Private: shared configure body, called after reset and CLKODIV are handled.
+CanStatus MCP2518Driver::configureWithFsys(uint32_t nominalBps, uint32_t dataBps,
+                                            uint8_t mode, const CanConfig& cfg, uint32_t fsys)
+{
+    mFsys = fsys;
 
     uint32_t nbtcfg, dbtcfg, tdcfg;
-    // In MODE_CLASSIC the data phase is unused; pass nominal rate for both so
-    // calcBitTiming() succeeds and the data registers get a consistent value.
     uint32_t effectiveDataBps = (mode == MODE_CLASSIC) ? nominalBps : dataBps;
     if (!calcBitTiming(mFsys, nominalBps, effectiveDataBps, nbtcfg, dbtcfg, tdcfg))
         return CanStatus::RATE_NOT_ACHIEVABLE;
@@ -67,8 +112,6 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
 
     if (!mSpi.setMode(mode)) return CanStatus::MODE_TIMEOUT;
 
-    // Enable TBC after mode transition — CiTSCON is not config-mode-only
-    // and must be set after exiting config mode to survive the transition
     if (cfg.enableTimestamp)
         mSpi.write32(REG_CiTSCON, TSCON_TBCEN);
 
@@ -84,8 +127,6 @@ CanStatus MCP2518Driver::configure(uint32_t nominalBps, uint32_t dataBps, uint8_
     }
     else
     {
-        // No INT pin on this instance. Clear sIsrInstance so a stale ISR
-        // from a previous local driver instance cannot write to freed memory.
         sIsrInstance = nullptr;
     }
 
@@ -118,12 +159,14 @@ CanStatus MCP2518Driver::setDataRate(uint32_t dataBps)
     return CanStatus::OK;
 }
 
-CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode)
+CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode,
+                                       uint32_t fsysHz)
 {
-    return configureRaw(nbtcfg, dbtcfg, tdcfg, mode, CanConfig{});
+    return configureRaw(nbtcfg, dbtcfg, tdcfg, mode, CanConfig{}, fsysHz);
 }
 
-CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode, const CanConfig& cfg)
+CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode,
+                                       const CanConfig& cfg, uint32_t fsysHz)
 {
     mSpi.begin();
     mSpi.reset();
@@ -139,10 +182,11 @@ CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t
         mSpi.write8(REG_OSC, osc0);
     }
 
+    mFsys = fsysHz;  // 0 = unknown; non-zero = caller-supplied oscillator frequency
     applyTiming(nbtcfg, dbtcfg, tdcfg);
     configFifos(cfg.rxFifoDepth, cfg.enableTimestamp);
     configFilter();
-    mTxTimeoutMs = calcTxTimeout(0, nbtcfg, dbtcfg);  // fsys unknown in raw path
+    mTxTimeoutMs = calcTxTimeout(mFsys, nbtcfg, dbtcfg);
     mNbtcfg = nbtcfg;
 
     if (!mSpi.setMode(mode)) return CanStatus::MODE_TIMEOUT;

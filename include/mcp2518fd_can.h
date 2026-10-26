@@ -30,6 +30,20 @@ struct CanMsg
     uint8_t  dlc       = 0;     // Data Length Code (0–15)
     uint32_t timestamp = 0;     // RX hardware timestamp (TBC counts); 0 when timestamping not enabled
     uint8_t  data[64]  = {};    // Payload bytes (up to 64 for CAN FD)
+
+    // Default constructor — all fields zero-initialised.
+    CanMsg() = default;
+
+    // Convenience constructor for the common transmit case.
+    // Arduino's C++ dialect (GCC 8, -std=gnu++11) does not support designated
+    // initialisers, so this constructor is the idiomatic alternative to:
+    //   CanMsg tx = { .id=0x123, .fdf=true, .brs=true, .dlc=8 };  // C++20 only
+    //
+    // Usage:
+    //   CanMsg tx(0x123, true, true, 8);
+    //   for (int i = 0; i < 8; i++) tx.data[i] = i;
+    CanMsg(uint32_t id_, bool fdf_, bool brs_, uint8_t dlc_)
+        : id(id_), ext(false), fdf(fdf_), brs(brs_), dlc(dlc_), timestamp(0), data{} {}
 };
 
 // ----------------------------------------------------------------------------
@@ -105,6 +119,14 @@ public:
     CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode);
     CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode, const CanConfig& cfg);
 
+    // Same as configure() but uses fsysHz as the oscillator frequency instead of
+    // auto-detecting it. Use this on boards with a 40 MHz crystal and PLL disabled
+    // (e.g. LilyGo T-2CAN FD) where auto-detection would return 20 MHz incorrectly.
+    CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode,
+                        uint32_t fsysHz);
+    CanStatus configure(uint32_t nominalBps, uint32_t dataBps, uint8_t mode,
+                        const CanConfig& cfg, uint32_t fsysHz);
+
     // Change the data bit rate at runtime without disturbing the nominal rate.
     // Returns INVALID_MODE if the driver is in MODE_CLASSIC (no data phase).
     CanStatus setDataRate(uint32_t dataBps);
@@ -156,8 +178,14 @@ public:
     // ------------------------------------------------------------------------
     // Raw / advanced API — direct register control for non-standard rates.
     // Presets for common rates are in mcp2518fd_presets.h.
-    CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode);
-    CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode, const CanConfig& cfg);
+    //
+    // fsysHz — optional oscillator frequency in Hz (e.g. 40000000).
+    // When non-zero, getFsys() returns this value after the call.
+    // When zero (default), getFsys() returns 0 (unknown).
+    CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode,
+                           uint32_t fsysHz = 0);
+    CanStatus configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg, uint8_t mode,
+                           const CanConfig& cfg, uint32_t fsysHz = 0);
     CanStatus setDataBitTimingRaw(uint32_t dbtcfg, uint32_t tdcfg);
 
 private:
@@ -176,6 +204,8 @@ private:
     static void IRAM_ATTR sIsrHandler();
 
     uint32_t detectFsys();
+    CanStatus configureWithFsys(uint32_t nominalBps, uint32_t dataBps, uint8_t mode,
+                                const CanConfig& cfg, uint32_t fsys);
     void configFifos(uint8_t rxFifoDepth, bool enableTimestamp);
     void configFilter();
     void applyTiming(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t tdcfg);
