@@ -165,6 +165,7 @@ All spec work stays on the branch until hardware verification is complete. PR to
 | 1.0.0 | Examples + v1.0 release |
 | 0.11.0 | SPEC-011 (Battery simulator example) |
 | 1.1.3 | lenToDlc() utility — inverse of dlcToLen() |
+| 1.1.4 | T-2CAN FD gaps: getFsys after configureRaw, explicit fsysHz in configure, CanMsg constructor |
 
 Update this table when a new spec is added.
 
