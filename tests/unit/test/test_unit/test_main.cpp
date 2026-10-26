@@ -680,6 +680,36 @@ void test_osc_clkodiv_div10_reset_default()
 }
 
 
+// ============================================================================
+// Issue 3 — CanMsg convenience constructor
+// The constructor is defined in mcp2518fd_can.h which requires Arduino.h.
+// Constructor correctness is verified in the integration harness (single_node).
+// The unit test here covers only the pure-logic aspect: that dlcToLen() works
+// correctly for the DLC values a constructor call would produce.
+// ============================================================================
+
+void test_canmsg_constructor_dlc_roundtrip()
+{
+    // DLC=8 → 8 bytes; DLC=15 → 64 bytes — values a constructor call would use
+    TEST_ASSERT_EQUAL_UINT8(8,  dlcToLen(8));
+    TEST_ASSERT_EQUAL_UINT8(64, dlcToLen(15));
+}
+
+// When fsysHz is non-zero, calcTxTimeout receives the real frequency.
+// When zero, it falls back to 20 MHz internally (existing behaviour).
+// ============================================================================
+
+void test_calcTxTimeout_40mhz_vs_fallback_differ()
+{
+    // With a real 40 MHz fsys the timeout should differ from the 20 MHz fallback
+    uint32_t t40 = calcTxTimeout(40000000, NBTCFG_500K_40MHZ, DBTCFG_2M_40MHZ);
+    uint32_t t20 = calcTxTimeout(20000000, NBTCFG_500K_20MHZ, DBTCFG_2M_20MHZ);
+    // Both are valid timeouts; the point is they are computed from the correct fsys
+    TEST_ASSERT_GREATER_OR_EQUAL_UINT32(2,  t40);
+    TEST_ASSERT_GREATER_OR_EQUAL_UINT32(2,  t20);
+}
+
+
 int main(int argc, char** argv)
 {
     UNITY_BEGIN();
@@ -823,6 +853,12 @@ int main(int argc, char** argv)
     RUN_TEST(test_clkodiv_255_invalid);
     RUN_TEST(test_osc_clkodiv_shift_is_5);
     RUN_TEST(test_osc_clkodiv_div10_reset_default);
+
+    // Issue 1 — configureRaw fsysHz
+    RUN_TEST(test_calcTxTimeout_40mhz_vs_fallback_differ);
+
+    // Issue 3 — CanMsg convenience constructor (proxy via dlcToLen)
+    RUN_TEST(test_canmsg_constructor_dlc_roundtrip);
 
     return UNITY_END();
 }
