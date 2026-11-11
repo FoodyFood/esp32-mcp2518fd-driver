@@ -640,6 +640,44 @@ void runTest()
         while (can.receive(rf, 5)) {}
     }
 
+    // ------------------------------------------------------------------
+    // getTimingRegisters() after configure()
+    // Verifies computed timing values are exposed correctly.
+    // ------------------------------------------------------------------
+    Serial.println("getTimingRegisters() after configure():");
+    {
+        can.configure(500000, 2000000, MODE_INTERNAL_LB);
+        uint32_t nbtcfg, dbtcfg, tdcfg;
+        can.getTimingRegisters(nbtcfg, dbtcfg, tdcfg);
+
+        // At 20 MHz: 500k nominal, 2M data should match presets
+        CHECK("NBTCFG matches 500k@20MHz preset", nbtcfg == NBTCFG_500K_20MHZ);
+        CHECK("DBTCFG matches 2M@20MHz preset",   dbtcfg == DBTCFG_2M_20MHZ);
+        CHECK("TDCFG matches 2M@20MHz preset",    tdcfg  == TDC_2M_20MHZ);
+
+        Serial.printf("  NBTCFG=0x%08lX DBTCFG=0x%08lX TDCFG=0x%08lX\n",
+                      (unsigned long)nbtcfg, (unsigned long)dbtcfg, (unsigned long)tdcfg);
+    }
+
+    // ------------------------------------------------------------------
+    // getTimingRegisters() after configureRaw()
+    // Verifies raw values are stored and returned correctly.
+    // ------------------------------------------------------------------
+    Serial.println("getTimingRegisters() after configureRaw():");
+    {
+        can.configureRaw(NBTCFG_125K_40MHZ, DBTCFG_4M_40MHZ, TDC_4M_40MHZ,
+                         MODE_INTERNAL_LB, 40000000);
+        uint32_t nbtcfg, dbtcfg, tdcfg;
+        can.getTimingRegisters(nbtcfg, dbtcfg, tdcfg);
+
+        CHECK("NBTCFG matches raw input", nbtcfg == NBTCFG_125K_40MHZ);
+        CHECK("DBTCFG matches raw input", dbtcfg == DBTCFG_4M_40MHZ);
+        CHECK("TDCFG matches raw input",  tdcfg  == TDC_4M_40MHZ);
+
+        Serial.printf("  NBTCFG=0x%08lX DBTCFG=0x%08lX TDCFG=0x%08lX\n",
+                      (unsigned long)nbtcfg, (unsigned long)dbtcfg, (unsigned long)tdcfg);
+    }
+
     Serial.println();
 }
 

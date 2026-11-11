@@ -134,7 +134,55 @@ Each example is a self-contained PlatformIO project — open, build and flash di
 
 ---
 
-## Verified on real hardware
+## Matching third-party nodes with configureRaw
+
+When integrating with a third-party CAN FD node (e.g. Battery-Emulator, mcp2518fd_lite), both nodes must use identical bit timing to communicate reliably. Different timing algorithms can produce different sample points for the same nominal rate — 80% vs 81.25% at the data phase is enough to cause REC escalation and zero successful receives.
+
+**Diagnosing timing mismatches**
+
+After calling `configure()`, inspect the computed register values:
+
+```cpp
+uint32_t nbtcfg, dbtcfg, tdcfg;
+can.getTimingRegisters(nbtcfg, dbtcfg, tdcfg);
+Serial.printf("NBTCFG=0x%08X DBTCFG=0x%08X TDCFG=0x%08X\n", nbtcfg, dbtcfg, tdcfg);
+```
+
+Compare these values with the other node's timing registers. If they differ, use `configureRaw()` with values derived from the other node's timing algorithm.
+
+**Using configureRaw for deterministic timing**
+
+```cpp
+// Match a third-party node's exact timing (500k/2M at 40 MHz)
+can.configureRaw(NBTCFG_500K_40MHZ, DBTCFG_2M_40MHZ, TDC_2M_40MHZ, MODE_NORMAL, 40000000);
+```
+
+**Precomputed timing values**
+
+All presets use BRP=0 and 80% sample point (75% for 5 Mbps). See `mcp2518fd_presets.h` for the full list.
+
+| Rate | 20 MHz NBTCFG | 20 MHz DBTCFG | 40 MHz NBTCFG | 40 MHz DBTCFG |
+|------|---------------|---------------|---------------|---------------|
+| 125 kbps | `0x007F2020` | — | `0x00FF4040` | — |
+| 250 kbps | `0x003F1010` | — | `0x007F2020` | — |
+| 500 kbps | `0x001F0808` | — | `0x003F1010` | — |
+| 1 Mbps | `0x000F0404` | `0x000F0404` | `0x001F0808` | `0x001F0808` |
+| 2 Mbps | — | `0x00070202` | — | `0x000F0404` |
+| 4 Mbps | — | `0x00030101` | — | `0x00070202` |
+| 5 Mbps | — | `0x00020101` | — | `0x00050202` |
+| 8 Mbps | — | — | — | `0x00030101` |
+
+TDC values (required at ≥1 Mbps data rate):
+
+| Data Rate | 20 MHz | 40 MHz |
+|-----------|--------|--------|
+| 1 Mbps | `0x00021000` | `0x00022000` |
+| 2 Mbps | `0x00020800` | `0x00021000` |
+| 4 Mbps | `0x00020400` | `0x00020800` |
+| 5 Mbps | `0x00020300` | `0x00020600` |
+| 8 Mbps | — | `0x00020400` |
+
+---
 
 Every feature was developed and verified on real hardware — not simulated, not assumed. The oscilloscope capture below shows a live CAN FD data burst: CANH, CANL, and the A−B differential. Clean edges, correct differential swing, no ringing.
 

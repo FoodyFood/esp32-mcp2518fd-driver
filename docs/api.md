@@ -352,6 +352,22 @@ Returns the oscillator frequency in Hz. Set by `configure()` via auto-detection,
 
 ---
 
+### getTimingRegisters()
+
+```cpp
+void getTimingRegisters(uint32_t& nbtcfg, uint32_t& dbtcfg, uint32_t& tdcfg) const;
+```
+
+Returns the bit timing register values computed by `configure()` or supplied to `configureRaw()`. Useful for debugging interoperability with third-party nodes that use different timing algorithms — compare NBTCFG/DBTCFG to verify sample points match.
+
+```cpp
+uint32_t nbtcfg, dbtcfg, tdcfg;
+can.getTimingRegisters(nbtcfg, dbtcfg, tdcfg);
+Serial.printf("NBTCFG=0x%08X DBTCFG=0x%08X TDCFG=0x%08X\n", nbtcfg, dbtcfg, tdcfg);
+```
+
+---
+
 ### configureRaw()
 
 ```cpp
