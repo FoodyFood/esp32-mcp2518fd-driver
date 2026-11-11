@@ -159,28 +159,30 @@ can.configureRaw(NBTCFG_500K_40MHZ, DBTCFG_2M_40MHZ, TDC_2M_40MHZ, MODE_NORMAL, 
 
 **Precomputed timing values**
 
-All presets use BRP=0 and 80% sample point (75% for 5 Mbps). See `mcp2518fd_presets.h` for the full list.
+All presets use BRP=0 and ~81.25% sample point (mcp2518fd_lite algorithm), matching the Microchip reference implementation. See `mcp2518fd_presets.h` for the full list.
 
 | Rate | 20 MHz NBTCFG | 20 MHz DBTCFG | 40 MHz NBTCFG | 40 MHz DBTCFG |
 |------|---------------|---------------|---------------|---------------|
-| 125 kbps | `0x007F2020` | — | `0x00FF4040` | — |
-| 250 kbps | `0x003F1010` | — | `0x007F2020` | — |
-| 500 kbps | `0x001F0808` | — | `0x003F1010` | — |
-| 1 Mbps | `0x000F0404` | `0x000F0404` | `0x001F0808` | `0x001F0808` |
-| 2 Mbps | — | `0x00070202` | — | `0x000F0404` |
-| 4 Mbps | — | `0x00030101` | — | `0x00070202` |
-| 5 Mbps | — | `0x00020101` | — | `0x00050202` |
-| 8 Mbps | — | — | — | `0x00030101` |
+| 125 kbps | `0x007E1F1F` | — | `0x00FE3F3F` | — |
+| 250 kbps | `0x003E0F0F` | — | `0x007E1F1F` | — |
+| 500 kbps | `0x001E0707` | — | `0x003E0F0F` | — |
+| 1 Mbps | `0x000E0303` | `0x000E0303` | `0x001E0707` | `0x001E0707` |
+| 2 Mbps | — | `0x00060101` | — | `0x000E0303` |
+| 4 Mbps | — | `0x00010101` | — | `0x00060101` |
+| 5 Mbps | — | — | — | `0x00040101` |
+| 8 Mbps | — | — | — | `0x00010101` |
+
+Note: 5 Mbps is not achievable at 20 MHz (requires only 4 TQ, below the minimum of 5).
 
 TDC values (required at ≥1 Mbps data rate):
 
 | Data Rate | 20 MHz | 40 MHz |
 |-----------|--------|--------|
-| 1 Mbps | `0x00021000` | `0x00022000` |
-| 2 Mbps | `0x00020800` | `0x00021000` |
-| 4 Mbps | `0x00020400` | `0x00020800` |
-| 5 Mbps | `0x00020300` | `0x00020600` |
-| 8 Mbps | — | `0x00020400` |
+| 1 Mbps | `0x00020F00` | `0x00021F00` |
+| 2 Mbps | `0x00020700` | `0x00020F00` |
+| 4 Mbps | `0x00020200` | `0x00020700` |
+| 5 Mbps | — | `0x00020500` |
+| 8 Mbps | — | `0x00020200` |
 
 ---
 

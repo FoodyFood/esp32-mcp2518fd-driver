@@ -452,4 +452,4 @@ for (int i = 0; i < len; i++) { /* process msg.data[i] */ }
 can.configureRaw(NBTCFG_500K_40MHZ, DBTCFG_2M_40MHZ, TDC_2M_40MHZ, MODE_NORMAL);
 ```
 
-All presets use BRP=0, exact rates, 80% sample point (75% for 5 Mbps). Prefer `configure(nominalBps, dataBps, mode)` for standard rates — it selects the correct preset automatically.
+All presets use BRP=0 and ~81.25% sample point (mcp2518fd_lite algorithm), matching the Microchip reference implementation. Prefer `configure(nominalBps, dataBps, mode)` for standard rates — it selects the correct preset automatically. Note: 5 Mbps is not achievable at 20 MHz.
