@@ -136,7 +136,7 @@ Each example is a self-contained PlatformIO project — open, build and flash di
 
 ## Matching third-party nodes with configureRaw
 
-When integrating with a third-party CAN FD node (e.g. Battery-Emulator, mcp2518fd_lite), both nodes must use identical bit timing to communicate reliably. Different timing algorithms can produce different sample points for the same nominal rate — 80% vs 81.25% at the data phase is enough to cause REC escalation and zero successful receives.
+When integrating with a third-party CAN FD node (e.g. Battery-Emulator, mcp2518fd_lite), both nodes must use identical bit timing to communicate reliably. Different timing algorithms can produce different sample points for the same nominal rate — 80% vs 81.25% at the data phase is enough to cause REC escalation and zero successful receives. If your third-party node uses a different timing algorithm, use `configureRaw()` with register values derived from that node's algorithm rather than relying on `configure()`.
 
 **Diagnosing timing mismatches**
 
