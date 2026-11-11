@@ -175,6 +175,11 @@ public:
     // Return the detected oscillator frequency in Hz. Valid after configure().
     uint32_t getFsys() const { return mFsys; }
 
+    // Return the computed bit timing register values. Valid after configure().
+    // Useful for debugging interoperability with third-party nodes that use
+    // different timing algorithms — compare NBTCFG/DBTCFG to verify sample points match.
+    void getTimingRegisters(uint32_t& nbtcfg, uint32_t& dbtcfg, uint32_t& tdcfg) const;
+
     // ------------------------------------------------------------------------
     // Raw / advanced API — direct register control for non-standard rates.
     // Presets for common rates are in mcp2518fd_presets.h.
@@ -193,6 +198,8 @@ private:
     uint32_t   mFsys          = 0;
     uint32_t   mTxTimeoutMs   = 10;
     uint32_t   mNbtcfg        = 0;
+    uint32_t   mDbtcfg        = 0;
+    uint32_t   mTdcfg         = 0;
     int8_t     mIntPin        = NO_INT_PIN;
     int8_t     mInt1Pin       = NO_INT_PIN;
     bool       mTimestamp     = false;

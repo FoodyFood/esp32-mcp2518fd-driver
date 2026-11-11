@@ -4,7 +4,7 @@
 
 MCP2518Driver::MCP2518Driver(SPIClass& spi, uint8_t csPin,
                              int8_t intPin, int8_t int0Pin, int8_t int1Pin)
-    : mSpi(spi, csPin), mFsys(0), mTxTimeoutMs(10), mNbtcfg(0),
+    : mSpi(spi, csPin), mFsys(0), mTxTimeoutMs(10), mNbtcfg(0), mDbtcfg(0), mTdcfg(0),
       mIntPin(intPin), mInt1Pin(int1Pin), mRxPending(false)
 {
     (void)int0Pin;  // INT0 is TX-only; not useful for RX-ready signalling
@@ -109,6 +109,8 @@ CanStatus MCP2518Driver::configureWithFsys(uint32_t nominalBps, uint32_t dataBps
     configFilter();
     mTxTimeoutMs = calcTxTimeout(mFsys, nbtcfg, dbtcfg);
     mNbtcfg = nbtcfg;
+    mDbtcfg = dbtcfg;
+    mTdcfg  = tdcfg;
 
     if (!mSpi.setMode(mode)) return CanStatus::MODE_TIMEOUT;
 
@@ -188,6 +190,8 @@ CanStatus MCP2518Driver::configureRaw(uint32_t nbtcfg, uint32_t dbtcfg, uint32_t
     configFilter();
     mTxTimeoutMs = calcTxTimeout(mFsys, nbtcfg, dbtcfg);
     mNbtcfg = nbtcfg;
+    mDbtcfg = dbtcfg;
+    mTdcfg  = tdcfg;
 
     if (!mSpi.setMode(mode)) return CanStatus::MODE_TIMEOUT;
 
@@ -347,6 +351,13 @@ bool MCP2518Driver::receive(CanMsg& msg, uint32_t timeoutMs)
 uint8_t MCP2518Driver::getMode()
 {
     return mSpi.getMode();
+}
+
+void MCP2518Driver::getTimingRegisters(uint32_t& nbtcfg, uint32_t& dbtcfg, uint32_t& tdcfg) const
+{
+    nbtcfg = mNbtcfg;
+    dbtcfg = mDbtcfg;
+    tdcfg  = mTdcfg;
 }
 
 CanStatus MCP2518Driver::stop()
