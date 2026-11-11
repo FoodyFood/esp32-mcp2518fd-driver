@@ -75,7 +75,7 @@ void loop() {
 
 **Bit rates**
 - One call sets nominal and data rates — no register maths, no presets to look up
-- 125 kbps – 1 Mbps nominal / 1 – 5 Mbps data at 20 MHz; up to 8 Mbps at 40 MHz
+- 125 kbps – 1 Mbps nominal / 1 – 4 Mbps data at 20 MHz; up to 8 Mbps at 40 MHz
 - Switch data rate at runtime without losing the nominal configuration
 
 **Filtering**
