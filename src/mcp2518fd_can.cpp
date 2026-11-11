@@ -145,7 +145,8 @@ CanStatus MCP2518Driver::setDataRate(uint32_t dataBps)
     uint32_t nBrp   = (mNbtcfg >> 24) & 0xFF;
     uint32_t nTseg1 = (mNbtcfg >> 16) & 0xFF;
     uint32_t nTseg2 = (mNbtcfg >>  8) & 0x7F;
-    uint32_t nominalBps = mFsys / ((nBrp + 1) * (1 + nTseg1 + nTseg2));
+    // totalTQ = tseg1 + tseg2 + 3 (sync + tseg1 + 1 + tseg2 + 1)
+    uint32_t nominalBps = mFsys / ((nBrp + 1) * (nTseg1 + nTseg2 + 3));
 
     uint32_t nbtcfg, dbtcfg, tdcfg;
     if (!calcBitTiming(mFsys, nominalBps, dataBps, nbtcfg, dbtcfg, tdcfg))

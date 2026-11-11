@@ -129,26 +129,18 @@ void runTest()
     CHECK("all 64 bytes match", data3Ok);
 
     // ------------------------------------------------------------------
-    // Higher data rates: 4 Mbps, 5 Mbps, 8 Mbps
-    // Each switches rate, sends one 8-byte frame, verifies all bytes.
+    // Higher data rates: 4 Mbps
+    // Note: 5 Mbps requires 40 MHz oscillator (only 4 TQ at 20 MHz)
     // ------------------------------------------------------------------
-    struct { const char* label; uint32_t bps; } rates[] = {
-        { "4 Mbps", 4000000 },
-        { "5 Mbps", 5000000 },
-    };
-
-    for (int r = 0; r < 2; r++)
+    Serial.println("setDataRate() @ 4 Mbps, 8 bytes:");
     {
         char label[56];
-        Serial.printf("setDataRate() @ %s, 8 bytes:\n", rates[r].label);
-
-        bool sw = (can.setDataRate(rates[r].bps) == CanStatus::OK);
-        snprintf(label, sizeof(label), "setDataRate(%s) returned OK", rates[r].label);
-        CHECK(label, sw);
+        bool sw = (can.setDataRate(4000000) == CanStatus::OK);
+        CHECK("setDataRate(4 Mbps) returned OK", sw);
 
         CanMsg tx4;
-        tx4.id = 0x100 + r; tx4.fdf = true; tx4.brs = true; tx4.dlc = 8;
-        for (int i = 0; i < 8; i++) tx4.data[i] = (uint8_t)(0x30 + r * 8 + i);
+        tx4.id = 0x100; tx4.fdf = true; tx4.brs = true; tx4.dlc = 8;
+        for (int i = 0; i < 8; i++) tx4.data[i] = (uint8_t)(0x30 + i);
 
         bool txOk = can.transmit(tx4) == CanTxResult::OK;
         CanMsg rx4 = {};
@@ -156,11 +148,14 @@ void runTest()
         bool dataOk = rxOk && rx4.id == tx4.id && rx4.dlc == 8;
         for (int i = 0; i < 8 && dataOk; i++) dataOk &= (rx4.data[i] == tx4.data[i]);
 
-        snprintf(label, sizeof(label), "transmit() + receive() 8 bytes @ %s", rates[r].label);
-        CHECK(label, txOk && rxOk);
-        snprintf(label, sizeof(label), "all 8 bytes match @ %s", rates[r].label);
-        CHECK(label, dataOk);
+        CHECK("transmit() + receive() 8 bytes @ 4 Mbps", txOk && rxOk);
+        CHECK("all 8 bytes match @ 4 Mbps", dataOk);
     }
+
+    // 5 Mbps not achievable at 20 MHz — verify rejection
+    Serial.println("setDataRate(5 Mbps) on 20 MHz — expect RATE_NOT_ACHIEVABLE:");
+    CHECK("setDataRate(5M) = RATE_NOT_ACHIEVABLE",
+          can.setDataRate(5000000) == CanStatus::RATE_NOT_ACHIEVABLE);
 
     // ------------------------------------------------------------------
     // Issue 3: CanMsg convenience constructor

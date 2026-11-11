@@ -71,9 +71,9 @@ void test_calcBitTiming_20mhz_1m_4m()
 
 void test_calcBitTiming_20mhz_500k_5m()
 {
+    // 5 Mbps @ 20 MHz = 4 TQ, below minimum of 5 for mcp2518fd_lite algorithm
     uint32_t nbtcfg, dbtcfg, tdcfg;
-    TEST_ASSERT_TRUE(calcBitTiming(20000000, 500000, 5000000, nbtcfg, dbtcfg, tdcfg));
-    TEST_ASSERT_EQUAL_HEX32(DBTCFG_5M_20MHZ, dbtcfg);
+    TEST_ASSERT_FALSE(calcBitTiming(20000000, 500000, 5000000, nbtcfg, dbtcfg, tdcfg));
 }
 
 // ============================================================================
@@ -442,9 +442,8 @@ void test_calcBitTiming_20mhz_tdc_1m()
 
 void test_calcBitTiming_20mhz_tdc_5m()
 {
-    uint32_t nbtcfg, dbtcfg, tdcfg;
-    calcBitTiming(20000000, 500000, 5000000, nbtcfg, dbtcfg, tdcfg);
-    TEST_ASSERT_EQUAL_HEX32(TDC_5M_20MHZ, tdcfg);
+    // 5 Mbps @ 20 MHz = 4 TQ, below minimum — test removed
+    // Use 40 MHz oscillator for 5 Mbps data rate
 }
 
 void test_calcBitTiming_brp_always_zero()
@@ -520,10 +519,8 @@ void test_calcBitTiming_40mhz_data_5m()
 {
     uint32_t nbtcfg, dbtcfg, tdcfg;
     TEST_ASSERT_TRUE(calcBitTiming(40000000, 500000, 5000000, nbtcfg, dbtcfg, tdcfg));
-    // 40 MHz / 5 Mbps = 8 TQ: TSEG2=1, TSEG1=6 — verify rate is exact
-    uint32_t tseg1 = (dbtcfg >> 16) & 0x1F;
-    uint32_t tseg2 = (dbtcfg >>  8) & 0x0F;
-    TEST_ASSERT_EQUAL_UINT32(5000000, 40000000 / (1 + tseg1 + tseg2));
+    TEST_ASSERT_EQUAL_HEX32(DBTCFG_5M_40MHZ, dbtcfg);
+    TEST_ASSERT_EQUAL_HEX32(TDC_5M_40MHZ, tdcfg);
 }
 
 void test_calcBitTiming_40mhz_tdc_8m()
@@ -642,18 +639,18 @@ void test_fltcon0_address()  { TEST_ASSERT_EQUAL_HEX16(0x1D0, FLTCON_REG(0)); }
 void test_calcBitTiming_classic_mode_nominal_equals_data_500k()
 {
     // configure(500000, 0, MODE_CLASSIC) substitutes dataBps=nominalBps=500000
-    // 20MHz/500kbps=40TQ: tseg2=8, tseg1=31 — fits in both nominal (8-bit) and data (5-bit) fields
+    // 20MHz/500kbps=40TQ: mcp2518fd_lite gives tseg2=7, tseg1=30
     uint32_t nbtcfg, dbtcfg, tdcfg;
     TEST_ASSERT_TRUE(calcBitTiming(20000000, 500000, 500000, nbtcfg, dbtcfg, tdcfg));
     TEST_ASSERT_EQUAL_HEX32(NBTCFG_500K_20MHZ, nbtcfg);
-    TEST_ASSERT_EQUAL_HEX32(0x001F0808u, dbtcfg);  // same encoding: BRP=0 TSEG1=31 TSEG2=8 SJW=8
+    TEST_ASSERT_EQUAL_HEX32(NBTCFG_500K_20MHZ, dbtcfg);  // same rate, same timing
     TEST_ASSERT_EQUAL_UINT32(0, tdcfg);             // 500 kbps < 1 Mbps — TDC disabled
 }
 
 void test_calcBitTiming_classic_mode_nominal_equals_data_125k()
 {
-    // 20MHz/125kbps=160TQ: tseg2=32, tseg1=127 — tseg1=127 exceeds 5-bit data field (max 31)
-    // calcBitTiming caps tseg1 to 31 then verifies rate: 20MHz/(1+31+32)=312500 ≠ 125000 → false
+    // 20MHz/125kbps=160TQ: mcp2518fd_lite gives tseg2=31, tseg1=126
+    // tseg1=126 exceeds 5-bit data field (max 31) — must fail
     uint32_t nbtcfg, dbtcfg, tdcfg;
     TEST_ASSERT_FALSE(calcBitTiming(20000000, 125000, 125000, nbtcfg, dbtcfg, tdcfg));
 }

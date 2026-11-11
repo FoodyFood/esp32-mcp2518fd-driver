@@ -9,8 +9,9 @@
 //
 // calcBitTiming()
 //   Computes NBTCFG, DBTCFG and TDCFG register words for the given rates and
-//   oscillator frequency.  BRP=0 throughout; 80% sample point (75% for 5 Mbps
-//   where TSEG1 would otherwise exceed the 5-bit field).
+//   oscillator frequency. Uses the mcp2518fd_lite algorithm for compatibility
+//   with Microchip reference implementations and third-party nodes.
+//   BRP=0 throughout; ~81.25% sample point.
 //   Returns false if the rate is not exactly achievable.
 //   Formula: rate = fsys / ((BRP+1) * (1 + TSEG1 + TSEG2))  [ref manual Eq 3-1/3-4]
 //
@@ -21,41 +22,48 @@
 inline bool calcBitTiming(uint32_t fsys, uint32_t nominalBps, uint32_t dataBps,
                            uint32_t& nbtcfg, uint32_t& dbtcfg, uint32_t& tdcfg)
 {
+    // mcp2518fd_lite algorithm:
+    //   tseg2 = round(n/5) - 1  using  (n*205 - 614) >> 10
+    //   tseg1 = n - 3 - tseg2
+    //   sjw   = tseg2
+    // This produces ~81.25% sample point, matching Microchip reference.
+
     // --- Nominal ---
-    // BRP=0, SP=80%: TSEG2 = totalTQ/5, TSEG1 = totalTQ - 1 - TSEG2
     // TSEG1 field: 8-bit (max 255), TSEG2 field: 7-bit (max 127)
     {
         if (nominalBps == 0) return false;
         uint32_t totalTQ = fsys / nominalBps;
-        if (totalTQ < 3 || (fsys % nominalBps) != 0) return false;
+        if (totalTQ < 5 || (fsys % nominalBps) != 0) return false;
 
-        uint32_t tseg2 = totalTQ / 5;
+        uint32_t tseg2 = ((totalTQ * 205) - 614) >> 10;
         if (tseg2 < 1)   tseg2 = 1;
         if (tseg2 > 127) tseg2 = 127;
-        uint32_t tseg1 = totalTQ - 1 - tseg2;
+        uint32_t tseg1 = totalTQ - 3 - tseg2;
         if (tseg1 > 255 || tseg1 < 1) return false;
+
+        // Verify values produce the exact target rate
+        if (1 + tseg1 + 1 + tseg2 + 1 != totalTQ) return false;
 
         uint32_t sjw = tseg2;
         nbtcfg = (0u << 24) | (tseg1 << 16) | (tseg2 << 8) | sjw;
     }
 
     // --- Data ---
-    // BRP=0, SP=80%: TSEG2 = totalTQ/5, TSEG1 = totalTQ - 1 - TSEG2
     // TSEG1 field: 5-bit (max 31), TSEG2 field: 4-bit (max 15)
     {
         if (dataBps == 0) return false;
         uint32_t totalTQ = fsys / dataBps;
-        if (totalTQ < 3 || (fsys % dataBps) != 0) return false;
+        if (totalTQ < 5 || (fsys % dataBps) != 0) return false;
 
-        uint32_t tseg2 = totalTQ / 5;
+        uint32_t tseg2 = ((totalTQ * 205) - 614) >> 10;
         if (tseg2 < 1)  tseg2 = 1;
         if (tseg2 > 15) tseg2 = 15;
-        uint32_t tseg1 = totalTQ - 1 - tseg2;
-        if (tseg1 > 31) tseg1 = 31;  // cap to field width, recheck rate below
+        uint32_t tseg1 = totalTQ - 3 - tseg2;
+        if (tseg1 > 31) return false;
         if (tseg1 < 1)  return false;
 
-        // Verify capped values still produce the exact target rate
-        if (fsys / (1 + tseg1 + tseg2) != dataBps) return false;
+        // Verify values produce the exact target rate
+        if (1 + tseg1 + 1 + tseg2 + 1 != totalTQ) return false;
 
         uint32_t sjw = tseg2;
         dbtcfg = (0u << 24) | (tseg1 << 16) | (tseg2 << 8) | sjw;
@@ -87,8 +95,8 @@ inline uint32_t calcTxTimeout(uint32_t fsys, uint32_t nbtcfg, uint32_t dbtcfg)
     if (fsys == 0) fsys = 20000000u;
     uint32_t tq_ns = 1000000000u / fsys;
 
-    uint32_t nbt_ns = (nBrp + 1) * (1 + nTseg1 + nTseg2) * tq_ns;
-    uint32_t dbt_ns = (dBrp + 1) * (1 + dTseg1 + dTseg2) * tq_ns;
+    uint32_t nbt_ns = (nBrp + 1) * (nTseg1 + nTseg2 + 3) * tq_ns;
+    uint32_t dbt_ns = (dBrp + 1) * (dTseg1 + dTseg2 + 3) * tq_ns;
 
     // Worst-case 64-byte CAN FD frame: ~36 nominal bits + ~562 data bits
     uint32_t frame_ns = 36 * nbt_ns + 562 * dbt_ns;
