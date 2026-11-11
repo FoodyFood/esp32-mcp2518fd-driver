@@ -181,7 +181,7 @@ void test_calcBitTiming_sample_point_500k_20mhz()
     calcBitTiming(20000000, 500000, 2000000, nbtcfg, dbtcfg, tdcfg);
     uint32_t tseg1 = (nbtcfg >> 16) & 0xFF;
     uint32_t tseg2 = (nbtcfg >>  8) & 0x7F;
-    uint32_t totalTQ = 1 + tseg1 + tseg2;
+    uint32_t totalTQ = tseg1 + tseg2 + 3;  // sync + tseg1 + 1 + tseg2 + 1
     // SP = (1+tseg1)/totalTQ — expect 75-85%
     uint32_t sp_pct = (1 + tseg1) * 100 / totalTQ;
     TEST_ASSERT_GREATER_OR_EQUAL_UINT32(75, sp_pct);
@@ -469,7 +469,8 @@ void test_calcBitTiming_data_sample_point_2m_20mhz()
     calcBitTiming(20000000, 500000, 2000000, nbtcfg, dbtcfg, tdcfg);
     uint32_t tseg1 = (dbtcfg >> 16) & 0x1F;
     uint32_t tseg2 = (dbtcfg >>  8) & 0x0F;
-    uint32_t sp_pct = (1 + tseg1) * 100 / (1 + tseg1 + tseg2);
+    uint32_t totalTQ = tseg1 + tseg2 + 3;  // sync + tseg1 + 1 + tseg2 + 1
+    uint32_t sp_pct = (1 + tseg1) * 100 / totalTQ;
     TEST_ASSERT_GREATER_OR_EQUAL_UINT32(75, sp_pct);
     TEST_ASSERT_LESS_OR_EQUAL_UINT32(85, sp_pct);
 }
