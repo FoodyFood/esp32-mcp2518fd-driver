@@ -192,16 +192,18 @@ Every feature was developed and verified on real hardware — not simulated, not
 
 <img src="docs/images/mcp2518fd_breakout_board.jpg" width="400" alt="MCP2518FD breakout board">
 
+The driver works with any board that pairs an ESP32 with an MCP2518FD over SPI — whether the chip is on a separate breakout or integrated on the same PCB. Verified on a custom breakout (20 MHz, ATA6561 transceiver) and the LilyGo T2-CANFD (40 MHz, integrated transceiver) — full test suite passes on both.
+
 | Item | Detail |
 |---|---|
 | MCU | ESP32-D0WD-V3 (rev 3.1) |
 | CAN controller | MCP2518FD |
-| Oscillator | 20 MHz crystal |
+| Oscillator | 20 MHz crystal (breakout) / 40 MHz (T2-CANFD) |
 | Transceiver | ATA6561 |
 | SPI | VSPI — SCK=33, MISO=35, MOSI=32, CS=25 |
 | INT | GPIO 34 |
 
-Other ESP32 boards and MCP2518FD breakout variants should work provided the SPI pins are configured correctly. See [docs/hardware.md](https://github.com/FoodyFood/esp32-mcp2518fd-driver/blob/main/docs/hardware.md) for wiring details.
+See [docs/hardware.md](https://github.com/FoodyFood/esp32-mcp2518fd-driver/blob/main/docs/hardware.md) for wiring details.
 
 ---
 

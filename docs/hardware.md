@@ -2,16 +2,12 @@
 
 ## Verified hardware
 
-| Item | Detail |
-|---|---|
-| MCU | ESP32-D0WD-V3 (rev 3.1) |
-| CAN controller | MCP2518FD |
-| Oscillator | 20 MHz crystal |
-| Transceiver | ATA6561 |
-| SPI bus | VSPI |
-| Framework | Arduino (PlatformIO) |
+| Board | MCP2518FD | Oscillator | Transceiver | Notes |
+|---|---|---|---|---|
+| Custom breakout (ESP32-D0WD-V3) | External | 20 MHz | ATA6561 | All examples and integration tests |
+| LilyGo T2-CANFD | Integrated | 40 MHz | Integrated | Full test suite — all tests pass |
 
-Other ESP32 boards and MCP2518FD breakout variants should work provided the SPI pins are configured correctly.
+The driver works with any board that pairs an ESP32 with an MCP2518FD over SPI, whether the chip is on a separate breakout or integrated on the same PCB. Configure the `PIN_*` constants to match your wiring and pass `fsysHz` to `configure()` if your oscillator is 40 MHz with PLL disabled.
 
 ## Default pin assignment
 
