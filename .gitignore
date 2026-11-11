@@ -8,6 +8,7 @@
 # Python
 __pycache__/
 *.pyc
+**/*.venv
 
 # Datasheet PDFs — download from Microchip, do not commit
 docs/reference/*.pdf
