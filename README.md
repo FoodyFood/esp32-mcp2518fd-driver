@@ -130,13 +130,13 @@ Each example is a self-contained PlatformIO project — open, build and flash di
 | [`uds_filter`](examples/uds_filter/) | Set an acceptance filter so your board only wakes up for the frames it cares about — demonstrated with a UDS request/response pattern |
 | [`can_logger`](examples/can_logger/) | Passively monitor a CAN bus in listen-only mode with per-frame hardware timestamps — pair with `scope_loopback` on a second board for a self-contained test |
 | [`classic_can`](examples/classic_can/) | Use the MCP2518FD as a plain CAN 2.0B controller to talk to legacy devices — demonstrated with a vehicle ECU and dashboard simulation |
-| [`meb_battery_sim`](examples/meb_battery_sim/) | Impersonate a VW MEB battery on a CAN FD bus — transmit the full keepalive schedule with VAG CRC so a Battery-Emulator node sees a healthy, contactors-closed pack |
+| [`meb_battery_sim`](examples/meb_battery_sim/) | Impersonate a VW MEB battery on a CAN FD bus — transmit the full keepalive schedule with VAG CRC so a receiving node sees a healthy, contactors-closed pack |
 
 ---
 
 ## Matching third-party nodes with configureRaw
 
-When integrating with a third-party CAN FD node (e.g. Battery-Emulator, mcp2518fd_lite), both nodes must use identical bit timing to communicate reliably. Different timing algorithms can produce different sample points for the same nominal rate — 80% vs 81.25% at the data phase is enough to cause REC escalation and zero successful receives. If your third-party node uses a different timing algorithm, use `configureRaw()` with register values derived from that node's algorithm rather than relying on `configure()`.
+When integrating with a third-party CAN FD node, both nodes must use identical bit timing to communicate reliably. Different timing algorithms can produce different sample points for the same nominal rate — 80% vs 81.25% at the data phase is enough to cause REC escalation and zero successful receives. If your third-party node uses a different timing algorithm, use `configureRaw()` with register values derived from that node's algorithm rather than relying on `configure()`.
 
 **Diagnosing timing mismatches**
 
